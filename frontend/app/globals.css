@@ -319,7 +319,12 @@
   }
 
   .input-zed {
-    @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none transition-all duration-300 focus:border-zed-primary focus:bg-white/10;
+    @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none transition-all duration-300;
+  }
+  
+  .input-zed:focus {
+    border-color: #4F46E5; /* zed-primary */
+    background-color: rgba(255, 255, 255, 0.1);
   }
   
   select.input-zed {
@@ -342,7 +347,8 @@
   select::-ms-expand { display: none; }
   
   select:focus {
-    @apply border-zed-primary ring-1 ring-zed-primary/20;
+    border-color: #4F46E5;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2);
   }
 
   .floating {
