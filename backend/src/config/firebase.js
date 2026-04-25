@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const fs = require('fs');
 require('dotenv').config();
 
 const path = require('path');
@@ -12,7 +13,7 @@ let serviceAccount = null;
 try {
   if (serviceAccountJson) {
     serviceAccount = JSON.parse(serviceAccountJson);
-  } else if (serviceAccountPath) {
+  } else if (serviceAccountPath && fs.existsSync(path.resolve(process.cwd(), serviceAccountPath))) {
     serviceAccount = require(path.resolve(process.cwd(), serviceAccountPath));
   }
 } catch (error) {
