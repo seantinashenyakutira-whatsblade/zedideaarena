@@ -5,9 +5,19 @@ const path = require('path');
 
 // Service Account can be provided via file path or environment variable
 const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-const serviceAccount = serviceAccountPath 
-  ? require(path.resolve(process.cwd(), serviceAccountPath)) 
-  : null;
+const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+
+let serviceAccount = null;
+
+try {
+  if (serviceAccountJson) {
+    serviceAccount = JSON.parse(serviceAccountJson);
+  } else if (serviceAccountPath) {
+    serviceAccount = require(path.resolve(process.cwd(), serviceAccountPath));
+  }
+} catch (error) {
+  console.error('Failed to parse/load service account:', error);
+}
 
 if (serviceAccount) {
   try {
@@ -15,7 +25,7 @@ if (serviceAccount) {
       credential: admin.credential.cert(serviceAccount),
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET
     });
-    console.log('Firebase Admin initialized with service account.');
+    console.log('Firebase Admin initialized successfully.');
   } catch (error) {
     console.error('Firebase Admin initialization error:', error);
   }
