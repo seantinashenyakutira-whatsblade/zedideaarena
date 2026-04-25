@@ -13,9 +13,20 @@ import Link from 'next/link'
 export default function VotingArenaPage() {
   const { profile } = useAuth()
   const [ideas, setIdeas] = useState<any[]>([])
+  const [filteredIdeas, setFilteredIdeas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [votedIdeas, setVotedIdeas] = useState<string[]>([])
   const [castingVote, setCastingVote] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    const results = ideas.filter(idea => 
+      idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      idea.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      idea.description.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    setFilteredIdeas(results)
+  }, [searchQuery, ideas])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -88,6 +99,8 @@ export default function VotingArenaPage() {
                     <input 
                       placeholder="Search ideas, industries..." 
                       className="input-zed pl-10 h-11"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
                   <button className="btn-secondary h-11 px-4 flex items-center gap-2">
@@ -121,15 +134,15 @@ export default function VotingArenaPage() {
                     <div key={i} className="card-zed h-96 animate-pulse opacity-50" />
                   ))}
                 </div>
-              ) : ideas.length === 0 ? (
+              ) : filteredIdeas.length === 0 ? (
                 <div className="text-center py-24 glass-premium rounded-3xl border border-white/5">
                   <Vote size={64} className="mx-auto text-zed-foreground-secondary mb-6 opacity-20" />
-                  <h3 className="text-xl font-black text-zed-foreground mb-2">No ideas in the Arena yet</h3>
-                  <p className="text-zed-foreground-secondary">Be the first to submit a vision!</p>
+                  <h3 className="text-xl font-black text-zed-foreground mb-2">No matching ideas found</h3>
+                  <p className="text-zed-foreground-secondary">Try a different search term.</p>
                 </div>
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {ideas.map((idea) => {
+                  {filteredIdeas.map((idea) => {
                     const hasVoted = votedIdeas.includes(idea.id)
                     const isOwn = idea.user_id === profile?.uid
 
