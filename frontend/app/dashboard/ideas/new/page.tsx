@@ -514,9 +514,10 @@ export default function NewIdeaPage() {
               </>
               )}
             </main>
-          )}
-        </div>
+          </>
+        )}
       </div>
-    </ProtectedRoute>
-  )
+    </div>
+  </ProtectedRoute>
+)
 }
