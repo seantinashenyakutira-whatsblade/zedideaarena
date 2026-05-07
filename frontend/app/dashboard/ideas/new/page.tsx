@@ -511,8 +511,9 @@ export default function NewIdeaPage() {
                   )}
                 </div>
               </form>
-              </>
-              )}
+                </>
+                )}
+              </div>
             </main>
           </>
         )}
