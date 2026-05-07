@@ -3,7 +3,7 @@
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { ChevronRight, ChevronLeft, Upload, Link as LinkIcon, FileText, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy } from 'lucide-react'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { ideaService } from '@/services/idea'
 import { mediaService } from '@/services/core'
 import { authService } from '@/services/auth'
@@ -21,7 +21,7 @@ const steps = [
   { number: 5, title: 'Commit', icon: CreditCard },
 ]
 
-export default function NewIdeaPage() {
+function NewIdeaForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [currentStep, setCurrentStep] = useState(1)
@@ -456,7 +456,7 @@ export default function NewIdeaPage() {
                                   <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-4">Total Entry Fee</p>
                                   <p className="text-5xl font-black text-white">$5.00</p>
                                   <p className="text-[10px] text-zed-foreground-secondary mt-2">Non-refundable competition fee</p>
-                               </div>
+                                </div>
                             </div>
                           </div>
                        </div>
@@ -520,5 +520,13 @@ export default function NewIdeaPage() {
       </div>
     </div>
   </ProtectedRoute>
-)
+  )
+}
+
+export default function NewIdeaPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center bg-zed-background"><Loader2 className="animate-spin text-zed-primary" /></div>}>
+      <NewIdeaForm />
+    </Suspense>
+  )
 }
