@@ -9,9 +9,11 @@ interface AuthContextType {
   user: any
   profile: any
   loading: boolean
+  currentRole: string
   login: (credentials: any) => Promise<void>
   logout: () => Promise<void>
   refreshProfile: () => Promise<void>
+  setCurrentRole: (role: string) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -20,6 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any>(null)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [currentRole, setCurrentRole] = useState<string>('contestant')
   const router = useRouter()
 
   const fetchProfile = useCallback(async () => {
@@ -80,6 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     profile,
     loading,
+    currentRole,
+    setCurrentRole,
     login,
     logout,
     refreshProfile: fetchProfile

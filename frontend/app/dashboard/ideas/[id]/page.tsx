@@ -20,15 +20,19 @@ import {
   Calendar,
   Users
 } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
 export default function IdeaDetailPage() {
   const { id } = useParams()
   const router = useRouter()
+  const { profile } = useAuth()
   const [idea, setIdea] = useState<any>(null)
   const [creator, setCreator] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [castingVote, setCastingVote] = useState(false)
+  const [hasVoted, setHasVoted] = useState(false) // You'd ideally fetch this from backend
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,6 +52,33 @@ export default function IdeaDetailPage() {
     }
     fetchData()
   }, [id])
+
+  const handleVote = async () => {
+    if (profile?.kyc_status !== 'verified' || profile?.voter_payment_status !== 'paid') {
+      toast.error('You must be verified and have paid the entry fee to vote.')
+      return
+    }
+
+    if (idea.user_id === profile.uid) {
+      toast.error('You cannot vote for your own idea.')
+      return
+    }
+
+    setCastingVote(true)
+    try {
+      await api.post('/votes/cast', { 
+        ideaId: idea.id, 
+        competitionId: idea.competition_id || 'idea-to-win-2024' 
+      })
+      toast.success('Your vote has been cast!')
+      setHasVoted(true)
+      setIdea((prev: any) => ({ ...prev, votes_count: (prev.votes_count || 0) + 1 }))
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to cast vote')
+    } finally {
+      setCastingVote(false)
+    }
+  }
 
   if (loading) return <div>Loading...</div>
   if (!idea) return <div>Idea not found</div>
@@ -154,8 +185,18 @@ export default function IdeaDetailPage() {
                     </div>
 
                     <div className="space-y-4">
-                      <button className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-sm font-black uppercase tracking-widest shadow-xl glow-primary">
-                        Cast Your Vote <ThumbsUp size={18} />
+                      <button 
+                        onClick={handleVote}
+                        disabled={hasVoted || castingVote || idea.user_id === profile?.uid}
+                        className={`w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-sm font-black uppercase tracking-widest transition-all ${
+                          hasVoted
+                            ? 'bg-zed-success text-white'
+                            : idea.user_id === profile?.uid
+                            ? 'bg-white/5 text-zed-foreground-secondary cursor-not-allowed'
+                            : 'btn-primary shadow-xl glow-primary'
+                        }`}
+                      >
+                        {castingVote ? 'Casting...' : hasVoted ? 'Voted' : 'Cast Your Vote'} <ThumbsUp size={18} />
                       </button>
                       <button className="btn-secondary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-sm font-black uppercase tracking-widest">
                         Share Pitch <Share2 size={18} />

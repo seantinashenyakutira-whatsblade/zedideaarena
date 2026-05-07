@@ -9,13 +9,6 @@ const saveIdeaDraft = async (req, res) => {
   const { id, title, category, competition_id, problem_statement, description, video_url, image_url, deck_url, estimated_impact, target_audience, timeline, links } = req.body;
 
   if (!db) {
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({ 
-        status: 'success', 
-        id: id || 'mock-idea-' + Date.now(), 
-        message: 'Idea draft saved (Simulated)' 
-      });
-    }
     return res.status(503).json({ status: 'error', message: 'Database service unavailable' });
   }
 
@@ -98,12 +91,6 @@ const submitIdea = async (req, res) => {
   }
 
   if (!db) {
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({ 
-        status: 'success', 
-        message: 'Idea submitted successfully (Simulated)' 
-      });
-    }
     return res.status(503).json({ status: 'error', message: 'Database service unavailable' });
   }
 
@@ -154,25 +141,21 @@ const getUserIdeas = async (req, res) => {
   const { uid } = req.user;
 
   if (!db) {
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({ 
-        status: 'success', 
-        data: [] 
-      });
-    }
     return res.status(503).json({ status: 'error', message: 'Database service unavailable' });
   }
 
   try {
     const snapshot = await db.collection('ideas')
       .where('user_id', '==', uid)
-      .orderBy('updatedAt', 'desc')
       .get();
 
     const ideas = [];
     snapshot.forEach(doc => {
       ideas.push({ id: doc.id, ...doc.data() });
     });
+
+    // Sort in memory to avoid requiring a composite index in Firestore
+    ideas.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
     res.json({ 
       status: 'success', 

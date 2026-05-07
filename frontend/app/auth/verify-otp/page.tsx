@@ -31,7 +31,7 @@ export default function OTPVerificationPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const otpCode = otp.join('')
-    console.log('OTP submitted:', otpCode)
+    // In a real app, send OTP to backend
   }
 
   const handleResend = () => {
@@ -46,9 +46,9 @@ export default function OTPVerificationPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-6">
-            <div className="flex items-center gap-3 justify-center">
-              <div className="w-10 h-10 rounded-lg bg-zed-gradient-primary" />
-              <span className="font-bold text-xl gradient-text">ZedIdeaArena</span>
+            <div className="flex items-center gap-3 justify-center floating">
+              <img src="/logo-icon.png" alt="ZedIdeaArena" className="w-10 h-10 object-contain drop-shadow-[0_0_8px_rgba(79,70,229,0.8)]" />
+              <span className="font-bold text-2xl gradient-text tracking-tighter">ZedIdeaArena</span>
             </div>
           </Link>
           <h1 className="text-3xl font-black text-zed-foreground mb-2">Verify Your Email</h1>

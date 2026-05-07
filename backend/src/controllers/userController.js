@@ -48,6 +48,7 @@ const login = async (req, res) => {
   }
 
   const { uid, email, name, picture } = req.user;
+  const { fullName: bodyName } = req.body;
 
   try {
     if (!db) throw new Error('Firestore not initialized');
@@ -62,7 +63,7 @@ const login = async (req, res) => {
       userData = {
         uid,
         email: email || null,
-        fullName: name || 'New Innovator',
+        fullName: bodyName || name || 'New Innovator',
         picture: picture || null,
         role: 'contestant', 
         kyc_status: 'unverified',
@@ -111,7 +112,8 @@ const syncUserProfile = async (req, res) => {
     nationality, 
     phone, 
     idType, 
-    idNumber 
+    idNumber,
+    role
   } = req.body;
 
   try {
@@ -125,6 +127,7 @@ const syncUserProfile = async (req, res) => {
       phone: phone || null,
       idType: idType || null,
       idNumber: idNumber || null,
+      role: role || null,
       updatedAt: new Date().toISOString()
     };
 

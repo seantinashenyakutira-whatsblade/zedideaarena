@@ -16,12 +16,6 @@ const createPaymentIntent = async (req, res) => {
   }
 
   if (!stripe) {
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({
-        status: 'success',
-        clientSecret: 'manual_payment_intent_secret_' + Math.random().toString(36).substr(2, 9)
-      });
-    }
     return res.status(503).json({ status: 'error', message: 'Payment service unavailable' });
   }
 
@@ -66,8 +60,6 @@ const handleWebhook = async (req, res) => {
     const paymentIntent = event.data.object;
     const { userId, type, ideaId } = paymentIntent.metadata;
 
-    console.log(`Payment succeeded for user ${userId}, type ${type}`);
-
     try {
       if (type === 'contestant' && ideaId !== 'none') {
         await db.collection('ideas').doc(ideaId).update({
@@ -79,15 +71,40 @@ const handleWebhook = async (req, res) => {
           competition_participant: true,
           updatedAt: new Date().toISOString()
         });
+        console.log(`[PAYMENT_SUCCESS] Contestant payment processed for idea ${ideaId}`);
       } else if (type === 'voter') {
         await db.collection('users').doc(userId).update({
           voter_payment_status: 'paid',
           updatedAt: new Date().toISOString()
         });
+        console.log(`[PAYMENT_SUCCESS] Voter payment processed for user ${userId}`);
       }
     } catch (err) {
       console.error('Error updating status after payment:', err);
     }
+  } else if (event.type === 'payment_intent.payment_failed') {
+    const paymentIntent = event.data.object;
+    const { userId, type, ideaId } = paymentIntent.metadata;
+
+    try {
+      console.log(`[PAYMENT_FAILED] Payment failed for user ${userId}, type: ${type}`);
+      // Log failed payment attempt
+      await db.collection('failed_payments').add({
+        userId,
+        type,
+        ideaId,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        failureReason: paymentIntent.last_payment_error?.message,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error('Error logging failed payment:', err);
+    }
+  } else if (event.type === 'payment_intent.canceled') {
+    const paymentIntent = event.data.object;
+    const { userId } = paymentIntent.metadata;
+    console.log(`[PAYMENT_CANCELLED] Payment cancelled by user ${userId}`);
   }
 
   res.status(200).send('Webhook Received');

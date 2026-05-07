@@ -52,7 +52,7 @@ export function Sidebar() {
       >
         {/* Logo */}
         <div className="h-16 flex items-center gap-3 px-6 border-b border-white/5 mt-12 md:mt-0 floating">
-          <div className="w-8 h-8 rounded-xl bg-zed-gradient-primary shadow-[0_0_15px_rgba(79,70,229,0.5)]" />
+          <img src="/logo-icon.png" alt="ZedIdeaArena Icon" className="w-8 h-8 object-contain drop-shadow-[0_0_8px_rgba(79,70,229,0.8)]" />
           <span className="font-black text-xl gradient-text tracking-tighter uppercase">ZedArena</span>
         </div>
 

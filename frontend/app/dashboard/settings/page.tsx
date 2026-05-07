@@ -4,10 +4,28 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
-import { User, Mail, Shield, LogOut, Camera, Save } from 'lucide-react'
+import { User, Mail, Shield, LogOut, Camera, Save, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import api from '@/lib/api'
 
 export default function SettingsPage() {
   const { profile, logout } = useAuth()
+  const [loadingRole, setLoadingRole] = useState(false)
+
+  const handleRoleChange = async (newRole: string) => {
+    if (profile?.role === newRole) return
+    setLoadingRole(true)
+    try {
+      await api.post('/user/profile', { role: newRole })
+      toast.success(`Role updated to ${newRole}`)
+      window.location.reload() // Quick refresh to update contexts
+    } catch (err) {
+      toast.error('Failed to switch role')
+    } finally {
+      setLoadingRole(false)
+    }
+  }
 
   return (
     <ProtectedRoute>
@@ -83,13 +101,36 @@ export default function SettingsPage() {
                     <Shield className="text-zed-accent" size={24} /> Security & Role
                   </h3>
                   
-                  <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5 gap-6">
                     <div>
                       <h4 className="text-sm font-black text-zed-foreground mb-1">Active Arena Role</h4>
-                      <p className="text-xs text-zed-foreground-secondary uppercase tracking-widest font-bold">{profile?.role || 'Contestant'}</p>
-                    </div>
-                    <div className="px-4 py-2 bg-zed-primary/20 text-zed-primary rounded-lg text-[10px] font-black uppercase tracking-widest border border-zed-primary/20">
-                      Primary
+                      <p className="text-xs text-zed-foreground-secondary mb-4">Switch between pitching your ideas or voting on others.</p>
+                      <div className="flex items-center gap-4">
+                        <button 
+                          disabled={loadingRole}
+                          onClick={() => handleRoleChange('contestant')}
+                          className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                            profile?.role === 'contestant' 
+                              ? 'bg-zed-primary text-white shadow-lg shadow-indigo-500/20' 
+                              : 'bg-white/5 text-zed-foreground-secondary hover:bg-white/10'
+                          }`}
+                        >
+                          {loadingRole && profile?.role !== 'contestant' ? <Loader2 size={14} className="animate-spin inline mr-2" /> : null}
+                          Contestant
+                        </button>
+                        <button 
+                          disabled={loadingRole}
+                          onClick={() => handleRoleChange('voter')}
+                          className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                            profile?.role === 'voter' 
+                              ? 'bg-zed-accent text-white shadow-lg shadow-pink-500/20' 
+                              : 'bg-white/5 text-zed-foreground-secondary hover:bg-white/10'
+                          }`}
+                        >
+                          {loadingRole && profile?.role !== 'voter' ? <Loader2 size={14} className="animate-spin inline mr-2" /> : null}
+                          Voter
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </section>

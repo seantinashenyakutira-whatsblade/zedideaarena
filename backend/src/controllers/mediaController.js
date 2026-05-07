@@ -11,13 +11,6 @@ const uploadMedia = async (req, res) => {
   }
 
   if (!storage) {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Simulating Media Upload in development mode...');
-      return res.json({
-        status: 'success',
-        url: 'https://via.placeholder.com/600x400?text=Development+Upload'
-      });
-    }
     return res.status(503).json({ status: 'error', message: 'Storage service unavailable' });
   }
 

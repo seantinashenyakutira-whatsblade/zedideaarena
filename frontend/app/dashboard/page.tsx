@@ -11,6 +11,8 @@ import {
   Eye,
   ThumbsUp,
   ArrowRight,
+  Lightbulb,
+  ChevronRight
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -62,9 +64,14 @@ export default function DashboardPage() {
         <main className="flex-1 overflow-auto">
           <div className="container-zed py-8">
             {/* Welcome Section */}
-            <div className="mb-12 animate-zed-fade-up">
-              <h1 className="text-4xl font-black gradient-text mb-2 drop-shadow-lg">Welcome Back!</h1>
-              <p className="text-zed-foreground-secondary font-medium">Manage your ideas and track your progress in the 3D Arena</p>
+            <div className="mb-12 animate-zed-fade-up flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div>
+                <h1 className="text-4xl font-black gradient-text mb-2 drop-shadow-lg">Welcome Back!</h1>
+                <p className="text-zed-foreground-secondary font-medium">Manage your ideas and track your progress in the 3D Arena</p>
+              </div>
+              <Link href="/dashboard/ideas/new" className="btn-primary px-8 h-14 flex items-center gap-3 text-sm font-black uppercase tracking-widest shadow-lg shadow-zed-primary/30">
+                <Lightbulb size={20} /> New Idea <ChevronRight size={18} />
+              </Link>
             </div>
 
             {/* KYC Banner */}

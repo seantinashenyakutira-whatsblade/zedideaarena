@@ -128,7 +128,7 @@ export default function VotingArenaPage() {
               )}
 
               {/* Ideas Grid */}
-              {loading ? (
+              {(profile?.kyc_status !== 'verified' || profile?.voter_payment_status !== 'paid') ? null : loading ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {[1,2,3,4,5,6].map(i => (
                     <div key={i} className="card-zed h-96 animate-pulse opacity-50" />

@@ -52,7 +52,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 glass-premium border-b border-white/10">
         <div className="container-zed flex items-center justify-between h-16">
           <div className="flex items-center gap-3 floating">
-            <img src="/logo-icon.svg" alt="ZedIdeaArena" className="w-8 h-8 drop-shadow-[0_0_8px_rgba(79,70,229,0.8)]" />
+            <img src="/logo-icon.png" alt="ZedIdeaArena" className="w-8 h-8 object-contain drop-shadow-[0_0_8px_rgba(79,70,229,0.8)]" />
             <span className="font-bold text-lg gradient-text hidden sm:inline tracking-tighter">ZedIdeaArena</span>
           </div>
           <div className="flex items-center gap-4">
@@ -102,9 +102,9 @@ export default function LandingPage() {
             <div className="absolute w-96 h-96 bg-indigo-500/20 rounded-full blur-[120px] animate-pulse" />
             <div className="absolute w-64 h-64 bg-purple-500/20 rounded-full blur-[100px] animate-pulse" />
             <img
-              src={isDark ? "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-full-dark.png-6NVXmEZ492CmERf77MXlcv5XTCMAzg.jpeg" : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-full-light.png-jKrwPpQmEy7AcoxTwBmXic4jucNqnB.jpeg"}
+              src={isDark ? "/logo-full-dark.png" : "/logo-full-light.png"}
               alt="ZedIdeaArena Logo"
-              className="relative z-10 w-64 h-64 object-contain"
+              className="relative z-10 w-64 h-64 object-contain transition-all duration-500"
             />
           </div>
         </div>
@@ -193,9 +193,18 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-4 border-t border-white/10 dark:border-white/10 text-center dark:text-gray-400 text-slate-600">
-        <div className="container-zed">
-          <p>&copy; 2024 ZedIdeaArena. All rights reserved.</p>
+      <footer className="py-12 px-4 border-t border-white/10 dark:border-white/10 text-center dark:text-gray-400 text-slate-600 bg-white/5 dark:bg-black/50 backdrop-blur-xl">
+        <div className="container-zed max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2">
+            <img src="/logo-icon.png" alt="ZedIdeaArena" className="w-6 h-6 object-contain grayscale opacity-50" />
+            <p className="text-sm font-medium">&copy; {new Date().getFullYear()} ZedIdeaArena. All rights reserved.</p>
+          </div>
+          <div className="flex items-center gap-6 text-sm font-bold uppercase tracking-widest text-xs">
+            <Link href="/docs/rules" className="hover:text-zed-primary transition-colors">Rules</Link>
+            <Link href="/docs/terms" className="hover:text-zed-primary transition-colors">Terms</Link>
+            <Link href="/docs/privacy" className="hover:text-zed-primary transition-colors">Privacy</Link>
+            <Link href="/docs/video-guidelines" className="hover:text-zed-primary transition-colors">Video Guidelines</Link>
+          </div>
         </div>
       </footer>
     </div>

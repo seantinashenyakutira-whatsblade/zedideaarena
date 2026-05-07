@@ -2,7 +2,7 @@
 
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
-import { ChevronRight, ChevronLeft, Upload, Link as LinkIcon, FileText, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Upload, Link as LinkIcon, FileText, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy } from 'lucide-react'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ideaService } from '@/services/idea'
 import { mediaService } from '@/services/core'
@@ -28,8 +28,10 @@ export default function NewIdeaPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [ideaId, setIdeaId] = useState<string | null>(null)
+  const [profile, setProfile] = useState<any>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
+  const [hasMounted, setHasMounted] = useState(false)
   
   const [formData, setFormData] = useState({
     // Profile Data (Step 1)
@@ -79,6 +81,7 @@ export default function NewIdeaPage() {
         
         // Pre-fill profile data if exists
         const p = profileRes.data
+        setProfile(p)
         if (p) {
           setFormData(prev => ({
             ...prev,
@@ -97,6 +100,7 @@ export default function NewIdeaPage() {
       }
     }
     fetchInitial()
+    setHasMounted(true)
   }, [])
 
   const [uploading, setUploading] = useState({ image: false, deck: false, video: false })
@@ -204,15 +208,39 @@ export default function NewIdeaPage() {
   return (
     <ProtectedRoute>
       <div className="flex h-screen bg-zed-background">
-        <Sidebar />
+        {!hasMounted ? null : <Sidebar />}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
-          <main className="flex-1 overflow-auto bg-zed-background-alt">
+          {!hasMounted ? (
+            <div className="flex-1 flex items-center justify-center">
+              <Loader2 className="animate-spin text-zed-primary" size={32} />
+            </div>
+          ) : (
+            <>
+              <DashboardHeader />
+              <main className="flex-1 overflow-auto bg-zed-background-alt">
             <div className="container-zed py-8">
-              <div className="mb-12">
-                <h1 className="text-4xl font-black text-zed-foreground mb-2">Competition Entry</h1>
-                <p className="text-zed-foreground-secondary uppercase tracking-widest text-[10px] font-bold">Step {currentStep} of 5: {steps[currentStep-1].title}</p>
-              </div>
+              {profile?.role === 'voter' ? (
+                <div className="max-w-2xl mx-auto mt-24 text-center card-zed glass-premium p-12 border-white/5">
+                  <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-8 floating border border-red-500/30">
+                    <ShieldCheck size={48} className="text-red-500" />
+                  </div>
+                  <h1 className="text-4xl font-black text-zed-foreground mb-4">Role Restricted</h1>
+                  <p className="text-zed-foreground-secondary mb-8">
+                    Your current role is set to <strong>Voter</strong>. Only <strong>Contestants</strong> can submit new ideas to the Arena.
+                  </p>
+                  <button 
+                    onClick={() => router.push('/dashboard/settings')}
+                    className="btn-primary px-8 py-3 rounded-xl inline-flex items-center gap-2"
+                  >
+                    Switch Role in Settings <ChevronRight size={18} />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-12">
+                    <h1 className="text-4xl font-black text-zed-foreground mb-2">Competition Entry</h1>
+                    <p className="text-zed-foreground-secondary uppercase tracking-widest text-[10px] font-bold">Step {currentStep} of 5: {steps[currentStep-1].title}</p>
+                  </div>
 
               {/* Progress Steps UI */}
               <div className="flex items-center justify-between mb-12 max-w-3xl mx-auto px-4">
@@ -483,8 +511,10 @@ export default function NewIdeaPage() {
                   )}
                 </div>
               </form>
-            </div>
-          </main>
+              </>
+              )}
+            </main>
+          )}
         </div>
       </div>
     </ProtectedRoute>
