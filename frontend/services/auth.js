@@ -21,8 +21,9 @@ export const authService = {
         return await api.post('/user/login');
       } catch (backendError) {
         console.error('Backend Sync Error after Login:', backendError);
-        // We throw a specific error if the backend is unreachable
-        throw new Error('Authenticated, but failed to sync with the Arena server.');
+        // Include backend error details to help debugging in dev
+        const backendMsg = typeof backendError === 'string' ? backendError : (backendError?.message || JSON.stringify(backendError));
+        throw new Error(`Authenticated, but failed to sync with the Arena server: ${backendMsg}`);
       }
     } catch (error) {
       console.error('Login Error:', error);
@@ -45,7 +46,8 @@ export const authService = {
         return await api.post('/user/login', { fullName: userData.fullName });
       } catch (backendError) {
         console.error('Backend Sync Error after Signup:', backendError);
-        throw new Error('Account created, but failed to synchronize with the Arena database.');
+        const backendMsg = typeof backendError === 'string' ? backendError : (backendError?.message || JSON.stringify(backendError));
+        throw new Error(`Account created, but failed to synchronize with the Arena database: ${backendMsg}`);
       }
     } catch (error) {
       console.error('Signup Error:', error);
@@ -67,7 +69,8 @@ export const authService = {
         await api.post('/user/login');
       } catch (backendError) {
         console.error('Backend Sync Error (Google):', backendError);
-        throw new Error('Google Auth succeeded, but failed to sync with the server.');
+        const backendMsg = typeof backendError === 'string' ? backendError : (backendError?.message || JSON.stringify(backendError));
+        throw new Error(`Google Auth succeeded, but failed to sync with the server: ${backendMsg}`);
       }
       return result.user;
     } catch (error) {
@@ -89,7 +92,8 @@ export const authService = {
         await api.post('/user/login');
       } catch (backendError) {
         console.error('Backend Sync Error (GitHub):', backendError);
-        throw new Error('GitHub Auth succeeded, but failed to sync with the server.');
+        const backendMsg = typeof backendError === 'string' ? backendError : (backendError?.message || JSON.stringify(backendError));
+        throw new Error(`GitHub Auth succeeded, but failed to sync with the server: ${backendMsg}`);
       }
       return result.user;
     } catch (error) {
