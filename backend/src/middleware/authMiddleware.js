@@ -19,7 +19,7 @@ const verifyToken = async (req, res, next) => {
   if (!auth) {
     return res.status(503).json({ 
       status: 'error', 
-      message: 'Authentication service unavailable (Firebase keys missing). Ensure FIREBASE_SERVICE_ACCOUNT_PATH is set and valid.' 
+      message: 'Authentication service unavailable (Firebase keys missing). Ensure FIREBASE_SERVICE_ACCOUNT_JSON is set on your host (e.g. Render) or FIREBASE_SERVICE_ACCOUNT_PATH is valid.' 
     });
   }
 
