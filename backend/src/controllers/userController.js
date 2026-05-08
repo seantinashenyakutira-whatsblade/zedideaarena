@@ -47,11 +47,18 @@ const login = async (req, res) => {
     return res.status(401).json({ status: 'error', message: 'No user data found in token' });
   }
 
+  // Explicitly check if Firebase is initialized before attempting to access Firestore
+  if (!db) {
+    return res.status(503).json({ 
+      status: 'error', 
+      message: 'Firebase service unavailable. Set FIREBASE_SERVICE_ACCOUNT_JSON environment variable on your server and redeploy.' 
+    });
+  }
+
   const { uid, email, name, picture } = req.user;
   const { fullName: bodyName } = req.body;
 
   try {
-    if (!db) throw new Error('Firestore not initialized');
 
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
@@ -106,6 +113,15 @@ const login = async (req, res) => {
  */
 const syncUserProfile = async (req, res) => {
   const { uid } = req.user;
+
+  // Explicitly check if Firebase is initialized
+  if (!db) {
+    return res.status(503).json({ 
+      status: 'error', 
+      message: 'Firebase service unavailable. Set FIREBASE_SERVICE_ACCOUNT_JSON environment variable on your server and redeploy.' 
+    });
+  }
+
   const { 
     fullName, 
     dob, 
@@ -117,8 +133,6 @@ const syncUserProfile = async (req, res) => {
   } = req.body;
 
   try {
-    if (!db) throw new Error('Firestore not initialized');
-
     const userRef = db.collection('users').doc(uid);
     const profileData = {
       fullName: fullName || null,
