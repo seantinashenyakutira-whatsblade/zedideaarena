@@ -2,8 +2,33 @@
 
 import Link from 'next/link'
 import { AlertOctagon, ArrowLeft, Home } from 'lucide-react'
+import { useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 
 export default function NotFound() {
+  const pathname = usePathname()
+
+  useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7293/ingest/65e1436f-7699-44c3-bae9-afb4840cd4a5', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Debug-Session-Id': 'ce949e',
+      },
+      body: JSON.stringify({
+        sessionId: 'ce949e',
+        runId: 'pre-fix-route-404',
+        hypothesisId: 'H6',
+        location: 'frontend/app/not-found.tsx:NotFound:useEffect',
+        message: 'NotFound rendered for route',
+        data: { pathname: pathname || 'unknown' },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {})
+    // #endregion
+  }, [pathname])
+
   return (
     <div className="min-h-screen bg-zed-background flex items-center justify-center p-4 relative overflow-hidden">
       {/* 3D Background Decoration */}

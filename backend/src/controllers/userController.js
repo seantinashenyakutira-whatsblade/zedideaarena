@@ -4,7 +4,10 @@ const { db } = require('../config/firebase');
  * Get User Profile from Firestore
  */
 const getUserProfile = async (req, res) => {
-  const { uid } = req.user;
+  const uid = req.user?.uid;
+  if (!uid) {
+    return res.status(401).json({ status: 'error', message: 'Unauthorized: No user data found in token' });
+  }
 
   if (!db) {
     return res.status(503).json({ 
@@ -43,7 +46,8 @@ const getUserProfile = async (req, res) => {
  * This is the primary entry point after Firebase Auth
  */
 const login = async (req, res) => {
-  if (!req.user) {
+  const uid = req.user?.uid;
+  if (!uid) {
     return res.status(401).json({ status: 'error', message: 'No user data found in token' });
   }
 
@@ -55,7 +59,7 @@ const login = async (req, res) => {
     });
   }
 
-  const { uid, email, name, picture } = req.user;
+  const { email, name, picture } = req.user || {};
   const { fullName: bodyName } = req.body;
 
   try {
@@ -112,7 +116,10 @@ const login = async (req, res) => {
  * Sync or Create User Profile with ID Validation
  */
 const syncUserProfile = async (req, res) => {
-  const { uid } = req.user;
+  const uid = req.user?.uid;
+  if (!uid) {
+    return res.status(401).json({ status: 'error', message: 'Unauthorized: No user data found in token' });
+  }
 
   // Explicitly check if Firebase is initialized
   if (!db) {

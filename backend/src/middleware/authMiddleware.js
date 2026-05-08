@@ -14,7 +14,13 @@ const verifyToken = async (req, res, next) => {
     });
   }
 
-  const idToken = authHeader.split('Bearer ')[1];
+  const idToken = authHeader.slice('Bearer '.length).trim();
+  if (!idToken) {
+    return res.status(401).json({
+      status: 'error',
+      message: 'Unauthorized: No token provided'
+    });
+  }
 
   if (!auth) {
     return res.status(503).json({ 
@@ -25,7 +31,7 @@ const verifyToken = async (req, res, next) => {
 
   try {
     const decodedToken = await auth.verifyIdToken(idToken);
-    req.user = decodedToken;
+    req.user = decodedToken || null;
     next();
   } catch (error) {
     console.error('Error verifying Firebase token:', error);

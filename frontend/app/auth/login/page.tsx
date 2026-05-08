@@ -2,7 +2,7 @@
 
 import { ArrowRight, Mail, Lock, Github } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { authService } from '@/services/auth'
 
 export default function LoginPage() {
@@ -14,6 +14,27 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7293/ingest/65e1436f-7699-44c3-bae9-afb4840cd4a5', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Debug-Session-Id': 'ce949e',
+      },
+      body: JSON.stringify({
+        sessionId: 'ce949e',
+        runId: 'pre-fix-route-404',
+        hypothesisId: 'H7',
+        location: 'frontend/app/auth/login/page.tsx:LoginPage:useEffect',
+        message: 'Login page mounted',
+        data: { path: typeof window !== 'undefined' ? window.location.pathname : 'server' },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {})
+    // #endregion
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
