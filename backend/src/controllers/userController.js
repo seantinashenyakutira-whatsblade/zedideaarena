@@ -92,8 +92,10 @@ const login = async (req, res) => {
       };
       if (email && !userData.email) updates.email = email;
       if (picture && !userData.picture) updates.picture = picture;
-      
-      await userRef.update(updates);
+
+      // Use set(..., {merge:true}) instead of update() to avoid hard failures
+      // if the doc was deleted between get() and write(), or if security rules change.
+      await userRef.set(updates, { merge: true });
       userData = { ...userData, ...updates };
       console.log(`[AUTH] User logged in: ${uid}`);
     }
