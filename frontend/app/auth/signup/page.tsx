@@ -35,7 +35,7 @@ export default function SignupPage() {
     
     try {
       await authService.signup(formData)
-      router.push('/dashboard')
+      router.push('/auth/login?signup=success')
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || 'Failed to create account. Please try again.')
     } finally {
@@ -47,7 +47,26 @@ export default function SignupPage() {
     try {
       setLoading(true)
       await authService.signInWithGoogle()
-      router.push('/dashboard')
+      await authService.logout()
+      // #region agent log
+      fetch('http://127.0.0.1:7293/ingest/65e1436f-7699-44c3-bae9-afb4840cd4a5', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Debug-Session-Id': 'ce949e',
+        },
+        body: JSON.stringify({
+          sessionId: 'ce949e',
+          runId: 'pre-fix-social-signup',
+          hypothesisId: 'H12',
+          location: 'frontend/app/auth/signup/page.tsx:handleGoogleSignIn',
+          message: 'Google signup flow enforced post-signup login',
+          data: {},
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {})
+      // #endregion
+      router.push('/auth/login?signup=success')
     } catch (err: any) {
       setError(err?.message || 'Google Auth failed.')
       setLoading(false)
@@ -58,7 +77,26 @@ export default function SignupPage() {
     try {
       setLoading(true)
       await authService.signInWithGithub()
-      router.push('/dashboard')
+      await authService.logout()
+      // #region agent log
+      fetch('http://127.0.0.1:7293/ingest/65e1436f-7699-44c3-bae9-afb4840cd4a5', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Debug-Session-Id': 'ce949e',
+        },
+        body: JSON.stringify({
+          sessionId: 'ce949e',
+          runId: 'pre-fix-social-signup',
+          hypothesisId: 'H12',
+          location: 'frontend/app/auth/signup/page.tsx:handleGithubSignIn',
+          message: 'GitHub signup flow enforced post-signup login',
+          data: {},
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {})
+      // #endregion
+      router.push('/auth/login?signup=success')
     } catch (err: any) {
       setError(err?.message || 'GitHub Auth failed.')
       setLoading(false)

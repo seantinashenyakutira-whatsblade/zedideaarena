@@ -26,7 +26,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   const fetchProfile = useCallback(async () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const token = typeof window !== 'undefined'
+      ? localStorage.getItem('token') || sessionStorage.getItem('token')
+      : null
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7293/ingest/65e1436f-7699-44c3-bae9-afb4840cd4a5', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Debug-Session-Id': 'ce949e',
+        },
+        body: JSON.stringify({
+          sessionId: 'ce949e',
+          runId: 'pre-fix-guard',
+          hypothesisId: 'H11',
+          location: 'frontend/hooks/useAuth.ts:fetchProfile:start',
+          message: 'fetchProfile token check',
+          data: { hasToken: Boolean(token) },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {})
+    }
+    // #endregion
     if (!token) {
       setLoading(false)
       return
@@ -42,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // If unauthorized, clear token
       if (err === 'Unauthorized: Invalid token' || err === 'Unauthorized: No token provided') {
         localStorage.removeItem('token')
+        sessionStorage.removeItem('token')
         setProfile(null)
       }
     } finally {
@@ -75,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Logout error:', err)
       // Fallback
       localStorage.removeItem('token')
+      sessionStorage.removeItem('token')
       window.location.href = '/auth/login'
     }
   }
