@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://zedideaarena-full-stack-app.onrender.com/api';
+// Use provided backend URL as default; you can still override via NEXT_PUBLIC_API_URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://zedideaarena-1.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
