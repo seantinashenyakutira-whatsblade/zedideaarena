@@ -25,6 +25,19 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Mirror health under /api/health for external checks
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    services: {
+      firebase: db ? 'connected' : 'missing_credentials',
+      stripe: stripe ? 'initialized' : 'missing_credentials',
+      didit: process.env.DIDIT_API_KEY ? 'keys_present' : 'missing_credentials'
+    }
+  });
+});
+
 // Base Route
 app.get('/', (req, res) => {
   res.json({ 
