@@ -40,7 +40,7 @@ app.get('/api/health', (req, res) => {
 
 app.get('/', (req, res) => {
   res.json({
-    status: 'success',
+    success: true,
     message: 'Zed Idea Arena API - Ready to Run',
     version: '2.0.0',
   });
@@ -58,7 +58,12 @@ app.use('/api/stats', require('./routes/statsRoutes'));
 app.use((err, req, res, next) => {
   console.error('[UNHANDLED_ERROR]', err);
   if (res.headersSent) return next(err);
-  res.status(500).json({ status: 'error', message: 'Internal server error' });
+  const isDev = process.env.NODE_ENV === 'development';
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error',
+    ...(isDev && { detail: err.message }),
+  });
 });
 
 app.listen(PORT, () => {

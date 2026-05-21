@@ -17,7 +17,7 @@ export default function LandingPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await api.get('/stats/global')
+        const res: any = await api.get('/stats/global')
         if (res.status === 'success') {
           setStats(res.data)
         }

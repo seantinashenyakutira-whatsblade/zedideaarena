@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { authService } from '@/services/auth'
 import { useRouter } from 'next/navigation'
+import { signupSchema } from '@/lib/validators/signup'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -17,18 +18,33 @@ export default function SignupPage() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
+    setFieldErrors({})
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords don't match")
       return
     }
 
-    setLoading(true)
-    setError(null)
+    const result = signupSchema.safeParse({
+      email: formData.email,
+      password: formData.password,
+      fullName: formData.fullName,
+    })
+    if (!result.success) {
+      const fields: Record<string, string> = {}
+      result.error.errors.forEach(err => { fields[err.path[0] as string] = err.message })
+      setFieldErrors(fields)
+      return
+    }
 
+    setLoading(true)
     try {
-      await authService.signup(formData)
+      await authService.signup(result.data)
       router.push('/auth/login?signup=success')
     } catch (err: any) {
       setError(err?.message || 'Failed to create account.')
@@ -70,6 +86,7 @@ export default function SignupPage() {
                 <User className="absolute left-3 top-3.5 text-zed-foreground-secondary" size={20} />
                 <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Your full name" className="input-zed pl-10" required />
               </div>
+              {fieldErrors.fullName && <p className="text-red-400 text-xs mt-1">{fieldErrors.fullName}</p>}
             </div>
 
             <div>
@@ -78,21 +95,23 @@ export default function SignupPage() {
                 <Mail className="absolute left-3 top-3.5 text-zed-foreground-secondary" size={20} />
                 <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="you@example.com" className="input-zed pl-10" required />
               </div>
+              {fieldErrors.email && <p className="text-red-400 text-xs mt-1">{fieldErrors.email}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-zed-foreground mb-2">Password</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3.5 text-zed-foreground-secondary" size={20} />
-                <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" className="input-zed pl-10" required />
+                <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="••••••••" className="input-zed pl-10" required />
               </div>
+              {fieldErrors.password && <p className="text-red-400 text-xs mt-1">{fieldErrors.password}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-zed-foreground mb-2">Confirm Password</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3.5 text-zed-foreground-secondary" size={20} />
-                <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" className="input-zed pl-10" required />
+                <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" className="input-zed pl-10" required />
               </div>
             </div>
 

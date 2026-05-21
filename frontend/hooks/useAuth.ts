@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res: any = await authService.getProfile()
       if (res.status === 'success') {
         setProfile(res.data)
-        setCurrentRole(res.data.role || 'contestant')
+        setCurrentRole(res.data.current_mode || res.data.role || 'contestant')
       }
     } catch (err: any) {
       localStorage.removeItem('token')

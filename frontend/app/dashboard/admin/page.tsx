@@ -27,7 +27,7 @@ export default function AdminDashboard() {
   })
 
   useEffect(() => {
-    if (profile?.role !== 'admin') return
+    if (!profile?.is_admin && profile?.role !== 'admin') return
 
     const fetchData = async () => {
       try {
@@ -102,7 +102,7 @@ export default function AdminDashboard() {
     setShowCompModal(true)
   }
 
-  if (profile?.role !== 'admin') {
+  if (!profile?.is_admin && profile?.role !== 'admin') {
     return (
       <div className="flex h-screen items-center justify-center bg-zed-background text-zed-foreground">
         <div className="text-center">

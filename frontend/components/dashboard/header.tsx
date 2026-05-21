@@ -16,14 +16,16 @@ export function DashboardHeader() {
   ]
 
   const handleRoleChange = async (newRole: string) => {
-    if (profile?.role === newRole) return
+    if (profile?.current_mode === newRole) return
+
     try {
-      await api.post('/user/profile', { role: newRole })
+      await api.patch('/user/profile', { current_mode: newRole })
       setCurrentRole(newRole)
       toast.success(`Switched to ${newRole} mode`)
       refreshProfile()
-    } catch {
-      toast.error('Failed to switch role')
+    } catch (err: any) {
+      const msg = err?.data?.error || err?.message || 'Failed to switch mode'
+      toast.error(msg)
     }
   }
 
@@ -33,7 +35,7 @@ export function DashboardHeader() {
         <div className="hidden md:flex bg-white/5 rounded-full p-1 border border-white/10">
           {roles.map((role) => {
             const Icon = role.icon
-            const isActive = currentRole === role.id
+            const isActive = (profile?.current_mode || currentRole) === role.id
             return (
               <button
                 key={role.id}
@@ -61,7 +63,7 @@ export function DashboardHeader() {
             </div>
             <div className="hidden sm:flex flex-col items-start leading-none">
               <span className="text-sm font-black tracking-tight">{profile?.full_name || profile?.fullName || 'Arena User'}</span>
-              <span className="text-[9px] text-zed-primary uppercase font-bold tracking-widest">{currentRole}</span>
+              <span className="text-[9px] text-zed-primary uppercase font-bold tracking-widest">{profile?.current_mode || currentRole}</span>
             </div>
             <ChevronDown size={14} className={`transition-transform duration-300 ${showDropdown ? 'rotate-180' : ''}`} />
           </button>
@@ -75,7 +77,7 @@ export function DashboardHeader() {
                   </div>
                   <div>
                     <div className="text-sm font-black text-zed-foreground truncate w-32">{profile?.full_name || profile?.fullName || 'Arena User'}</div>
-                    <div className="text-[10px] text-zed-foreground-secondary uppercase tracking-widest">{profile?.role || 'Member'}</div>
+                    <div className="text-[10px] text-zed-foreground-secondary uppercase tracking-widest">{profile?.current_mode || profile?.role || 'Member'}</div>
                   </div>
                 </div>
 
@@ -85,16 +87,16 @@ export function DashboardHeader() {
                     <button
                       key={role.id}
                       onClick={() => { handleRoleChange(role.id); setShowDropdown(false) }}
-                      className={`w-full flex items-center justify-between px-4 py-2 text-xs font-bold rounded-xl ${currentRole === role.id ? 'bg-zed-primary/20 text-zed-primary' : 'hover:bg-white/5'}`}
+                      className={`w-full flex items-center justify-between px-4 py-2 text-xs font-bold rounded-xl ${(profile?.current_mode || currentRole) === role.id ? 'bg-zed-primary/20 text-zed-primary' : 'hover:bg-white/5'}`}
                     >
                       {role.label}
-                      {currentRole === role.id && <ShieldCheck size={12} />}
+                      {(profile?.current_mode || currentRole) === role.id && <ShieldCheck size={12} />}
                     </button>
                   ))}
                   <div className="border-b border-white/10 my-2" />
                 </div>
 
-                <a href="/dashboard/settings" className="flex items-center gap-3 px-4 py-2.5 text-xs font-bold hover:bg-white/5 rounded-xl transition-all">
+                <a href="/contestant/settings" className="flex items-center gap-3 px-4 py-2.5 text-xs font-bold hover:bg-white/5 rounded-xl transition-all">
                   <Settings size={14} />
                   Arena Preferences
                 </a>

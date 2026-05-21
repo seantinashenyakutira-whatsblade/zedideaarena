@@ -1,26 +1,20 @@
 const { supabase } = require('../config/supabase');
 
-const ADMIN_EMAILS = [
-  'dybrahimovic28@gmail.com',
-  'seantinashenyakutira@gmail.com',
-  'chenaichapto@gmail.com',
-];
-
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
-      status: 'error',
-      message: 'Unauthorized: No token provided',
+      success: false,
+      error: 'Unauthorized: No token provided',
     });
   }
 
   const token = authHeader.slice('Bearer '.length).trim();
   if (!token) {
     return res.status(401).json({
-      status: 'error',
-      message: 'Unauthorized: No token provided',
+      success: false,
+      error: 'Unauthorized: No token provided',
     });
   }
 
@@ -32,8 +26,8 @@ const verifyToken = async (req, res, next) => {
 
     if (error || !user) {
       return res.status(401).json({
-        status: 'error',
-        message: 'Unauthorized: Invalid token',
+        success: false,
+        error: 'Unauthorized: Invalid token',
       });
     }
 
@@ -48,32 +42,35 @@ const verifyToken = async (req, res, next) => {
   } catch (err) {
     console.error('Error verifying Supabase token:', err);
     return res.status(401).json({
-      status: 'error',
-      message: 'Unauthorized: Invalid token',
+      success: false,
+      error: 'Unauthorized: Invalid token',
     });
   }
 };
 
 const isAdmin = async (req, res, next) => {
-  if (!req.user) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
+  if (!req.user) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
 
   try {
     const { data: userRow, error } = await supabase
       .from('users')
-      .select('role')
+      .select('is_admin')
       .eq('id', req.user.uid)
       .single();
 
-    if (error || !userRow || userRow.role !== 'admin') {
-      return res
-        .status(403)
-        .json({ status: 'error', message: 'Forbidden: Admin access required' });
+    if (error || !userRow || !userRow.is_admin) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: Admin access required',
+      });
     }
 
     next();
   } catch (err) {
-    res.status(500).json({ status: 'error', message: 'Internal server error' });
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
 
-module.exports = { verifyToken, isAdmin, ADMIN_EMAILS };
+module.exports = { verifyToken, isAdmin };

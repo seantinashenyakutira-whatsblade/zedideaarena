@@ -1,21 +1,56 @@
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get('token') || request.headers.get('Authorization')
-  
-  // Protect /dashboard routes
-  if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    // Note: Since localStorage is used on the client for Firebase tokens, 
-    // real middleware protection often requires setting a cookie.
-    // For now, if no auth header/cookie is present in server side, 
-    // we let the client side `ProtectedRoute.tsx` handle it, 
-    // but we can add basic cookie checks here if implemented later.
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next()
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  const path = request.nextUrl.pathname
+
+  if (!session) {
+    const loginUrl = new URL('/auth/login', request.url)
+    loginUrl.searchParams.set('redirect', path)
+    return NextResponse.redirect(loginUrl)
   }
-  
-  return NextResponse.next()
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('is_admin, is_verified')
+    .eq('id', session.user.id)
+    .single()
+
+  if (path.startsWith('/admin') && !profile?.is_admin) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  if (path.startsWith('/voter') && !profile?.is_verified) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  return response
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*'],
+  matcher: ['/contestant/:path*', '/voter/:path*', '/admin/:path*'],
 }

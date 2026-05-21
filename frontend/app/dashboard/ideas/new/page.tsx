@@ -9,7 +9,6 @@ import { mediaService } from '@/services/core'
 import { authService } from '@/services/auth'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
-import debounce from 'lodash/debounce'
 import api from '@/lib/api'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 

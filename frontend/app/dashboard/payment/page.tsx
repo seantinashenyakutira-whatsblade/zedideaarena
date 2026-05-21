@@ -32,7 +32,7 @@ function PaymentContent() {
           ideaId,
           amount
         })
-        setClientSecret(res.clientSecret)
+        setClientSecret((res as any).clientSecret)
       } catch (err: any) {
         setError(err.message || 'Failed to initialize payment')
       } finally {

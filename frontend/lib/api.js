@@ -24,6 +24,7 @@ api.interceptors.response.use(
     const responseData = error?.response?.data;
     const message =
       (typeof responseData === 'string' && responseData.trim()) ||
+      responseData?.error ||
       responseData?.message ||
       error?.message ||
       'An unexpected error occurred';

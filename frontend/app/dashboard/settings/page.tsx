@@ -14,14 +14,15 @@ export default function SettingsPage() {
   const [loadingRole, setLoadingRole] = useState(false)
 
   const handleRoleChange = async (newRole: string) => {
-    if (profile?.role === newRole) return
+    if (profile?.current_mode === newRole) return
     setLoadingRole(true)
     try {
-      await api.post('/user/profile', { role: newRole })
-      toast.success(`Role updated to ${newRole}`)
+      await api.patch('/user/profile', { current_mode: newRole })
+      toast.success(`Mode switched to ${newRole}`)
       refreshProfile()
-    } catch {
-      toast.error('Failed to switch role')
+    } catch (err: any) {
+      const msg = err?.data?.error || err?.message || 'Failed to switch mode'
+      toast.error(msg)
     } finally {
       setLoadingRole(false)
     }
@@ -94,17 +95,17 @@ export default function SettingsPage() {
                         <button
                           disabled={loadingRole}
                           onClick={() => handleRoleChange('contestant')}
-                          className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${profile?.role === 'contestant' ? 'bg-zed-primary text-white shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-zed-foreground-secondary hover:bg-white/10'}`}
+                          className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${profile?.current_mode === 'contestant' ? 'bg-zed-primary text-white shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-zed-foreground-secondary hover:bg-white/10'}`}
                         >
-                          {loadingRole && profile?.role !== 'contestant' ? <Loader2 size={14} className="animate-spin inline mr-2" /> : null}
+                          {loadingRole && profile?.current_mode !== 'contestant' ? <Loader2 size={14} className="animate-spin inline mr-2" /> : null}
                           Contestant
                         </button>
                         <button
                           disabled={loadingRole}
                           onClick={() => handleRoleChange('voter')}
-                          className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${profile?.role === 'voter' ? 'bg-zed-accent text-white shadow-lg shadow-pink-500/20' : 'bg-white/5 text-zed-foreground-secondary hover:bg-white/10'}`}
+                          className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${profile?.current_mode === 'voter' ? 'bg-zed-accent text-white shadow-lg shadow-pink-500/20' : 'bg-white/5 text-zed-foreground-secondary hover:bg-white/10'}`}
                         >
-                          {loadingRole && profile?.role !== 'voter' ? <Loader2 size={14} className="animate-spin inline mr-2" /> : null}
+                          {loadingRole && profile?.current_mode !== 'voter' ? <Loader2 size={14} className="animate-spin inline mr-2" /> : null}
                           Voter
                         </button>
                       </div>

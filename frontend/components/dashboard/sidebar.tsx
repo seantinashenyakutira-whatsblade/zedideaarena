@@ -7,12 +7,12 @@ import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 
 const navItems = [
-  { href: '/dashboard', icon: Home, label: 'Dashboard' },
-  { href: '/dashboard/ideas', icon: FileText, label: 'My Ideas' },
-  { href: '/dashboard/competitions', icon: Trophy, label: 'Competitions' },
-  { href: '/dashboard/voting', icon: Vote, label: 'Voting Arena' },
-  { href: '/dashboard/admin', icon: Settings, label: 'Admin Panel', role: 'admin' },
-  { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
+  { href: '/contestant/dashboard', icon: Home, label: 'Dashboard' },
+  { href: '/contestant/ideas', icon: FileText, label: 'My Ideas' },
+  { href: '/contestant/competitions', icon: Trophy, label: 'Competitions' },
+  { href: '/voter/voting', icon: Vote, label: 'Voting Arena' },
+  { href: '/admin/dashboard', icon: Settings, label: 'Admin Panel', role: 'admin' },
+  { href: '/contestant/settings', icon: Settings, label: 'Settings' },
 ]
 
 export function Sidebar() {
@@ -21,7 +21,7 @@ export function Sidebar() {
   const { profile, logout } = useAuth()
 
   const filteredNavItems = navItems.filter(item => {
-    if (item.role === 'admin' && profile?.role !== 'admin') return false
+    if (item.role === 'admin' && profile?.role !== 'admin' && !profile?.is_admin) return false
     return true
   })
 

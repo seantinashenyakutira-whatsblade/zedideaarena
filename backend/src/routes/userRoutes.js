@@ -6,6 +6,7 @@ const { verifyToken } = require('../middleware/authMiddleware');
 router.get('/profile', verifyToken, userController.getUserProfile);
 router.get('/profile/:id', userController.getUserProfileById);
 router.post('/profile', verifyToken, userController.syncUserProfile);
+router.patch('/profile', verifyToken, userController.updateMode);
 router.post('/signup', verifyToken, userController.syncUserProfile);
 router.post('/login', verifyToken, userController.login);
 
