@@ -1,12 +1,6 @@
 const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
-const { db } = require('../config/firebase');
+const { supabase } = require('../config/supabase');
 
-const PARTICIPATION_FEE = 10000; // in cents (e.g., $100.00)
-const CURRENCY = 'usd';
-
-/**
- * Create Payment Intent
- */
 const createPaymentIntent = async (req, res) => {
   const { uid } = req.user;
   const { ideaId, type, amount } = req.body;
@@ -21,19 +15,28 @@ const createPaymentIntent = async (req, res) => {
 
   try {
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: parseInt(amount) * 100, // convert to cents
+      amount: parseInt(amount) * 100,
       currency: 'usd',
       payment_method_types: ['card'],
       metadata: {
         userId: uid,
         type: type,
-        ideaId: ideaId || 'none'
-      }
+        ideaId: ideaId || 'none',
+      },
+    });
+
+    await supabase.from('payments').insert({
+      user_id: uid,
+      idea_id: ideaId !== 'none' ? ideaId : null,
+      type,
+      amount: parseInt(amount),
+      status: 'pending',
+      stripe_payment_intent_id: paymentIntent.id,
     });
 
     res.json({
       status: 'success',
-      clientSecret: paymentIntent.client_secret
+      clientSecret: paymentIntent.client_secret,
     });
   } catch (error) {
     console.error('Stripe Intent Error:', error);
@@ -41,9 +44,6 @@ const createPaymentIntent = async (req, res) => {
   }
 };
 
-/**
- * Handle Stripe Webhook
- */
 const handleWebhook = async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -55,56 +55,57 @@ const handleWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle the event
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object;
     const { userId, type, ideaId } = paymentIntent.metadata;
 
     try {
+      await supabase
+        .from('payments')
+        .update({ status: 'succeeded' })
+        .eq('stripe_payment_intent_id', paymentIntent.id);
+
       if (type === 'contestant' && ideaId !== 'none') {
-        await db.collection('ideas').doc(ideaId).update({
-          payment_status: 'paid',
-          updatedAt: new Date().toISOString()
-        });
-        // Also mark user as participant
-        await db.collection('users').doc(userId).update({
-          competition_participant: true,
-          updatedAt: new Date().toISOString()
-        });
-        console.log(`[PAYMENT_SUCCESS] Contestant payment processed for idea ${ideaId}`);
+        await supabase
+          .from('ideas')
+          .update({ payment_status: 'paid', updated_at: new Date().toISOString() })
+          .eq('id', ideaId);
+
+        await supabase
+          .from('users')
+          .update({ competition_participant: true, updated_at: new Date().toISOString() })
+          .eq('id', userId);
       } else if (type === 'voter') {
-        await db.collection('users').doc(userId).update({
-          voter_payment_status: 'paid',
-          updatedAt: new Date().toISOString()
-        });
-        console.log(`[PAYMENT_SUCCESS] Voter payment processed for user ${userId}`);
+        await supabase
+          .from('users')
+          .update({ voter_payment_status: 'paid', updated_at: new Date().toISOString() })
+          .eq('id', userId);
       }
     } catch (err) {
       console.error('Error updating status after payment:', err);
     }
   } else if (event.type === 'payment_intent.payment_failed') {
     const paymentIntent = event.data.object;
-    const { userId, type, ideaId } = paymentIntent.metadata;
 
     try {
-      console.log(`[PAYMENT_FAILED] Payment failed for user ${userId}, type: ${type}`);
-      // Log failed payment attempt
-      await db.collection('failed_payments').add({
-        userId,
-        type,
-        ideaId,
-        amount: paymentIntent.amount,
-        currency: paymentIntent.currency,
-        failureReason: paymentIntent.last_payment_error?.message,
-        timestamp: new Date().toISOString()
-      });
+      await supabase
+        .from('payments')
+        .update({ status: 'failed' })
+        .eq('stripe_payment_intent_id', paymentIntent.id);
     } catch (err) {
       console.error('Error logging failed payment:', err);
     }
   } else if (event.type === 'payment_intent.canceled') {
     const paymentIntent = event.data.object;
-    const { userId } = paymentIntent.metadata;
-    console.log(`[PAYMENT_CANCELLED] Payment cancelled by user ${userId}`);
+
+    try {
+      await supabase
+        .from('payments')
+        .update({ status: 'canceled' })
+        .eq('stripe_payment_intent_id', paymentIntent.id);
+    } catch (err) {
+      console.error('Error logging canceled payment:', err);
+    }
   }
 
   res.status(200).send('Webhook Received');

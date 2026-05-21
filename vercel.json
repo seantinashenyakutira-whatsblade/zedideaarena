@@ -1,10 +1,6 @@
 {
   "version": 2,
-  "public": true,
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "backend/src/index.js"
-    }
-  ]
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/.next",
+  "installCommand": "cd frontend && npm install"
 }

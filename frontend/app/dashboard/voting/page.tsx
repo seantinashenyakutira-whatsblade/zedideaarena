@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { useAuth } from '@/hooks/useAuth'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import { Trophy, Vote, Search, Filter, ExternalLink, ThumbsUp, Loader2 } from 'lucide-react'
+import { Trophy, Vote, Search, ExternalLink, ThumbsUp, Loader2 } from 'lucide-react'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -20,10 +20,10 @@ export default function VotingArenaPage() {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    const results = ideas.filter(idea => 
+    const results = ideas.filter(idea =>
       idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      idea.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      idea.description.toLowerCase().includes(searchQuery.toLowerCase())
+      idea.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      idea.description?.toLowerCase().includes(searchQuery.toLowerCase())
     )
     setFilteredIdeas(results)
   }, [searchQuery, ideas])
@@ -31,13 +31,13 @@ export default function VotingArenaPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [ideasRes, profileRes] = await Promise.all([
+        const [ideasRes, votesRes] = await Promise.all([
           api.get('/ideas/public'),
-          api.get('/user/profile') // to get latest voted status
+          api.get('/votes/user'),
         ])
         setIdeas(ideasRes.data || [])
-        // Assume profile has a list of voted ideas or we fetch them separately
-        // For now let's just use the ideas list
+        const votedIds = (votesRes.data || []).map((v: any) => v.idea_id)
+        setVotedIdeas(votedIds)
       } catch (err) {
         console.error('Failed to fetch ideas:', err)
       } finally {
@@ -48,25 +48,24 @@ export default function VotingArenaPage() {
   }, [])
 
   const handleVote = async (idea: any) => {
-    if (profile?.kyc_status !== 'verified' || profile?.voter_payment_status !== 'paid') {
+    if (!profile?.is_verified || profile?.voter_payment_status !== 'paid') {
       toast.error('You must be verified and have paid the entry fee to vote.')
       return
     }
 
-    if (idea.user_id === profile.uid) {
+    if (idea.user_id === profile?.id) {
       toast.error('You cannot vote for your own idea.')
       return
     }
 
     setCastingVote(idea.id)
     try {
-      await api.post('/votes/cast', { 
-        ideaId: idea.id, 
-        competitionId: idea.competition_id || 'idea-to-win-2024' 
+      await api.post('/votes/cast', {
+        ideaId: idea.id,
+        competitionId: idea.competition_id,
       })
       toast.success('Your vote has been cast!')
       setVotedIdeas(prev => [...prev, idea.id])
-      // Refresh ideas to show updated counts
       const res = await api.get('/ideas/public')
       setIdeas(res.data || [])
     } catch (err: any) {
@@ -76,6 +75,8 @@ export default function VotingArenaPage() {
     }
   }
 
+  const canVote = profile?.is_verified && profile?.voter_payment_status === 'paid'
+
   return (
     <ProtectedRoute>
       <div className="flex h-screen bg-zed-background">
@@ -84,7 +85,6 @@ export default function VotingArenaPage() {
           <DashboardHeader />
           <main className="flex-1 overflow-auto p-8 bg-zed-background-alt">
             <div className="max-w-7xl mx-auto">
-              {/* Header */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
                 <div>
                   <h1 className="text-4xl font-black text-zed-foreground mb-2 flex items-center gap-3">
@@ -96,21 +96,17 @@ export default function VotingArenaPage() {
                 <div className="flex items-center gap-4 w-full md:w-auto">
                   <div className="relative flex-1 md:w-80">
                     <Search className="absolute left-3 top-3 text-zed-foreground-secondary" size={18} />
-                    <input 
-                      placeholder="Search ideas, industries..." 
+                    <input
+                      placeholder="Search ideas, industries..."
                       className="input-zed pl-10 h-11"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
-                  <button className="btn-secondary h-11 px-4 flex items-center gap-2">
-                    <Filter size={18} /> Filter
-                  </button>
                 </div>
               </div>
 
-              {/* Status Notice if not eligible */}
-              {(profile?.kyc_status !== 'verified' || profile?.voter_payment_status !== 'paid') && (
+              {!canVote && (
                 <div className="mb-12 p-6 glass-premium border-yellow-500/20 rounded-2xl flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-yellow-500/10 rounded-full flex items-center justify-center">
@@ -127,10 +123,9 @@ export default function VotingArenaPage() {
                 </div>
               )}
 
-              {/* Ideas Grid */}
-              {(profile?.kyc_status !== 'verified' || profile?.voter_payment_status !== 'paid') ? null : loading ? (
+              {!canVote ? null : loading ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {[1,2,3,4,5,6].map(i => (
+                  {[1, 2, 3, 4, 5, 6].map(i => (
                     <div key={i} className="card-zed h-96 animate-pulse opacity-50" />
                   ))}
                 </div>
@@ -144,23 +139,22 @@ export default function VotingArenaPage() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {filteredIdeas.map((idea) => {
                     const hasVoted = votedIdeas.includes(idea.id)
-                    const isOwn = idea.user_id === profile?.uid
+                    const isOwn = idea.user_id === profile?.id
 
                     return (
                       <div key={idea.id} className="card-zed group flex flex-col hover:border-zed-primary/30 transition-all duration-500">
-                        {/* Image Preview */}
                         <div className="relative aspect-video rounded-xl overflow-hidden mb-6">
-                           <img 
-                            src={idea.image_url || 'https://via.placeholder.com/600x400?text=ZedIdeaArena'} 
+                          <img
+                            src={idea.image_url || 'https://via.placeholder.com/600x400?text=ZedIdeaArena'}
                             alt={idea.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                           />
-                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                           <div className="absolute bottom-4 left-4">
-                             <span className="bg-zed-primary/80 backdrop-blur-md text-[10px] text-white px-2 py-1 rounded-full font-black uppercase tracking-widest">
-                               {idea.category}
-                             </span>
-                           </div>
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                          <div className="absolute bottom-4 left-4">
+                            <span className="bg-zed-primary/80 backdrop-blur-md text-[10px] text-white px-2 py-1 rounded-full font-black uppercase tracking-widest">
+                              {idea.category}
+                            </span>
+                          </div>
                         </div>
 
                         <div className="flex-1 flex flex-col">
@@ -178,22 +172,13 @@ export default function VotingArenaPage() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <Link 
-                                href={`/dashboard/ideas/${idea.id}`}
-                                className="btn-icon w-10 h-10"
-                              >
+                              <Link href={`/dashboard/ideas/${idea.id}`} className="btn-icon w-10 h-10">
                                 <ExternalLink size={18} />
                               </Link>
                               <button
                                 onClick={() => handleVote(idea)}
                                 disabled={hasVoted || isOwn || !!castingVote}
-                                className={`flex items-center gap-2 h-10 px-6 rounded-xl font-black text-xs transition-all ${
-                                  hasVoted 
-                                    ? 'bg-zed-success text-white' 
-                                    : isOwn
-                                    ? 'bg-white/5 text-zed-foreground-secondary cursor-not-allowed'
-                                    : 'bg-zed-primary text-white shadow-[0_4px_15px_rgba(79,70,229,0.3)] hover:scale-105 active:scale-95'
-                                }`}
+                                className={`flex items-center gap-2 h-10 px-6 rounded-xl font-black text-xs transition-all ${hasVoted ? 'bg-zed-success text-white' : isOwn ? 'bg-white/5 text-zed-foreground-secondary cursor-not-allowed' : 'bg-zed-primary text-white shadow-[0_4px_15px_rgba(79,70,229,0.3)] hover:scale-105 active:scale-95'}`}
                               >
                                 {castingVote === idea.id ? (
                                   <Loader2 size={16} className="animate-spin" />

@@ -26,29 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   const fetchProfile = useCallback(async () => {
-    const token = typeof window !== 'undefined'
-      ? localStorage.getItem('token') || sessionStorage.getItem('token')
-      : null
-    // #region agent log
-    if (typeof window !== 'undefined') {
-      fetch('http://127.0.0.1:7293/ingest/65e1436f-7699-44c3-bae9-afb4840cd4a5', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Debug-Session-Id': 'ce949e',
-        },
-        body: JSON.stringify({
-          sessionId: 'ce949e',
-          runId: 'pre-fix-guard',
-          hypothesisId: 'H11',
-          location: 'frontend/hooks/useAuth.ts:fetchProfile:start',
-          message: 'fetchProfile token check',
-          data: { hasToken: Boolean(token) },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {})
-    }
-    // #endregion
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
     if (!token) {
       setLoading(false)
       return
@@ -58,15 +36,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res: any = await authService.getProfile()
       if (res.status === 'success') {
         setProfile(res.data)
+        setCurrentRole(res.data.role || 'contestant')
       }
     } catch (err: any) {
-      console.error('Failed to fetch profile:', err)
-      // If unauthorized, clear token
-      if (err === 'Unauthorized: Invalid token' || err === 'Unauthorized: No token provided') {
-        localStorage.removeItem('token')
-        sessionStorage.removeItem('token')
-        setProfile(null)
-      }
+      localStorage.removeItem('token')
+      setProfile(null)
     } finally {
       setLoading(false)
     }
@@ -77,14 +51,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [fetchProfile])
 
   const login = async (credentials: any) => {
-    try {
-      await authService.login(credentials)
-      await fetchProfile()
-      router.push('/dashboard')
-      toast.success('Welcome back!')
-    } catch (err: any) {
-      throw err
-    }
+    await authService.login(credentials)
+    await fetchProfile()
+    router.push('/dashboard')
+    toast.success('Welcome back!')
   }
 
   const logout = async () => {
@@ -93,12 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null)
       setUser(null)
       router.push('/auth/login')
-      toast.info('Logged out safely.')
+      toast.info('Logged out.')
     } catch (err) {
-      console.error('Logout error:', err)
-      // Fallback
       localStorage.removeItem('token')
-      sessionStorage.removeItem('token')
       window.location.href = '/auth/login'
     }
   }
@@ -111,10 +78,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCurrentRole,
     login,
     logout,
-    refreshProfile: fetchProfile
+    refreshProfile: fetchProfile,
   }
 
-  // Workaround for Turbopack bug with JSX in certain contexts
   return React.createElement(AuthContext.Provider, { value }, children)
 }
 

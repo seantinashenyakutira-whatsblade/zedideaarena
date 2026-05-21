@@ -1,11 +1,5 @@
-const { db, admin } = require('../config/firebase');
+const { supabase } = require('../config/supabase');
 
-/**
- * Cast a Vote for an Idea
- * Logic: 
- * 1. User must be verified
- * 2. User can only vote once per competition
- */
 const castVote = async (req, res) => {
   const { ideaId, competitionId } = req.body;
   const userId = req.user.uid;
@@ -15,80 +9,93 @@ const castVote = async (req, res) => {
   }
 
   try {
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.data();
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('is_verified, voter_payment_status, role')
+      .eq('id', userId)
+      .single();
 
-    if (!userDoc.exists) {
+    if (userError || !userData) {
       return res.status(404).json({ status: 'error', message: 'User profile not found.' });
     }
 
-    if (userData.kyc_status !== 'verified') {
-      return res.status(403).json({ status: 'error', message: 'You must be KYC verified to vote.' });
+    if (!userData.is_verified) {
+      return res.status(403).json({ status: 'error', message: 'You must be verified by an admin to vote.' });
     }
 
     if (userData.voter_payment_status !== 'paid' && userData.role !== 'admin') {
       return res.status(403).json({ status: 'error', message: 'You must pay the voter entry fee to vote.' });
     }
 
-    // 2. Perform a strict Firestore Transaction to ensure data integrity
-    await db.runTransaction(async (transaction) => {
-      // a. Check Idea
-      const ideaRef = db.collection('ideas').doc(ideaId);
-      const ideaDoc = await transaction.get(ideaRef);
+    const { data: ideaData, error: ideaError } = await supabase
+      .from('ideas')
+      .select('*')
+      .eq('id', ideaId)
+      .single();
 
-      if (!ideaDoc.exists) {
-        throw new Error('Idea not found.');
-      }
+    if (ideaError || !ideaData) {
+      return res.status(404).json({ status: 'error', message: 'Idea not found.' });
+    }
 
-      const ideaData = ideaDoc.data();
+    if (ideaData.payment_status !== 'paid') {
+      return res.status(403).json({ status: 'error', message: 'This idea is not eligible for voting yet.' });
+    }
 
-      if (ideaData.payment_status !== 'paid') {
-        throw new Error('This idea is not eligible for voting yet.');
-      }
+    if (ideaData.user_id === userId) {
+      return res.status(403).json({ status: 'error', message: 'You cannot vote for your own idea.' });
+    }
 
-      if (ideaData.user_id === userId) {
-        throw new Error('You cannot vote for your own idea.');
-      }
+    const { data: existingVote } = await supabase
+      .from('votes')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('competition_id', competitionId)
+      .single();
 
-      // b. Check if user already voted in this competition
-      const voteQuery = db.collection('votes')
-        .where('userId', '==', userId)
-        .where('competitionId', '==', competitionId);
-      
-      const voteCheck = await transaction.get(voteQuery);
-      if (!voteCheck.empty) {
-        throw new Error('You have already voted in this competition.');
-      }
+    if (existingVote) {
+      return res.status(400).json({ status: 'error', message: 'You have already voted in this competition.' });
+    }
 
-      // c. Record the vote and increment atomically
-      const newVoteRef = db.collection('votes').doc();
-      transaction.set(newVoteRef, {
-        userId,
-        ideaId,
-        competitionId,
-        timestamp: new Date().toISOString()
-      });
-
-      transaction.update(ideaRef, {
-        votes_count: admin.firestore.FieldValue.increment(1)
-      });
+    const { error: voteError } = await supabase.from('votes').insert({
+      user_id: userId,
+      idea_id: ideaId,
+      competition_id: competitionId,
     });
 
-    res.json({
-      status: 'success',
-      message: 'Vote cast successfully via secure transaction!'
-    });
+    if (voteError) throw voteError;
 
+    const { error: countError } = await supabase
+      .from('ideas')
+      .update({ votes_count: ideaData.votes_count + 1 })
+      .eq('id', ideaId);
+
+    if (countError) throw countError;
+
+    res.json({ status: 'success', message: 'Vote cast successfully!' });
   } catch (error) {
     console.error('Error casting vote:', error);
-    // Determine if it's our thrown validation error or a system error
-    if (error.message && !error.message.includes('No document to update')) {
+    if (error.message && (error.message.includes('already voted') || error.message.includes('cannot vote') || error.message.includes('must be') || error.message.includes('must pay') || error.message.includes('not eligible') || error.message.includes('not found'))) {
       return res.status(400).json({ status: 'error', message: error.message });
     }
     res.status(500).json({ status: 'error', message: 'Internal server error while voting.' });
   }
 };
 
-module.exports = {
-  castVote
+const getUserVotes = async (req, res) => {
+  const userId = req.user.uid;
+
+  try {
+    const { data, error } = await supabase
+      .from('votes')
+      .select('idea_id, competition_id')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    res.json({ status: 'success', data: data || [] });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: 'Failed to fetch votes' });
+  }
 };
+
+module.exports = { castVote, getUserVotes };

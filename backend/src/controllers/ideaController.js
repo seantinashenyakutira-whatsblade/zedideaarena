@@ -1,36 +1,23 @@
-const { db } = require('../config/firebase');
+const { supabase } = require('../config/supabase');
 
-/**
- * Save Idea Draft
- * Creates or updates an idea with 'draft' status.
- */
 const saveIdeaDraft = async (req, res) => {
   const { uid } = req.user;
   const { id, title, category, competition_id, problem_statement, description, video_url, image_url, deck_url, estimated_impact, target_audience, timeline, links } = req.body;
 
-  if (!db) {
-    return res.status(503).json({ status: 'error', message: 'Database service unavailable' });
-  }
-
   try {
-    const ideaRef = id ? db.collection('ideas').doc(id) : db.collection('ideas').doc();
-    
     if (id) {
-      const existing = await ideaRef.get();
-      if (existing.exists) {
-        // Ownership check
-        if (existing.data().user_id !== uid) {
-          return res.status(403).json({ 
-            status: 'error', 
-            message: 'Unauthorized: You do not own this idea' 
-          });
+      const { data: existing } = await supabase
+        .from('ideas')
+        .select('user_id, status')
+        .eq('id', id)
+        .single();
+
+      if (existing) {
+        if (existing.user_id !== uid) {
+          return res.status(403).json({ status: 'error', message: 'Unauthorized: You do not own this idea' });
         }
-        // State check
-        if (existing.data().status === 'submitted') {
-          return res.status(400).json({ 
-            status: 'error', 
-            message: 'Cannot edit an idea that has already been submitted' 
-          });
+        if (existing.status === 'submitted') {
+          return res.status(400).json({ status: 'error', message: 'Cannot edit an idea that has already been submitted' });
         }
       }
     }
@@ -39,178 +26,129 @@ const saveIdeaDraft = async (req, res) => {
       user_id: uid,
       title: title || '',
       category: category || '',
-      competition_id: competition_id || '',
+      competition_id: competition_id || null,
       problem_statement: problem_statement || '',
       description: description || '',
       video_url: video_url || '',
       image_url: image_url || '',
       deck_url: deck_url || '',
-      estimated_impact: estimated_impact || '',
-      target_audience: target_audience || '',
-      timeline: timeline || '',
       links: links || {},
       status: 'draft',
       payment_status: 'unpaid',
       votes_count: 0,
-      updatedAt: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
-    if (!id) {
-      ideaData.createdAt = new Date().toISOString();
+    let result;
+    if (id) {
+      result = await supabase.from('ideas').update(ideaData).eq('id', id).select('id').single();
+    } else {
+      ideaData.created_at = new Date().toISOString();
+      result = await supabase.from('ideas').insert(ideaData).select('id').single();
     }
 
-    await ideaRef.set(ideaData, { merge: true });
+    if (result.error) throw result.error;
 
-    res.json({ 
-      status: 'success', 
-      id: ideaRef.id, 
-      message: 'Idea draft saved successfully' 
-    });
+    res.json({ status: 'success', id: result.data.id, message: 'Idea draft saved successfully' });
   } catch (error) {
     console.error('Error saving idea draft:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: 'Failed to save draft' 
-    });
+    res.status(500).json({ status: 'error', message: 'Failed to save draft' });
   }
 };
 
-/**
- * Submit Idea
- * Finalizes an idea submission and locks it for editing.
- */
 const submitIdea = async (req, res) => {
   const { uid } = req.user;
   const { id } = req.body;
 
   if (!id) {
-    return res.status(400).json({ 
-      status: 'error', 
-      message: 'Idea ID is required for submission' 
-    });
-  }
-
-  if (!db) {
-    return res.status(503).json({ status: 'error', message: 'Database service unavailable' });
+    return res.status(400).json({ status: 'error', message: 'Idea ID is required for submission' });
   }
 
   try {
-    const ideaRef = db.collection('ideas').doc(id);
-    const doc = await ideaRef.get();
+    const { data: doc, error: fetchError } = await supabase
+      .from('ideas')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!doc.exists || doc.data().user_id !== uid) {
-      return res.status(404).json({ 
-        status: 'error', 
-        message: 'Idea not found' 
-      });
+    if (fetchError || !doc || doc.user_id !== uid) {
+      return res.status(404).json({ status: 'error', message: 'Idea not found' });
     }
 
-    const data = doc.data();
-
-    // Final Validation before submission
-    if (!data.title || !data.category || !data.problem_statement || !data.description) {
+    if (!doc.title || !doc.category || !doc.problem_statement || !doc.description) {
       return res.status(400).json({
         status: 'error',
-        message: 'Incomplete idea data. Please fill in all required fields (Title, Category, Problem, Description) before submitting.'
+        message: 'Incomplete idea data. Please fill in all required fields before submitting.',
       });
     }
 
-    await ideaRef.update({
-      status: 'submitted',
-      updatedAt: new Date().toISOString()
-    });
+    const { error } = await supabase
+      .from('ideas')
+      .update({ status: 'submitted', updated_at: new Date().toISOString() })
+      .eq('id', id);
 
-    res.json({ 
-      status: 'success', 
-      message: 'Idea submitted successfully and is now under review' 
-    });
+    if (error) throw error;
+
+    res.json({ status: 'success', message: 'Idea submitted successfully and is now under review' });
   } catch (error) {
     console.error('Error submitting idea:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: 'Failed to submit idea' 
-    });
+    res.status(500).json({ status: 'error', message: 'Failed to submit idea' });
   }
 };
 
-/**
- * Get User Ideas
- * Returns all ideas (drafts and submitted) for the authenticated user.
- */
 const getUserIdeas = async (req, res) => {
   const { uid } = req.user;
 
-  if (!db) {
-    return res.status(503).json({ status: 'error', message: 'Database service unavailable' });
-  }
-
   try {
-    const snapshot = await db.collection('ideas')
-      .where('user_id', '==', uid)
-      .get();
+    const { data, error } = await supabase
+      .from('ideas')
+      .select('*')
+      .eq('user_id', uid)
+      .order('updated_at', { ascending: false });
 
-    const ideas = [];
-    snapshot.forEach(doc => {
-      ideas.push({ id: doc.id, ...doc.data() });
-    });
+    if (error) throw error;
 
-    // Sort in memory to avoid requiring a composite index in Firestore
-    ideas.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-
-    res.json({ 
-      status: 'success', 
-      data: ideas 
-    });
+    res.json({ status: 'success', data: data || [] });
   } catch (error) {
     console.error('Error fetching user ideas:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: 'Failed to fetch ideas' 
-    });
+    res.status(500).json({ status: 'error', message: 'Failed to fetch ideas' });
   }
 };
 
-/**
- * Get Public Ideas
- */
 const getPublicIdeas = async (req, res) => {
   try {
-    const snapshot = await db.collection('ideas')
-      .where('status', '==', 'submitted')
-      .where('payment_status', '==', 'paid')
-      .get();
+    const { data, error } = await supabase
+      .from('ideas')
+      .select('*')
+      .eq('status', 'submitted')
+      .eq('payment_status', 'paid')
+      .order('votes_count', { ascending: false });
 
-    const ideas = [];
-    snapshot.forEach(doc => {
-      ideas.push({ id: doc.id, ...doc.data() });
-    });
+    if (error) throw error;
 
-    res.json({ status: 'success', data: ideas });
+    res.json({ status: 'success', data: data || [] });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
-/**
- * Get Idea by ID
- */
 const getIdeaById = async (req, res) => {
   const { id } = req.params;
   try {
-    const doc = await db.collection('ideas').doc(id).get();
-    if (!doc.exists) {
+    const { data, error } = await supabase
+      .from('ideas')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
       return res.status(404).json({ status: 'error', message: 'Idea not found' });
     }
-    res.json({ status: 'success', data: { id: doc.id, ...doc.data() } });
+
+    res.json({ status: 'success', data: { id: data.id, ...data } });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
-module.exports = {
-  saveIdeaDraft,
-  submitIdea,
-  getUserIdeas,
-  getPublicIdeas,
-  getIdeaById
-};
+module.exports = { saveIdeaDraft, submitIdea, getUserIdeas, getPublicIdeas, getIdeaById };

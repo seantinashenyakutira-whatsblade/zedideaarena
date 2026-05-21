@@ -5,7 +5,6 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
 app.use(cors({
   origin: true,
   credentials: true,
@@ -14,61 +13,48 @@ app.use(cors({
 }));
 app.use(express.json());
 
-const { db } = require('./config/firebase');
+const { supabase } = require('./config/supabase');
 const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
 
-// Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     services: {
-      firebase: db ? 'connected' : 'missing_credentials',
+      supabase: process.env.SUPABASE_URL ? 'configured' : 'missing_credentials',
       stripe: stripe ? 'initialized' : 'missing_credentials',
-      didit: process.env.DIDIT_API_KEY ? 'keys_present' : 'missing_credentials'
-    }
+    },
   });
 });
 
-// Mirror health under /api/health for external checks
 app.get('/api/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     services: {
-      firebase: db ? 'connected' : 'missing_credentials',
+      supabase: process.env.SUPABASE_URL ? 'configured' : 'missing_credentials',
       stripe: stripe ? 'initialized' : 'missing_credentials',
-      didit: process.env.DIDIT_API_KEY ? 'keys_present' : 'missing_credentials'
-    }
+    },
   });
 });
 
-// Base Route
 app.get('/', (req, res) => {
-  res.json({ 
-    status: 'success', 
+  res.json({
+    status: 'success',
     message: 'Zed Idea Arena API - Ready to Run',
-    version: '1.0.0'
+    version: '2.0.0',
   });
 });
 
-// Routes
 app.use('/api/user', require('./routes/userRoutes'));
-app.use('/api/kyc', require('./routes/kycRoutes'));
-const ideaRoutes = require('./routes/ideaRoutes');
-const mediaRoutes = require('./routes/mediaRoutes');
-const voteRoutes = require('./routes/voteRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-
-app.use('/api/ideas', ideaRoutes);
-app.use('/api/media', mediaRoutes);
-app.use('/api/votes', voteRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/ideas', require('./routes/ideaRoutes'));
+app.use('/api/media', require('./routes/mediaRoutes'));
+app.use('/api/votes', require('./routes/voteRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/payment', require('./routes/paymentRoutes'));
 app.use('/api/competitions', require('./routes/competitionRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
 
-// Always return JSON for unhandled errors (prevents HTML stack traces leaking to clients)
 app.use((err, req, res, next) => {
   console.error('[UNHANDLED_ERROR]', err);
   if (res.headersSent) return next(err);
@@ -76,5 +62,5 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server highly active on port ${PORT}`);
+  console.log(`Server active on port ${PORT}`);
 });

@@ -1,55 +1,57 @@
-const { storage } = require('../config/firebase');
+const { supabase } = require('../config/supabase');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
-/**
- * Handle Media Upload to Firebase Storage
- */
+const ALLOWED_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'application/pdf',
+];
+
+const MAX_FILE_SIZE = 500 * 1024 * 1024;
+
 const uploadMedia = async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ status: 'error', message: 'No file uploaded' });
   }
 
-  if (!storage) {
-    return res.status(503).json({ status: 'error', message: 'Storage service unavailable' });
+  if (req.file.size > MAX_FILE_SIZE) {
+    return res.status(400).json({ status: 'error', message: 'File size exceeds 500MB limit' });
+  }
+
+  if (!ALLOWED_TYPES.includes(req.file.mimetype)) {
+    return res.status(400).json({ status: 'error', message: 'File type not allowed' });
   }
 
   try {
-    const bucket = storage.bucket();
     const fileName = `${req.user.uid}/${uuidv4()}${path.extname(req.file.originalname)}`;
-    const file = bucket.file(fileName);
 
-    const stream = file.createWriteStream({
-      metadata: {
+    const { data, error } = await supabase.storage
+      .from('uploads')
+      .upload(fileName, req.file.buffer, {
         contentType: req.file.mimetype,
-        firebaseStorageDownloadTokens: uuidv4()
-      }
-    });
-
-    stream.on('error', (err) => {
-      console.error('Storage stream error:', err);
-      res.status(500).json({ status: 'error', message: 'File upload failed' });
-    });
-
-    stream.on('finish', async () => {
-      // Make the file public (or get signed URL)
-      // For simplicity in this arena, we'll get a signed URL or public URL
-      await file.makePublic();
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-      
-      res.json({
-        status: 'success',
-        url: publicUrl
+        cacheControl: '3600',
       });
-    });
 
-    stream.end(req.file.buffer);
+    if (error) throw error;
+
+    const { data: urlData } = supabase.storage
+      .from('uploads')
+      .getPublicUrl(fileName);
+
+    res.json({
+      status: 'success',
+      url: urlData.publicUrl,
+    });
   } catch (error) {
-    console.error('Upload catch error:', error);
+    console.error('Upload error:', error);
     res.status(500).json({ status: 'error', message: 'Internal server error during upload' });
   }
 };
 
-module.exports = {
-  uploadMedia
-};
+module.exports = { uploadMedia };

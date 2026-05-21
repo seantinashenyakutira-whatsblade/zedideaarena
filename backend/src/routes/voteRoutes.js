@@ -3,11 +3,7 @@ const router = express.Router();
 const voteController = require('../controllers/voteController');
 const { verifyToken } = require('../middleware/authMiddleware');
 
-/**
- * @route POST /api/votes/cast
- * @desc Cast a vote for an innovation
- * @access Private
- */
 router.post('/cast', verifyToken, voteController.castVote);
+router.get('/user', verifyToken, voteController.getUserVotes);
 
 module.exports = router;

@@ -1,209 +1,144 @@
-const { db } = require('../config/firebase');
+const { supabase } = require('../config/supabase');
+const { ADMIN_EMAILS } = require('../middleware/authMiddleware');
 
-/**
- * Get User Profile from Firestore
- */
 const getUserProfile = async (req, res) => {
   const uid = req.user?.uid;
   if (!uid) {
     return res.status(401).json({ status: 'error', message: 'Unauthorized: No user data found in token' });
   }
 
-  if (!db) {
-    return res.status(503).json({ 
-      status: 'error', 
-      message: 'Database service unavailable (Firestore not initialized)' 
-    });
-  }
-
   try {
-    const userDoc = await db.collection('users').doc(uid).get();
-    
-    if (!userDoc.exists) {
-      // If profile doesn't exist yet, we might want to return a specific status 
-      // so the frontend can redirect to "Complete Profile"
-      return res.status(404).json({ 
-        status: 'error', 
-        message: 'Profile not found' 
-      });
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', uid)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ status: 'error', message: 'Profile not found' });
     }
 
-    res.json({ 
-      status: 'success', 
-      data: userDoc.data() 
-    });
+    res.json({ status: 'success', data });
   } catch (error) {
     console.error(`[PROFILE_ERROR] UID: ${uid}:`, error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: 'Failed to fetch profile' 
-    });
+    res.status(500).json({ status: 'error', message: 'Failed to fetch profile' });
   }
 };
 
-/**
- * Login / Sync User with Firestore
- * This is the primary entry point after Firebase Auth
- */
 const login = async (req, res) => {
   const uid = req.user?.uid;
   if (!uid) {
     return res.status(401).json({ status: 'error', message: 'No user data found in token' });
   }
 
-  // Explicitly check if Firebase is initialized before attempting to access Firestore
-  if (!db) {
-    return res.status(503).json({ 
-      status: 'error', 
-      message: 'Firebase service unavailable. Set FIREBASE_SERVICE_ACCOUNT_JSON environment variable on your server and redeploy.' 
-    });
-  }
-
   const { email, name, picture } = req.user || {};
   const { fullName: bodyName } = req.body;
 
   try {
-
-    const userRef = db.collection('users').doc(uid);
-    const userDoc = await userRef.get();
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', uid)
+      .single();
 
     let userData;
 
-    if (!userDoc.exists) {
-      // Create new user if they don't exist
+    if (!existingUser) {
+      const isAdmin = ADMIN_EMAILS.includes(email);
       userData = {
-        uid,
+        id: uid,
         email: email || null,
-        fullName: bodyName || name || 'New Innovator',
+        full_name: bodyName || name || 'New Innovator',
         picture: picture || null,
-        role: 'contestant', 
-        kyc_status: 'unverified',
-        is_verified: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        role: isAdmin ? 'admin' : 'contestant',
+        is_verified: isAdmin,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
-      await userRef.set(userData);
-      console.log(`[AUTH] New user created: ${uid} (${email || 'no-email'})`);
+
+      const { error } = await supabase.from('users').insert(userData);
+      if (error) throw error;
     } else {
-      userData = userDoc.data();
-      // Sync basic info if it changed
-      const updates = {
-        updatedAt: new Date().toISOString()
-      };
+      userData = existingUser;
+      const updates = { updated_at: new Date().toISOString() };
       if (email && !userData.email) updates.email = email;
       if (picture && !userData.picture) updates.picture = picture;
 
-      // Use set(..., {merge:true}) instead of update() to avoid hard failures
-      // if the doc was deleted between get() and write(), or if security rules change.
-      await userRef.set(updates, { merge: true });
+      const { error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('id', uid);
+      if (error) throw error;
+
       userData = { ...userData, ...updates };
-      console.log(`[AUTH] User logged in: ${uid}`);
     }
 
     res.json({
       status: 'success',
       message: 'Logged in successfully',
-      data: userData
+      data: userData,
     });
   } catch (error) {
     console.error(`[LOGIN_ERROR] UID: ${uid}:`, error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to synchronize user data with Arena'
-    });
+    res.status(500).json({ status: 'error', message: 'Failed to synchronize user data with Arena' });
   }
 };
 
-/**
- * Sync or Create User Profile with ID Validation
- */
 const syncUserProfile = async (req, res) => {
   const uid = req.user?.uid;
   if (!uid) {
     return res.status(401).json({ status: 'error', message: 'Unauthorized: No user data found in token' });
   }
 
-  // Explicitly check if Firebase is initialized
-  if (!db) {
-    return res.status(503).json({ 
-      status: 'error', 
-      message: 'Firebase service unavailable. Set FIREBASE_SERVICE_ACCOUNT_JSON environment variable on your server and redeploy.' 
-    });
-  }
-
-  const { 
-    fullName, 
-    dob, 
-    nationality, 
-    phone, 
-    idType, 
-    idNumber,
-    role
-  } = req.body;
+  const { fullName, dob, nationality, phone, idType, idNumber, role, profession, bio } = req.body;
 
   try {
-    const userRef = db.collection('users').doc(uid);
-    const profileData = {
-      fullName: fullName || null,
-      dob: dob || null,
-      nationality: nationality || null,
-      phone: phone || null,
-      idType: idType || null,
-      idNumber: idNumber || null,
-      role: role || null,
-      updatedAt: new Date().toISOString()
-    };
+    const profileData = {};
+    if (fullName !== undefined) profileData.full_name = fullName;
+    if (dob !== undefined) profileData.dob = dob;
+    if (nationality !== undefined) profileData.nationality = nationality;
+    if (idNumber !== undefined) profileData.id_number = idNumber;
+    if (profession !== undefined) profileData.profession = profession;
+    if (bio !== undefined) profileData.bio = bio;
+    if (role !== undefined) profileData.role = role;
+    profileData.updated_at = new Date().toISOString();
 
-    // Remove nulls to avoid overwriting existing data with nulls if not provided
-    Object.keys(profileData).forEach(key => profileData[key] === null && delete profileData[key]);
+    const { error } = await supabase
+      .from('users')
+      .update(profileData)
+      .eq('id', uid);
 
-    await userRef.set(profileData, { merge: true });
+    if (error) throw error;
 
     res.json({
       status: 'success',
       message: 'Profile updated successfully',
-      data: profileData
+      data: profileData,
     });
   } catch (error) {
     console.error(`[SYNC_ERROR] UID: ${uid}:`, error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to update profile data'
-    });
+    res.status(500).json({ status: 'error', message: 'Failed to update profile data' });
   }
 };
 
-/**
- * Get User Profile by ID (Public)
- */
 const getUserProfileById = async (req, res) => {
   const { id } = req.params;
   try {
-    if (!db) throw new Error('Firestore not initialized');
-    
-    const userDoc = await db.collection('users').doc(id).get();
-    if (!userDoc.exists) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, full_name, picture, role')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
       return res.status(404).json({ status: 'error', message: 'User not found' });
     }
-    const data = userDoc.data();
-    res.json({
-      status: 'success',
-      data: {
-        uid: id,
-        fullName: data.fullName,
-        picture: data.picture,
-        role: data.role
-      }
-    });
+
+    res.json({ status: 'success', data });
   } catch (error) {
     console.error(`[PUBLIC_PROFILE_ERROR] ID: ${id}:`, error);
     res.status(500).json({ status: 'error', message: 'Internal server error' });
   }
 };
 
-module.exports = {
-  getUserProfile,
-  getUserProfileById,
-  syncUserProfile,
-  login
-};
+module.exports = { getUserProfile, getUserProfileById, syncUserProfile, login };
