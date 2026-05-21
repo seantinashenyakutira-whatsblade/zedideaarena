@@ -6,4 +6,5 @@ export const ideaService = {
   submitIdea: async (id: string) => api.post('/ideas/submit', { id }),
   getPublicIdeas: async () => api.get('/ideas/public'),
   getIdeaById: async (id: string) => api.get(`/ideas/${id}`),
+  createIdea: async (data: any) => api.post('/ideas', data),
 };

@@ -2,17 +2,7 @@ const { supabase } = require('../config/supabase');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
-const ALLOWED_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'video/mp4',
-  'video/webm',
-  'video/quicktime',
-  'application/pdf',
-];
-
+const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
 const MAX_FILE_SIZE = 500 * 1024 * 1024;
 
 const uploadMedia = async (req, res) => {
@@ -24,29 +14,31 @@ const uploadMedia = async (req, res) => {
     return res.status(400).json({ status: 'error', message: 'File size exceeds 500MB limit' });
   }
 
-  if (!ALLOWED_TYPES.includes(req.file.mimetype)) {
-    return res.status(400).json({ status: 'error', message: 'File type not allowed' });
+  if (!VIDEO_TYPES.includes(req.file.mimetype)) {
+    return res.status(400).json({ status: 'error', message: 'Only mp4, mov, and webm videos are allowed' });
   }
 
   try {
-    const fileName = `${req.user.uid}/${uuidv4()}${path.extname(req.file.originalname)}`;
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const fileName = `${req.user.uid}/${uuidv4()}${ext}`;
 
     const { data, error } = await supabase.storage
-      .from('uploads')
+      .from('pitch-videos')
       .upload(fileName, req.file.buffer, {
         contentType: req.file.mimetype,
         cacheControl: '3600',
+        upsert: false,
       });
 
     if (error) throw error;
 
-    const { data: urlData } = supabase.storage
-      .from('uploads')
-      .getPublicUrl(fileName);
+    const { data: signedUrlData } = await supabase.storage
+      .from('pitch-videos')
+      .createSignedUrl(fileName, 86400);
 
     res.json({
       status: 'success',
-      url: urlData.publicUrl,
+      url: signedUrlData.signedUrl,
     });
   } catch (error) {
     console.error('Upload error:', error);

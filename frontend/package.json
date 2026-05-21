@@ -9,6 +9,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@googlemaps/js-api-loader": "^2.0.2",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "1.2.12",
     "@radix-ui/react-alert-dialog": "1.1.15",
@@ -66,6 +67,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.0",
+    "@types/google.maps": "^3.64.1",
     "@types/lodash": "^4.17.24",
     "@types/node": "^22",
     "@types/react": "^19",

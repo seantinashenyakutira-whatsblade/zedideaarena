@@ -2,8 +2,8 @@
 
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
-import { ChevronRight, ChevronLeft, Upload, Link as LinkIcon, FileText, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy } from 'lucide-react'
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
+import { ChevronRight, ChevronLeft, Upload, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy } from 'lucide-react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { ideaService } from '@/services/idea'
 import { mediaService } from '@/services/core'
 import { authService } from '@/services/auth'
@@ -11,6 +11,14 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+
+interface FormState {
+  fullName: string; dob: string; nationality: string; bio: string; profession: string;
+  title: string; competition_id: string;
+  problem: string; solution: string; industry: string; business_model: string;
+  pitch_video_url: string; github_url: string; linkedin_url: string; instagram_url: string;
+  guidelinesAccepted: boolean; termsAccepted: boolean;
+}
 
 const steps = [
   { number: 1, title: 'Identity', icon: User },
@@ -20,54 +28,42 @@ const steps = [
   { number: 5, title: 'Commit', icon: CreditCard },
 ]
 
+const FORM_KEY = 'idea_submission_form'
+
 function NewIdeaForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
-  const [ideaId, setIdeaId] = useState<string | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
   const [hasMounted, setHasMounted] = useState(false)
-  
-  const [formData, setFormData] = useState({
-    // Profile Data (Step 1)
-    fullName: '',
-    dob: '',
-    nationality: '',
-    idNumber: '',
-    bio: '',
-    profession: '',
-    
-    // Idea Data (Step 2)
-    title: '',
-    category: '',
-    competition_id: searchParams.get('competitionId') || '',
-    description: '',
-    problem_statement: '',
-    business_model: '',
-    target_audience: '',
-    
-    // Media (Step 3)
-    video_url: '',
-    image_url: '',
-    deck_url: '',
-    links: {
-      instagram: '',
-      github: '',
-      linkedin: '',
-      website: ''
-    },
-    
-    // Legal (Step 4)
-    guidelinesAccepted: false,
-    termsAccepted: false,
-  })
+
+  const getInitialForm = (): FormState => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem(FORM_KEY)
+      if (saved) {
+        try { return JSON.parse(saved) } catch {}
+      }
+    }
+    return {
+      fullName: '', dob: '', nationality: '', bio: '', profession: '',
+      title: '', competition_id: searchParams.get('competitionId') || '',
+      problem: '', solution: '', industry: '', business_model: '',
+      pitch_video_url: '', github_url: '', linkedin_url: '', instagram_url: '',
+      guidelinesAccepted: false, termsAccepted: false,
+    }
+  }
+
+  const [formData, setFormData] = useState<FormState>(getInitialForm)
+
+  useEffect(() => {
+    sessionStorage.setItem(FORM_KEY, JSON.stringify(formData))
+  }, [formData])
 
   const [competitions, setCompetitions] = useState<any[]>([])
-  const [loadingComps, setLoadingComps] = useState(true)
 
   useEffect(() => {
     const fetchInitial = async () => {
@@ -77,66 +73,49 @@ function NewIdeaForm() {
           authService.getProfile()
         ])
         setCompetitions(compsRes.data.data || [])
-        
-        // Pre-fill profile data if exists
         const p = profileRes.data
         setProfile(p)
         if (p) {
           setFormData(prev => ({
             ...prev,
-            fullName: p.fullName || '',
+            fullName: p.full_name || p.fullName || '',
             dob: p.dob || '',
             nationality: p.nationality || '',
-            idNumber: p.idNumber || '',
             bio: p.bio || '',
             profession: p.profession || ''
           }))
         }
       } catch (err) {
         console.error('Failed to fetch initial data:', err)
-      } finally {
-        setLoadingComps(false)
       }
     }
     fetchInitial()
     setHasMounted(true)
   }, [])
 
-  const [uploading, setUploading] = useState({ image: false, deck: false, video: false })
+  const [uploading, setUploading] = useState(false)
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'deck' | 'video') => {
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setUploading(prev => ({ ...prev, [type]: true }))
+    setUploading(true)
     try {
       const response: any = await mediaService.uploadFile(file)
       if (response.status === 'success') {
-        setFormData(prev => ({ 
-          ...prev, 
-          [type === 'image' ? 'image_url' : type === 'deck' ? 'deck_url' : 'video_url']: response.url 
-        }))
-        toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} uploaded!`)
+        setFormData(prev => ({ ...prev, pitch_video_url: response.url }))
+        toast.success('Video uploaded!')
       }
-    } catch (err) {
-      toast.error(`Upload failed.`)
+    } catch {
+      toast.error('Upload failed.')
     } finally {
-      setUploading(prev => ({ ...prev, [type]: false }))
+      setUploading(false)
     }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
     const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    
-    if (name.startsWith('links.')) {
-      const field = name.split('.')[1]
-      setFormData(prev => ({
-        ...prev,
-        links: { ...prev.links, [field]: val }
-      }))
-    } else {
-      setFormData(prev => ({ ...prev, [name]: val }))
-    }
+    setFormData(prev => ({ ...prev, [name]: val }))
   }
 
   const handleScroll = () => {
@@ -149,28 +128,32 @@ function NewIdeaForm() {
 
   const handleNext = async () => {
     if (currentStep === 1) {
-      if (!formData.fullName || !formData.idNumber) {
-        toast.error('Identity fields are required.')
+      if (!formData.fullName) {
+        toast.error('Full name is required.')
         return
       }
-      // Save profile info to user profile
       try {
         await authService.updateProfile({
           fullName: formData.fullName,
           dob: formData.dob,
           nationality: formData.nationality,
-          idNumber: formData.idNumber,
           bio: formData.bio,
           profession: formData.profession
         })
-      } catch (err) {
-        console.error('Profile update failed during onboarding')
+      } catch {
+        // silent
       }
     }
-    
-    if (currentStep === 2 && (!formData.title || !formData.competition_id)) {
-      toast.error('Idea title and competition are required.')
-      return
+
+    if (currentStep === 2) {
+      if (!formData.title || !formData.competition_id) {
+        toast.error('Idea title and competition are required.')
+        return
+      }
+      if (!formData.problem || !formData.solution) {
+        toast.error('Problem and solution are required.')
+        return
+      }
     }
 
     if (currentStep === 4 && !hasScrolledToEnd) {
@@ -189,20 +172,20 @@ function NewIdeaForm() {
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      const draftRes: any = await ideaService.saveDraft({ ...formData, id: ideaId })
-      const finalId = draftRes.id || ideaId
-      await ideaService.submitIdea(finalId)
+      const res: any = await ideaService.createIdea({
+        ...formData,
+        competition_id: formData.competition_id || undefined,
+      })
+      sessionStorage.removeItem(FORM_KEY)
       setIsSuccess(true)
       toast.success('Idea submitted!')
-      setTimeout(() => router.push(`/dashboard/payment?type=contestant&ideaId=${finalId}&amount=5`), 2500)
+      setTimeout(() => router.push(`/dashboard/payment?type=contestant&ideaId=${res.id}&amount=5`), 2500)
     } catch (err: any) {
       toast.error(err.message || 'Submission failed')
     } finally {
       setIsSubmitting(false)
     }
   }
-
-  const progressPercent = (currentStep / 5) * 100
 
   return (
     <ProtectedRoute>
@@ -218,7 +201,7 @@ function NewIdeaForm() {
               <DashboardHeader />
               <main className="flex-1 overflow-auto bg-zed-background-alt">
             <div className="container-zed py-8">
-              {profile?.role === 'voter' ? (
+              {profile?.current_mode === 'voter' ? (
                 <div className="max-w-2xl mx-auto mt-24 text-center card-zed glass-premium p-12 border-white/5">
                   <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-8 floating border border-red-500/30">
                     <ShieldCheck size={48} className="text-red-500" />
@@ -227,7 +210,7 @@ function NewIdeaForm() {
                   <p className="text-zed-foreground-secondary mb-8">
                     Your current role is set to <strong>Voter</strong>. Only <strong>Contestants</strong> can submit new ideas to the Arena.
                   </p>
-                  <button 
+                  <button
                     onClick={() => router.push('/dashboard/settings')}
                     className="btn-primary px-8 py-3 rounded-xl inline-flex items-center gap-2"
                   >
@@ -241,7 +224,6 @@ function NewIdeaForm() {
                     <p className="text-zed-foreground-secondary uppercase tracking-widest text-[10px] font-bold">Step {currentStep} of 5: {steps[currentStep-1].title}</p>
                   </div>
 
-              {/* Progress Steps UI */}
               <div className="flex items-center justify-between mb-12 max-w-3xl mx-auto px-4">
                  {steps.map((s, idx) => {
                    const Icon = s.icon
@@ -266,24 +248,24 @@ function NewIdeaForm() {
 
               <form onSubmit={handleSubmit} className="max-w-3xl mx-auto pb-24">
                 <div className="card-zed glass-premium p-10 min-h-[500px] border-white/5 relative overflow-hidden">
-                  
+
                   {/* Step 1: Identity */}
                   {currentStep === 1 && (
                     <div className="space-y-8 animate-zed-fade-up">
                       <div className="grid md:grid-cols-2 gap-8">
                          <div>
                             <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Full Name</label>
-                            <input name="fullName" value={formData.fullName} onChange={handleInputChange} className="input-zed" placeholder="As it appears on ID" required />
+                            <input name="fullName" value={formData.fullName} onChange={handleInputChange} className="input-zed" placeholder="As it appears on ID" />
                          </div>
                          <div>
                             <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Date of Birth</label>
-                            <input type="date" name="dob" value={formData.dob} onChange={handleInputChange} className="input-zed" required />
+                            <input type="date" name="dob" value={formData.dob} onChange={handleInputChange} className="input-zed" />
                          </div>
                       </div>
                       <div className="grid md:grid-cols-2 gap-8">
                          <div>
                             <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Nationality</label>
-                            <select name="nationality" value={formData.nationality} onChange={handleInputChange} className="input-zed" required>
+                            <select name="nationality" value={formData.nationality} onChange={handleInputChange} className="input-zed">
                                <option value="">Select Nationality</option>
                                <option value="Zambia">Zambia</option>
                                <option value="Zimbabwe">Zimbabwe</option>
@@ -294,14 +276,8 @@ function NewIdeaForm() {
                             </select>
                          </div>
                          <div>
-                            <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">ID / Passport Number</label>
-                            <input name="idNumber" value={formData.idNumber} onChange={handleInputChange} className="input-zed" placeholder="Unique ID" required />
-                         </div>
-                      </div>
-                      <div className="grid md:grid-cols-2 gap-8">
-                         <div>
                             <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Profession</label>
-                            <select name="profession" value={formData.profession} onChange={handleInputChange} className="input-zed" required>
+                            <select name="profession" value={formData.profession} onChange={handleInputChange} className="input-zed">
                                <option value="">Select Profession</option>
                                <option value="Student">Student</option>
                                <option value="Entrepreneur">Entrepreneur</option>
@@ -326,63 +302,71 @@ function NewIdeaForm() {
                     <div className="space-y-8 animate-zed-fade-up">
                       <div>
                         <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Idea Title</label>
-                        <input name="title" value={formData.title} onChange={handleInputChange} className="input-zed text-lg font-bold" placeholder="Vision name" required />
+                        <input name="title" value={formData.title} onChange={handleInputChange} className="input-zed text-lg font-bold" placeholder="Vision name" />
                       </div>
                       <div className="grid md:grid-cols-2 gap-8">
                          <div>
                             <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Competition Arena</label>
-                            <select name="competition_id" value={formData.competition_id} onChange={handleInputChange} className="input-zed" required>
+                            <select name="competition_id" value={formData.competition_id} onChange={handleInputChange} className="input-zed">
                                <option value="">Select Target</option>
                                {competitions.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                             </select>
                          </div>
                          <div>
                             <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Target Industry</label>
-                            <select name="category" value={formData.category} onChange={handleInputChange} className="input-zed">
-                               <option value="tech">Technology</option>
-                               <option value="fintech">Fintech</option>
-                               <option value="agritech">Agritech</option>
-                               <option value="edu">Education</option>
+                            <select name="industry" value={formData.industry} onChange={handleInputChange} className="input-zed">
+                               <option value="">Select Industry</option>
+                               <option value="Technology">Technology</option>
+                               <option value="Fintech">Fintech</option>
+                               <option value="Agritech">Agritech</option>
+                               <option value="Education">Education</option>
+                               <option value="Healthcare">Healthcare</option>
+                               <option value="Entertainment">Entertainment</option>
+                               <option value="Other">Other</option>
                             </select>
                          </div>
                       </div>
                       <div>
                          <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">The Problem</label>
-                         <textarea name="problem_statement" value={formData.problem_statement} onChange={handleInputChange} rows={3} className="input-zed" placeholder="What pain point are you solving?" />
+                         <textarea name="problem" value={formData.problem} onChange={handleInputChange} rows={3} className="input-zed" placeholder="What pain point are you solving?" />
                       </div>
                       <div>
                          <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">The Solution</label>
-                         <textarea name="description" value={formData.description} onChange={handleInputChange} rows={4} className="input-zed" placeholder="Describe your vision clearly..." />
+                         <textarea name="solution" value={formData.solution} onChange={handleInputChange} rows={4} className="input-zed" placeholder="Describe your vision clearly..." />
+                      </div>
+                      <div>
+                         <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Business Model</label>
+                         <textarea name="business_model" value={formData.business_model} onChange={handleInputChange} rows={2} className="input-zed" placeholder="How will this create value?" />
                       </div>
                     </div>
                   )}
 
-                  {/* Step 3: Media */}
+                  {/* Step 3: Pitch */}
                   {currentStep === 3 && (
                     <div className="space-y-12 animate-zed-fade-up">
                       <div className="grid md:grid-cols-2 gap-12">
                          <div className="space-y-6">
                             <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary">Video Pitch (2-5 mins)</label>
                             <div className="aspect-video bg-white/5 rounded-3xl border border-white/10 flex flex-col items-center justify-center relative group overflow-hidden">
-                               {formData.video_url ? (
-                                 <video src={formData.video_url} controls className="w-full h-full" />
+                               {formData.pitch_video_url ? (
+                                 <video src={formData.pitch_video_url} controls className="w-full h-full" />
                                ) : (
                                  <label className="cursor-pointer flex flex-col items-center gap-3">
                                     <div className="w-16 h-16 bg-zed-primary/20 rounded-2xl flex items-center justify-center text-zed-primary">
-                                       {uploading.video ? <Loader2 className="animate-spin" /> : <Upload />}
+                                       {uploading ? <Loader2 className="animate-spin" /> : <Upload />}
                                     </div>
                                     <span className="text-[10px] font-black uppercase">Upload Video</span>
-                                    <input type="file" accept="video/*" onChange={e => handleFileUpload(e, 'video')} className="hidden" />
+                                    <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={handleVideoUpload} className="hidden" />
                                  </label>
                                )}
                             </div>
                          </div>
                          <div className="space-y-6">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary">Supporting Links</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary">Links</label>
                             <div className="space-y-4">
-                               <input name="links.linkedin" value={formData.links.linkedin} onChange={handleInputChange} placeholder="LinkedIn URL" className="input-zed h-12 text-sm" />
-                               <input name="links.github" value={formData.links.github} onChange={handleInputChange} placeholder="GitHub Repo" className="input-zed h-12 text-sm" />
-                               <input name="links.website" value={formData.links.website} onChange={handleInputChange} placeholder="Website URL" className="input-zed h-12 text-sm" />
+                               <input name="linkedin_url" value={formData.linkedin_url} onChange={handleInputChange} placeholder="LinkedIn URL" className="input-zed h-12 text-sm" />
+                               <input name="github_url" value={formData.github_url} onChange={handleInputChange} placeholder="GitHub Repo" className="input-zed h-12 text-sm" />
+                               <input name="instagram_url" value={formData.instagram_url} onChange={handleInputChange} placeholder="Instagram URL" className="input-zed h-12 text-sm" />
                             </div>
                          </div>
                       </div>
@@ -392,8 +376,8 @@ function NewIdeaForm() {
                   {/* Step 4: Guidelines */}
                   {currentStep === 4 && (
                     <div className="space-y-8 animate-zed-fade-up">
-                       <div 
-                        ref={scrollRef} 
+                       <div
+                        ref={scrollRef}
                         onScroll={handleScroll}
                         className="p-10 bg-black/20 rounded-3xl border border-white/5 max-h-96 overflow-y-auto custom-scrollbar"
                        >
@@ -425,10 +409,10 @@ function NewIdeaForm() {
                           </div>
                           {!hasScrolledToEnd && <div className="mt-8 text-center text-[10px] font-black uppercase text-zed-primary animate-bounce">Scroll to read all</div>}
                        </div>
-                       
+
                        <label className="flex items-center gap-4 cursor-pointer p-6 bg-zed-primary/5 rounded-2xl border border-zed-primary/20">
-                          <input type="checkbox" checked={formData.guidelinesAccepted} onChange={e => setFormData({...formData, guidelinesAccepted: e.target.checked})} className="w-5 h-5 rounded border-white/10" disabled={!hasScrolledToEnd} />
-                          <span className="text-xs font-black uppercase tracking-widest text-zed-foreground">I confirm I have read and followed the guidelines</span>
+                          <input type="checkbox" name="guidelinesAccepted" checked={formData.guidelinesAccepted} onChange={handleInputChange} className="w-5 h-5 rounded border-white/10" disabled={!hasScrolledToEnd} />
+                          <span className="text-xs font-black uppercase tracking-widest text-zed-foreground">I confirm I have read and followed the competition rules</span>
                        </label>
                     </div>
                   )}
@@ -439,29 +423,35 @@ function NewIdeaForm() {
                        <div className="p-10 bg-zed-primary/5 rounded-3xl border border-zed-primary/20 relative overflow-hidden">
                           <Trophy className="absolute -right-12 -top-12 text-zed-primary opacity-10" size={160} />
                           <div className="relative z-10">
-                            <h3 className="text-3xl font-black mb-8">Final Commitment</h3>
+                            <h3 className="text-3xl font-black mb-8">Review & Submit</h3>
                             <div className="grid md:grid-cols-2 gap-12">
                                <div className="space-y-6">
                                   <div>
                                      <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1">Competition</p>
-                                     <p className="text-lg font-bold">{competitions.find(c => c.id === formData.competition_id)?.title}</p>
+                                     <p className="text-lg font-bold">{competitions.find(c => c.id === formData.competition_id)?.title || 'N/A'}</p>
                                   </div>
                                   <div>
                                      <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1">Submission Title</p>
                                      <p className="text-lg font-bold">{formData.title}</p>
                                   </div>
+                                  <div>
+                                     <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1">Industry</p>
+                                     <p className="text-lg font-bold">{formData.industry || 'Not specified'}</p>
+                                  </div>
                                </div>
-                               <div className="p-8 bg-black/20 rounded-2xl">
-                                  <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-4">Total Entry Fee</p>
-                                  <p className="text-5xl font-black text-white">$5.00</p>
-                                  <p className="text-[10px] text-zed-foreground-secondary mt-2">Non-refundable competition fee</p>
-                                </div>
+                               <div className="space-y-6">
+                                  <div className="p-8 bg-black/20 rounded-2xl">
+                                     <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-4">Total Entry Fee</p>
+                                     <p className="text-5xl font-black text-white">$5.00</p>
+                                     <p className="text-[10px] text-zed-foreground-secondary mt-2">Non-refundable competition fee</p>
+                                   </div>
+                               </div>
                             </div>
                           </div>
                        </div>
 
                        <label className="flex items-center gap-4 cursor-pointer">
-                          <input type="checkbox" checked={formData.termsAccepted} onChange={e => setFormData({...formData, termsAccepted: e.target.checked})} className="w-5 h-5 rounded border-white/10" />
+                          <input type="checkbox" name="termsAccepted" checked={formData.termsAccepted} onChange={handleInputChange} className="w-5 h-5 rounded border-white/10" />
                           <span className="text-xs font-black uppercase tracking-widest text-zed-foreground-secondary">I confirm all data provided is accurate and authentic.</span>
                        </label>
                     </div>
@@ -474,17 +464,16 @@ function NewIdeaForm() {
                           <ShieldCheck size={64} className="text-zed-success" />
                        </div>
                        <h2 className="text-4xl font-black mb-4">Vision Submitted!</h2>
-                       <p className="text-zed-foreground-secondary max-w-sm mb-12">Your entry into the Arena has been recorded. Redirecting to our secure payment gateway...</p>
+                       <p className="text-zed-foreground-secondary max-w-sm mb-12">Your entry into the Arena has been recorded. Redirecting to payment...</p>
                        <Loader2 className="animate-spin text-zed-primary" size={32} />
                     </div>
                   )}
                 </div>
 
-                {/* Navigation Buttons */}
                 <div className="mt-8 flex justify-between gap-6">
-                  <button 
-                    type="button" 
-                    onClick={handlePrev} 
+                  <button
+                    type="button"
+                    onClick={handlePrev}
                     disabled={currentStep === 1 || isSubmitting}
                     className="btn-secondary px-10 h-16 flex items-center gap-3 text-xs font-black uppercase tracking-widest disabled:opacity-20"
                   >
@@ -492,20 +481,20 @@ function NewIdeaForm() {
                   </button>
 
                   {currentStep < 5 ? (
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={handleNext}
                       className="btn-primary px-16 h-16 flex items-center gap-3 text-xs font-black uppercase tracking-widest"
                     >
                       Continue <ChevronRight size={20} />
                     </button>
                   ) : (
-                    <button 
-                      type="submit" 
+                    <button
+                      type="submit"
                       disabled={isSubmitting || !formData.termsAccepted}
                       className="btn-primary px-16 h-16 flex items-center gap-3 text-xs font-black uppercase tracking-widest shadow-2xl shadow-zed-primary/40"
                     >
-                      {isSubmitting ? 'Processing...' : 'Pay & Submit'} <CreditCard size={20} />
+                      {isSubmitting ? 'Processing...' : 'Submit Entry'} <CreditCard size={20} />
                     </button>
                   )}
                 </div>

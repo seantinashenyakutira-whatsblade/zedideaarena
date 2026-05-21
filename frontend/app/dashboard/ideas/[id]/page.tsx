@@ -104,11 +104,10 @@ export default function IdeaDetailPage() {
                 <div className="lg:col-span-2 space-y-12">
                   {/* Hero / Video */}
                   <div className="relative aspect-video rounded-3xl overflow-hidden bg-black shadow-2xl border border-white/5 group">
-                    {idea.video_url ? (
+                    {(idea.pitch_video_url || idea.video_url) ? (
                       <video 
-                        src={idea.video_url} 
+                        src={idea.pitch_video_url || idea.video_url} 
                         controls 
-                        poster={idea.image_url}
                         className="w-full h-full object-contain"
                       />
                     ) : (
@@ -120,14 +119,14 @@ export default function IdeaDetailPage() {
                   </div>
 
                   {/* About the Idea */}
-                  <div className="space-y-8 animate-zed-fade-up">
+                    <div className="space-y-8 animate-zed-fade-up">
                     <div>
                       <div className="flex items-center gap-3 mb-4">
                         <span className="bg-zed-primary/10 text-zed-primary text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border border-zed-primary/20">
-                          {idea.category}
+                          {idea.industry || idea.category}
                         </span>
                         <span className="text-zed-foreground-secondary text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                          <Calendar size={12} /> {new Date(idea.createdAt).toLocaleDateString()}
+                          <Calendar size={12} /> {new Date(idea.createdAt || idea.created_at).toLocaleDateString()}
                         </span>
                       </div>
                       <h1 className="text-5xl font-black text-zed-foreground mb-6 leading-tight">
@@ -139,29 +138,29 @@ export default function IdeaDetailPage() {
                       <section>
                         <h4 className="text-xs font-black text-zed-primary uppercase tracking-[0.2em] mb-3">The Problem</h4>
                         <p className="text-lg text-zed-foreground-secondary font-medium leading-relaxed">
-                          {idea.problem_statement}
+                          {idea.problem || idea.problem_statement}
                         </p>
                       </section>
 
                       <section>
                         <h4 className="text-xs font-black text-zed-primary uppercase tracking-[0.2em] mb-3">Our Solution</h4>
                         <p className="text-lg text-zed-foreground font-medium leading-relaxed">
-                          {idea.description}
+                          {idea.solution || idea.description}
                         </p>
                       </section>
 
                       <div className="grid md:grid-cols-2 gap-8">
                         <div className="p-6 bg-white/5 rounded-3xl border border-white/5">
                           <h4 className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
-                            <Users size={14} /> Target Audience
+                            <Users size={14} /> Business Model
                           </h4>
-                          <p className="font-bold text-zed-foreground">{idea.target_audience || 'Not specified'}</p>
+                          <p className="font-bold text-zed-foreground">{idea.business_model || 'Not specified'}</p>
                         </div>
                         <div className="p-6 bg-white/5 rounded-3xl border border-white/5">
                           <h4 className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
-                            <Calendar size={14} /> Timeline
+                            <Calendar size={14} /> Status
                           </h4>
-                          <p className="font-bold text-zed-foreground">{idea.timeline || 'Not specified'}</p>
+                          <p className="font-bold text-zed-foreground capitalize">{idea.status}</p>
                         </div>
                       </div>
                     </div>
@@ -225,8 +224,8 @@ export default function IdeaDetailPage() {
                     </div>
 
                     <div className="space-y-3">
-                      {idea.links?.github && (
-                        <a href={idea.links.github} target="_blank" className="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
+                      {(idea.github_url || idea.links?.github) && (
+                        <a href={idea.github_url || idea.links?.github} target="_blank" className="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
                           <div className="flex items-center gap-3">
                             <Github size={16} className="text-zed-foreground-secondary" />
                             <span className="text-xs font-bold">GitHub Repository</span>
@@ -234,8 +233,8 @@ export default function IdeaDetailPage() {
                           <ExternalLink size={14} className="text-white/20" />
                         </a>
                       )}
-                      {idea.links?.linkedin && (
-                        <a href={idea.links.linkedin} target="_blank" className="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
+                      {(idea.linkedin_url || idea.links?.linkedin) && (
+                        <a href={idea.linkedin_url || idea.links?.linkedin} target="_blank" className="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
                           <div className="flex items-center gap-3">
                             <Linkedin size={16} className="text-zed-foreground-secondary" />
                             <span className="text-xs font-bold">LinkedIn Profile</span>
@@ -243,8 +242,8 @@ export default function IdeaDetailPage() {
                           <ExternalLink size={14} className="text-white/20" />
                         </a>
                       )}
-                      {idea.links?.instagram && (
-                        <a href={idea.links.instagram} target="_blank" className="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
+                      {(idea.instagram_url || idea.links?.instagram) && (
+                        <a href={idea.instagram_url || idea.links?.instagram} target="_blank" className="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
                           <div className="flex items-center gap-3">
                             <Instagram size={16} className="text-zed-foreground-secondary" />
                             <span className="text-xs font-bold">Instagram</span>

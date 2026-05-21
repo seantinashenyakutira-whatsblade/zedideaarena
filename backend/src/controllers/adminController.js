@@ -2,10 +2,10 @@ const { supabase } = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
 
 const createCompetition = async (req, res) => {
-  const { title, description, startDate, endDate, prizePool } = req.body;
+  const { title, description, thumbnail_url, submission_deadline, start_date, end_date, entry_fee_cents, voter_fee_cents, prize_pool_cents } = req.body;
 
-  if (!title || !startDate || !endDate) {
-    return res.status(400).json({ status: 'error', message: 'Title, Start Date, and End Date are required' });
+  if (!title || !submission_deadline || !start_date || !end_date) {
+    return res.status(400).json({ status: 'error', message: 'Title, Submission Deadline, Start Date, and End Date are required' });
   }
 
   try {
@@ -14,11 +14,14 @@ const createCompetition = async (req, res) => {
       id: compId,
       title,
       description: description || '',
-      start_date: startDate,
-      end_date: endDate,
-      submission_deadline: endDate,
-      entry_fee: 5,
-      status: 'upcoming',
+      thumbnail_url: thumbnail_url || '',
+      start_date,
+      end_date,
+      submission_deadline,
+      entry_fee_cents: entry_fee_cents || 500,
+      voter_fee_cents: voter_fee_cents || 0,
+      prize_pool_cents: prize_pool_cents || 0,
+      created_by: req.user.uid,
       created_at: new Date().toISOString(),
     });
 
@@ -40,16 +43,22 @@ const getCompetitions = async (req, res) => {
 
     if (error) throw error;
 
+    const now = new Date();
     const comps = (data || []).map((comp) => {
-      const now = new Date();
       const startDate = new Date(comp.start_date);
       const deadline = new Date(comp.submission_deadline);
 
-      let status = 'upcoming';
-      if (now > deadline) status = 'closed';
-      else if (now >= startDate) status = 'active';
+      let calculatedStatus = 'upcoming';
+      if (now > deadline) calculatedStatus = 'closed';
+      else if (now >= startDate) calculatedStatus = 'active';
 
-      return { ...comp, calculatedStatus: status };
+      const { entry_fee, ...rest } = comp;
+
+      return {
+        ...rest,
+        entry_fee_cents: comp.entry_fee_cents || (entry_fee ? Math.round(Number(entry_fee) * 100) : 500),
+        calculatedStatus,
+      };
     });
 
     res.json({ status: 'success', data: comps });

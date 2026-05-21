@@ -8,6 +8,7 @@ import { Trophy, Calendar, Users, ArrowRight, Loader2, FileText, Shield, Info, C
 import api from '@/lib/api'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+import { CompetitionCountdown } from '@/components/CompetitionCountdown'
 
 export default function CompetitionDetailPage() {
   const { id } = useParams()
@@ -109,10 +110,14 @@ export default function CompetitionDetailPage() {
 
                    <div className="space-y-8">
                       <div className="card-zed glass-premium p-8 sticky top-8">
-                         <div className="mb-8">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1">Entry Fee</p>
-                            <p className="text-4xl font-black text-zed-foreground">${competition.entry_fee}.00</p>
-                         </div>
+                          <div className="mb-8">
+                             <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1">Entry Fee</p>
+                             <p className="text-4xl font-black text-zed-foreground">${(competition.entry_fee_cents / 100).toFixed(2)}</p>
+                          </div>
+                          <div className="mb-8 p-4 bg-white/5 rounded-2xl">
+                             <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-2">Time Remaining</p>
+                             <CompetitionCountdown deadline={competition.submission_deadline} />
+                          </div>
                          
                          <div className="space-y-4 mb-8">
                             <div className="flex justify-between text-sm">

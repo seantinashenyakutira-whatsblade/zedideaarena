@@ -77,18 +77,24 @@ export default function MyIdeasPage() {
                       <div className="flex-1 flex flex-col justify-center">
                         <div className="flex items-center gap-3 mb-3">
                           <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-white/5 rounded-full text-zed-foreground-secondary border border-white/10">
-                            {idea.category}
+                            {idea.industry || idea.category}
                           </span>
                           <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1.5 ${
-                            idea.status === 'submitted' ? 'bg-zed-success/10 text-zed-success border border-zed-success/20' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
+                            idea.status === 'submitted' || idea.status === 'pending'
+                              ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
+                              : idea.status === 'approved'
+                              ? 'bg-zed-success/10 text-zed-success border border-zed-success/20'
+                              : idea.status === 'rejected'
+                              ? 'bg-red-500/10 text-red-500 border border-red-500/20'
+                              : 'bg-white/10 text-zed-foreground-secondary border border-white/10'
                           }`}>
-                            {idea.status === 'submitted' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                            {(idea.status === 'submitted' || idea.status === 'pending') ? <Clock size={12} /> : idea.status === 'approved' ? <CheckCircle2 size={12} /> : <FileText size={12} />}
                             {idea.status}
                           </span>
                         </div>
 
                         <h3 className="text-2xl font-black text-zed-foreground mb-2 group-hover:text-zed-primary transition-colors">{idea.title}</h3>
-                        <p className="text-sm text-zed-foreground-secondary line-clamp-2 font-medium mb-6">{idea.problem_statement}</p>
+                        <p className="text-sm text-zed-foreground-secondary line-clamp-2 font-medium mb-6">{idea.problem || idea.problem_statement}</p>
 
                         <div className="flex flex-wrap items-center gap-6 pt-6 border-t border-white/5">
                            <div className="flex flex-col">
@@ -105,14 +111,14 @@ export default function MyIdeasPage() {
                            <div className="flex-1" />
                            
                            <div className="flex items-center gap-3">
-                             {idea.status === 'submitted' && idea.payment_status !== 'paid' && (
-                               <Link 
-                                href={`/dashboard/payment?type=contestant&ideaId=${idea.id}&amount=5`}
-                                className="btn-primary py-2 px-6 rounded-xl text-xs font-black shadow-lg"
-                               >
-                                 Pay Entry Fee
-                               </Link>
-                             )}
+                            {(idea.status === 'submitted' || idea.status === 'pending') && idea.payment_status !== 'paid' && (
+                                <Link 
+                                 href={`/dashboard/payment?type=contestant&ideaId=${idea.id}&amount=5`}
+                                 className="btn-primary py-2 px-6 rounded-xl text-xs font-black shadow-lg"
+                                >
+                                  Pay Entry Fee
+                                </Link>
+                              )}
                              <Link 
                                href={`/dashboard/ideas/${idea.id}`}
                                className="btn-secondary w-12 h-12 rounded-2xl flex items-center justify-center group-hover:bg-zed-primary group-hover:text-white transition-all"

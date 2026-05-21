@@ -23,7 +23,8 @@ export default function AdminDashboard() {
 
   const [compForm, setCompForm] = useState({
     title: '', description: '', thumbnail_url: '',
-    start_date: '', end_date: '', submission_deadline: '', entry_fee: 5, status: 'active',
+    start_date: '', end_date: '', submission_deadline: '', entry_fee_dollars: 5,
+    voter_fee_dollars: 0, prize_pool_dollars: 0,
   })
 
   useEffect(() => {
@@ -74,12 +75,23 @@ export default function AdminDashboard() {
 
   const handleSaveCompetition = async (e: React.FormEvent) => {
     e.preventDefault()
+    const payload = {
+      title: compForm.title,
+      description: compForm.description,
+      thumbnail_url: compForm.thumbnail_url,
+      start_date: compForm.start_date,
+      end_date: compForm.end_date,
+      submission_deadline: compForm.submission_deadline,
+      entry_fee_cents: Math.round(compForm.entry_fee_dollars * 100),
+      voter_fee_cents: Math.round(compForm.voter_fee_dollars * 100),
+      prize_pool_cents: Math.round(compForm.prize_pool_dollars * 100),
+    }
     try {
       if (editingComp) {
-        await api.put(`/competitions/${editingComp.id}`, compForm)
+        await api.put(`/competitions/${editingComp.id}`, payload)
         toast.success('Competition updated')
       } else {
-        await api.post('/competitions', compForm)
+        await api.post('/competitions', payload)
         toast.success('Competition created')
       }
       setShowCompModal(false)
@@ -97,7 +109,9 @@ export default function AdminDashboard() {
       start_date: comp.start_date?.split('T')[0] || '',
       end_date: comp.end_date?.split('T')[0] || '',
       submission_deadline: comp.submission_deadline?.split('T')[0] || '',
-      entry_fee: comp.entry_fee || 5, status: comp.status || 'active',
+      entry_fee_dollars: (comp.entry_fee_cents || 500) / 100,
+      voter_fee_dollars: (comp.voter_fee_cents || 0) / 100,
+      prize_pool_dollars: (comp.prize_pool_cents || 0) / 100,
     })
     setShowCompModal(true)
   }
@@ -125,10 +139,10 @@ export default function AdminDashboard() {
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-12">
                 <h1 className="text-4xl font-black text-zed-foreground">Admin Command Center</h1>
-                <button
-                  onClick={() => { setEditingComp(null); setCompForm({ title: '', description: '', thumbnail_url: '', start_date: '', end_date: '', submission_deadline: '', entry_fee: 5, status: 'active' }); setShowCompModal(true) }}
-                  className="btn-primary flex items-center gap-2"
-                >
+                  <button
+                    onClick={() => { setEditingComp(null); setCompForm({ title: '', description: '', thumbnail_url: '', start_date: '', end_date: '', submission_deadline: '', entry_fee_dollars: 5, voter_fee_dollars: 0, prize_pool_dollars: 0 }); setShowCompModal(true) }}
+                    className="btn-primary flex items-center gap-2"
+                  >
                   <Plus size={20} /> New Competition
                 </button>
               </div>
@@ -196,7 +210,15 @@ export default function AdminDashboard() {
                             </td>
                             <td className="p-4 text-xs font-medium text-zed-foreground-secondary">{idea.user_id?.slice(0, 8)}...</td>
                             <td className="p-4">
-                              <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${idea.status === 'submitted' ? 'bg-zed-success/10 text-zed-success border-zed-success/20' : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'}`}>
+                              <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${
+                                idea.status === 'submitted' || idea.status === 'pending'
+                                  ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                                  : idea.status === 'approved'
+                                  ? 'bg-zed-success/10 text-zed-success border-zed-success/20'
+                                  : idea.status === 'rejected'
+                                  ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                                  : 'bg-white/10 text-zed-foreground-secondary border-white/10'
+                              }`}>
                                 {idea.status}
                               </span>
                             </td>
@@ -288,7 +310,7 @@ export default function AdminDashboard() {
                       <h4 className="font-black text-lg mb-2">{comp.title}</h4>
                       <div className="flex items-center gap-4 text-xs text-zed-foreground-secondary mb-4">
                         <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(comp.submission_deadline).toLocaleDateString()}</span>
-                        <span className="flex items-center gap-1"><DollarSign size={12} /> ${comp.entry_fee}</span>
+                        <span className="flex items-center gap-1"><DollarSign size={12} /> ${(comp.entry_fee_cents / 100).toFixed(2)}</span>
                       </div>
                       <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${comp.calculatedStatus === 'active' ? 'bg-zed-success/20 text-zed-success' : 'bg-red-500/20 text-red-400'}`}>
                         {comp.calculatedStatus}
@@ -324,15 +346,23 @@ export default function AdminDashboard() {
                       <input type="date" className="input-zed" value={compForm.submission_deadline} onChange={e => setCompForm({ ...compForm, submission_deadline: e.target.value })} required />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary block mb-2">Entry Fee ($)</label>
-                      <input type="number" className="input-zed" value={compForm.entry_fee} onChange={e => setCompForm({ ...compForm, entry_fee: parseInt(e.target.value) })} required />
+                      <input type="number" className="input-zed" value={compForm.entry_fee_dollars} onChange={e => setCompForm({ ...compForm, entry_fee_dollars: parseFloat(e.target.value) || 0 })} required />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary block mb-2">Thumbnail URL</label>
-                      <input type="text" className="input-zed" value={compForm.thumbnail_url} onChange={e => setCompForm({ ...compForm, thumbnail_url: e.target.value })} placeholder="/placeholder.jpg" />
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary block mb-2">Voter Fee ($)</label>
+                      <input type="number" className="input-zed" value={compForm.voter_fee_dollars} onChange={e => setCompForm({ ...compForm, voter_fee_dollars: parseFloat(e.target.value) || 0 })} />
                     </div>
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary block mb-2">Prize Pool ($)</label>
+                      <input type="number" className="input-zed" value={compForm.prize_pool_dollars} onChange={e => setCompForm({ ...compForm, prize_pool_dollars: parseFloat(e.target.value) || 0 })} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary block mb-2">Thumbnail URL</label>
+                    <input type="text" className="input-zed" value={compForm.thumbnail_url} onChange={e => setCompForm({ ...compForm, thumbnail_url: e.target.value })} placeholder="/placeholder.jpg" />
                   </div>
                   <div className="flex gap-4 pt-4">
                     <button type="button" onClick={() => setShowCompModal(false)} className="btn-secondary flex-1">Cancel</button>

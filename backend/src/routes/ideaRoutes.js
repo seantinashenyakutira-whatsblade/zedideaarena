@@ -3,6 +3,7 @@ const router = express.Router();
 const ideaController = require('../controllers/ideaController');
 const { verifyToken } = require('../middleware/authMiddleware');
 
+router.post('/', verifyToken, ideaController.createIdea);
 router.post('/save', verifyToken, ideaController.saveIdeaDraft);
 router.post('/submit', verifyToken, ideaController.submitIdea);
 router.get('/user', verifyToken, ideaController.getUserIdeas);

@@ -75,11 +75,15 @@ const submitIdea = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Idea not found' });
     }
 
-    if (!doc.title || !doc.category || !doc.problem_statement || !doc.description) {
+    if (!doc.title) {
       return res.status(400).json({
         status: 'error',
         message: 'Incomplete idea data. Please fill in all required fields before submitting.',
       });
+    }
+
+    if (doc.status === 'submitted') {
+      return res.status(400).json({ status: 'error', message: 'Idea already submitted' });
     }
 
     const { error } = await supabase
@@ -151,4 +155,51 @@ const getIdeaById = async (req, res) => {
   }
 };
 
-module.exports = { saveIdeaDraft, submitIdea, getUserIdeas, getPublicIdeas, getIdeaById };
+const createIdea = async (req, res) => {
+  const { uid } = req.user;
+  const {
+    title, problem, solution, industry, business_model,
+    competition_id, pitch_video_url, github_url, linkedin_url, instagram_url
+  } = req.body;
+
+  if (!title || !problem || !solution) {
+    return res.status(400).json({ status: 'error', message: 'Title, problem, and solution are required' });
+  }
+
+  try {
+    const ideaData = {
+      user_id: uid,
+      title,
+      problem: problem || '',
+      solution: solution || '',
+      industry: industry || '',
+      business_model: business_model || '',
+      competition_id: competition_id || null,
+      pitch_video_url: pitch_video_url || '',
+      github_url: github_url || '',
+      linkedin_url: linkedin_url || '',
+      instagram_url: instagram_url || '',
+      status: 'pending',
+      payment_status: 'unpaid',
+      is_public: false,
+      votes_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('ideas')
+      .insert(ideaData)
+      .select('id')
+      .single();
+
+    if (error) throw error;
+
+    res.json({ status: 'success', id: data.id, message: 'Idea submitted successfully and is pending review' });
+  } catch (error) {
+    console.error('Error creating idea:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to submit idea' });
+  }
+};
+
+module.exports = { saveIdeaDraft, submitIdea, getUserIdeas, getPublicIdeas, getIdeaById, createIdea };

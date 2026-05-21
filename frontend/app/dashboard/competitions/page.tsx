@@ -4,42 +4,10 @@ import { useState, useEffect } from 'react'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import { Trophy, Calendar, Users, ArrowRight, Loader2, Star, Clock } from 'lucide-react'
+import { Trophy, Calendar, Users, ArrowRight, Loader2, Star } from 'lucide-react'
 import api from '@/lib/api'
 import Link from 'next/link'
-
-function CountdownTimer({ deadline }: { deadline: string }) {
-  const [timeLeft, setTimeLeft] = useState('')
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date().getTime()
-      const end = new Date(deadline).getTime()
-      const distance = end - now
-
-      if (distance < 0) {
-        setTimeLeft('Closed')
-        clearInterval(timer)
-        return
-      }
-
-      const days = Math.floor(distance / (1000 * 60 * 60 * 24))
-      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
-
-      setTimeLeft(`${days}d ${hours}h ${minutes}m`)
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [deadline])
-
-  return (
-    <div className="flex items-center gap-2 text-zed-primary font-bold">
-      <Clock size={16} className="animate-pulse" />
-      <span>Ends in: {timeLeft}</span>
-    </div>
-  )
-}
+import { CompetitionCountdown } from '@/components/CompetitionCountdown'
 
 export default function CompetitionsPage() {
   const [competitions, setCompetitions] = useState<any[]>([])
@@ -145,8 +113,8 @@ export default function CompetitionsPage() {
                         <div className="mt-auto flex items-center justify-between pt-6">
                           <div className="flex flex-col gap-1">
                             <span className="text-[10px] text-zed-foreground-secondary uppercase font-bold tracking-widest">Entry Fee</span>
-                            <span className="text-2xl font-black text-zed-foreground">${comp.entry_fee}</span>
-                            <CountdownTimer deadline={comp.submission_deadline} />
+                            <span className="text-2xl font-black text-zed-foreground">${(comp.entry_fee_cents / 100).toFixed(2)}</span>
+                            <CompetitionCountdown deadline={comp.submission_deadline} />
                           </div>
                           <Link 
                             href={`/dashboard/competitions/${comp.id}`}

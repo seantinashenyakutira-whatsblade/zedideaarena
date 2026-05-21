@@ -4,10 +4,12 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
-import { User, Mail, Shield, LogOut, Save, Loader2 } from 'lucide-react'
+import { authService } from '@/services/auth'
+import { User, Mail, Shield, LogOut, Save, Loader2, MapPin } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { LocationAutocomplete } from '@/components/LocationAutocomplete'
 
 export default function SettingsPage() {
   const { profile, logout, refreshProfile } = useAuth()
@@ -72,6 +74,26 @@ export default function SettingsPage() {
                             <Mail className="absolute left-3 top-3.5 text-zed-foreground-secondary" size={18} />
                             <input type="email" value={profile?.email} disabled className="input-zed pl-10 opacity-50 cursor-not-allowed" />
                           </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Location</label>
+                        <div className="relative">
+                          <MapPin className="absolute left-3 top-3.5 text-zed-foreground-secondary z-10" size={18} />
+                          <LocationAutocomplete
+                            value={profile?.country ? { country: profile.country, city: profile.city || '' } : undefined}
+                            onChange={async (location) => {
+                              try {
+                                await authService.updateProfile({ country: location.country, city: location.city })
+                                toast.success('Location updated')
+                                refreshProfile()
+                              } catch {
+                                toast.error('Failed to update location')
+                              }
+                            }}
+                            placeholder="Search your city or country"
+                          />
                         </div>
                       </div>
 
