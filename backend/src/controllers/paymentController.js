@@ -273,4 +273,27 @@ const getPaymentHistory = async (req, res) => {
   }
 };
 
-module.exports = { enterCompetition, registerVoter, handleStripeWebhook, getPaymentHistory };
+const checkEntryPayment = async (req, res) => {
+  const { uid } = req.user;
+  const { competitionId } = req.params;
+
+  try {
+    const { data, error } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('user_id', uid)
+      .eq('competition_id', competitionId)
+      .eq('type', 'contestant')
+      .eq('status', 'completed')
+      .maybeSingle();
+
+    if (error) throw error;
+
+    res.json({ status: 'success', paid: !!data });
+  } catch (error) {
+    console.error('Error checking entry payment:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to verify payment' });
+  }
+};
+
+module.exports = { enterCompetition, registerVoter, handleStripeWebhook, getPaymentHistory, checkEntryPayment };

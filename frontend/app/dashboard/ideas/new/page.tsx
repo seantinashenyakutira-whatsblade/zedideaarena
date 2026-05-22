@@ -2,7 +2,7 @@
 
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
-import { ChevronRight, ChevronLeft, Upload, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Upload, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy, CheckCircle } from 'lucide-react'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { ideaService } from '@/services/idea'
 import { mediaService } from '@/services/core'
@@ -72,7 +72,8 @@ function NewIdeaForm() {
           api.get('/competitions'),
           authService.getProfile()
         ])
-        setCompetitions(compsRes.data.data || [])
+        const allComps = compsRes.data.data || []
+        setCompetitions(allComps.filter((c: any) => c.calculatedStatus === 'active'))
         const p = profileRes.data
         setProfile(p)
         if (p) {
@@ -85,6 +86,13 @@ function NewIdeaForm() {
             profession: p.profession || ''
           }))
         }
+        const compId = searchParams.get('competitionId')
+        if (compId) {
+          try {
+            const payRes = await api.get(`/payments/check-entry/${compId}`)
+            setHasPaidEntry(payRes.paid === true)
+          } catch { /* silent */ }
+        }
       } catch (err) {
         console.error('Failed to fetch initial data:', err)
       }
@@ -94,6 +102,7 @@ function NewIdeaForm() {
   }, [])
 
   const [uploading, setUploading] = useState(false)
+  const [hasPaidEntry, setHasPaidEntry] = useState(false)
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -170,6 +179,26 @@ function NewIdeaForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    if (!token) {
+      router.push('/auth/login')
+      return
+    }
+
+    if (!hasPaidEntry && formData.competition_id) {
+      try {
+        const res: any = await api.post(`/competitions/${formData.competition_id}/enter`)
+        if (res.checkoutUrl) {
+          sessionStorage.removeItem(FORM_KEY)
+          window.location.href = res.checkoutUrl
+          return
+        }
+      } catch {
+        // fall through to default flow
+      }
+    }
+
     setIsSubmitting(true)
     try {
       const res: any = await ideaService.createIdea({
@@ -179,7 +208,11 @@ function NewIdeaForm() {
       sessionStorage.removeItem(FORM_KEY)
       setIsSuccess(true)
       toast.success('Idea submitted!')
-      setTimeout(() => router.push(`/dashboard/payment?type=contestant&competitionId=${formData.competition_id}`), 2500)
+      if (!hasPaidEntry && formData.competition_id) {
+        setTimeout(() => router.push(`/dashboard/payment?type=contestant&competitionId=${formData.competition_id}`), 2500)
+      } else {
+        setTimeout(() => router.push(`/dashboard/ideas/${res.id}`), 2500)
+      }
     } catch (err: any) {
       toast.error(err.message || 'Submission failed')
     } finally {
@@ -440,11 +473,22 @@ function NewIdeaForm() {
                                   </div>
                                </div>
                                <div className="space-y-6">
-                                  <div className="p-8 bg-black/20 rounded-2xl">
-                                     <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-4">Total Entry Fee</p>
-                                     <p className="text-5xl font-black text-white">$5.00</p>
-                                     <p className="text-[10px] text-zed-foreground-secondary mt-2">Non-refundable competition fee</p>
-                                   </div>
+                                <div className="p-8 bg-black/20 rounded-2xl">
+                                      <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-4">Entry Fee</p>
+                                      {hasPaidEntry ? (
+                                        <div className="flex items-center gap-2 text-zed-success">
+                                          <CheckCircle size={24} />
+                                          <span className="text-lg font-black">Fee Paid</span>
+                                        </div>
+                                      ) : (
+                                        <>
+                                          <p className="text-5xl font-black text-white">
+                                            ${(() => { const c = competitions.find(x => x.id === formData.competition_id); return c ? (c.entry_fee_cents / 100).toFixed(2) : '5.00' })()}
+                                          </p>
+                                          <p className="text-[10px] text-zed-foreground-secondary mt-2">Non-refundable competition fee</p>
+                                        </>
+                                      )}
+                                    </div>
                                </div>
                             </div>
                           </div>

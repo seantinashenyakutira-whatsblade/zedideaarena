@@ -2,8 +2,11 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+const protectedPaths = ['/dashboard', '/contestant', '/voter', '/admin']
+
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next()
+  const path = request.nextUrl.pathname
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,8 +29,6 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession()
 
-  const path = request.nextUrl.pathname
-
   if (!session) {
     const loginUrl = new URL('/auth/login', request.url)
     loginUrl.searchParams.set('redirect', path)
@@ -36,7 +37,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from('users')
-    .select('is_admin, is_verified')
+    .select('is_admin, is_verified, onboarding_complete')
     .eq('id', session.user.id)
     .single()
 
@@ -48,9 +49,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
+  if (!profile?.onboarding_complete && path !== '/onboarding') {
+    return NextResponse.redirect(new URL('/onboarding', request.url))
+  }
+
+  if (profile?.onboarding_complete && path === '/onboarding') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
   return response
 }
 
 export const config = {
-  matcher: ['/contestant/:path*', '/voter/:path*', '/admin/:path*'],
+  matcher: ['/dashboard/:path*', '/contestant/:path*', '/voter/:path*', '/admin/:path*', '/onboarding'],
 }

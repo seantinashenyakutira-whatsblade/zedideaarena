@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { authService } from '@/services/auth'
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [authorized, setAuthorized] = useState(false)
 
   useEffect(() => {
@@ -24,6 +25,14 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
         if (cancelled) return
         if (!ok) throw new Error('Profile not available')
+
+        const profile = res.data
+
+        if (!profile.onboarding_complete && pathname !== '/onboarding') {
+          router.push('/onboarding')
+          return
+        }
+
         setAuthorized(true)
       } catch (_) {
         if (cancelled) return
@@ -33,7 +42,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     })()
 
     return () => { cancelled = true }
-  }, [router])
+  }, [router, pathname])
 
   if (!authorized) {
     return (

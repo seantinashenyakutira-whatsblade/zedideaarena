@@ -4,11 +4,17 @@ const multer = require('multer');
 const mediaController = require('../controllers/mediaController');
 const { verifyToken } = require('../middleware/authMiddleware');
 
-const upload = multer({
+const uploadVideo = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 500 * 1024 * 1024 },
 });
 
-router.post('/upload', verifyToken, upload.single('file'), mediaController.uploadMedia);
+const uploadDoc = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
+
+router.post('/upload', verifyToken, uploadVideo.single('file'), mediaController.uploadMedia);
+router.post('/upload-document', verifyToken, uploadDoc.single('file'), mediaController.uploadDocument);
 
 module.exports = router;

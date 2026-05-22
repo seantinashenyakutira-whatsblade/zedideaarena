@@ -5,28 +5,43 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { useAuth } from '@/hooks/useAuth'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import { ShieldCheck, CreditCard, Vote, ChevronRight, CheckCircle2, Clock, Loader2 } from 'lucide-react'
+import { ShieldCheck, CreditCard, Vote, ChevronRight, CheckCircle2, Clock, Loader2, Lock } from 'lucide-react'
 import Link from 'next/link'
 import { paymentService } from '@/services/payment'
 import { toast } from 'sonner'
+import api from '@/lib/api'
 
 export default function VoterOnboardingPage() {
   const { profile, refreshProfile } = useAuth()
   const [localProfile, setLocalProfile] = useState<any>(null)
   const [paying, setPaying] = useState(false)
+  const [activeCompetitions, setActiveCompetitions] = useState<any[]>([])
 
   useEffect(() => {
     setLocalProfile(profile)
   }, [profile])
 
-  const handleVoterPayment = async (competitionId: string) => {
-    if (!competitionId) {
-      toast.error('No active competition found. Please try again later.')
+  useEffect(() => {
+    const fetchCompetitions = async () => {
+      try {
+        const res = await api.get('/competitions')
+        const all = res.data.data || []
+        const active = all.filter((c: any) => c.calculatedStatus === 'active' || c.calculatedStatus === 'upcoming')
+        setActiveCompetitions(active)
+      } catch { /* silent */ }
+    }
+    fetchCompetitions()
+  }, [])
+
+  const handleVoterPayment = async () => {
+    const comp = activeCompetitions[0]
+    if (!comp) {
+      toast.error('No active competition found for voter registration.')
       return
     }
     setPaying(true)
     try {
-      const res: any = await paymentService.registerVoter(competitionId)
+      const res: any = await paymentService.registerVoter(comp.id)
       window.location.href = res.checkoutUrl
     } catch (err: any) {
       toast.error(err.message || 'Failed to initiate voter payment')
@@ -35,33 +50,36 @@ export default function VoterOnboardingPage() {
     }
   }
 
+  const paidComps = (localProfile?.voter_competitions_paid || []) as string[]
+  const hasPaidAnyComp = paidComps.length > 0
+
   const steps = [
     {
-      title: 'Complete Profile',
-      desc: 'Fill in your details for admin review',
+      title: 'Complete Onboarding',
+      desc: 'Fill in your personal details',
       icon: ShieldCheck,
-      status: localProfile?.full_name && localProfile?.id_number ? 'completed' : 'todo',
-      link: '/dashboard/settings',
+      status: localProfile?.onboarding_complete ? 'completed' : 'locked',
+      link: '/onboarding',
     },
     {
       title: 'Admin Verification',
       desc: 'An admin will verify your identity',
       icon: ShieldCheck,
-      status: localProfile?.is_verified ? 'completed' : localProfile?.full_name ? 'pending' : 'locked',
+      status: localProfile?.is_verified ? 'completed' : localProfile?.onboarding_complete ? 'pending' : 'locked',
       link: '/dashboard/settings',
     },
     {
       title: 'Voter Registration Fee',
       desc: 'One-time entry for the season',
       icon: CreditCard,
-      status: localProfile?.voter_payment_status === 'paid' ? 'completed' : localProfile?.is_verified ? 'todo' : 'locked',
+      status: hasPaidAnyComp ? 'completed' : localProfile?.is_verified ? 'todo' : 'locked',
       link: '',
     },
     {
       title: 'Cast Your Votes',
       desc: 'Support your favorite visions',
       icon: Vote,
-      status: (localProfile?.is_verified && localProfile?.voter_payment_status === 'paid') ? 'todo' : 'locked',
+      status: (localProfile?.is_verified && hasPaidAnyComp) ? 'todo' : 'locked',
       link: '/dashboard/voting',
     },
   ]
@@ -81,56 +99,69 @@ export default function VoterOnboardingPage() {
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {steps.map((step, i) => {
-                  const Icon = step.icon
-                  const isLocked = step.status === 'locked'
-                  const isCompleted = step.status === 'completed'
-                  const isPending = step.status === 'pending'
+              {!profile?.onboarding_complete ? (
+                <div className="mb-8 p-8 glass-premium rounded-3xl border border-zed-primary/20">
+                  <div className="flex items-center gap-4 mb-4">
+                    <Lock className="text-zed-primary" size={24} />
+                    <h2 className="text-xl font-black text-zed-foreground">Onboarding Required</h2>
+                  </div>
+                  <p className="text-zed-foreground-secondary mb-6">You must complete your profile onboarding before accessing the voter area.</p>
+                  <Link href="/onboarding" className="btn-primary px-8 py-3 rounded-xl inline-flex items-center gap-2 text-xs font-black">
+                    Complete Onboarding <ChevronRight size={16} />
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {steps.map((step, i) => {
+                    const Icon = step.icon
+                    const isLocked = step.status === 'locked'
+                    const isCompleted = step.status === 'completed'
+                    const isPending = step.status === 'pending'
 
-                  return (
-                    <div
-                      key={i}
-                      className={`card-zed relative p-8 flex flex-col gap-6 transition-all duration-300 ${isLocked ? 'opacity-50 grayscale pointer-events-none' : 'hover:scale-[1.02]'} ${isCompleted ? 'border-zed-success/30' : ''}`}
-                    >
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isCompleted ? 'bg-zed-success/10 text-zed-success' : 'bg-zed-primary/10 text-zed-primary'}`}>
-                        <Icon size={24} />
+                    return (
+                      <div
+                        key={i}
+                        className={`card-zed relative p-8 flex flex-col gap-6 transition-all duration-300 ${isLocked ? 'opacity-50 grayscale pointer-events-none' : 'hover:scale-[1.02]'} ${isCompleted ? 'border-zed-success/30' : ''}`}
+                      >
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isCompleted ? 'bg-zed-success/10 text-zed-success' : 'bg-zed-primary/10 text-zed-primary'}`}>
+                          <Icon size={24} />
+                        </div>
+
+                        <div>
+                          <h3 className="text-lg font-black text-zed-foreground mb-1">{step.title}</h3>
+                          <p className="text-xs text-zed-foreground-secondary font-bold uppercase tracking-widest">{step.desc}</p>
+                        </div>
+
+                        <div className="mt-auto">
+                          {isCompleted ? (
+                            <div className="flex items-center gap-2 text-zed-success font-black text-xs uppercase tracking-tighter">
+                              <CheckCircle2 size={16} /> Done
+                            </div>
+                          ) : isPending ? (
+                            <div className="flex items-center gap-2 text-yellow-400 font-black text-xs uppercase tracking-tighter">
+                              <Clock size={16} /> Pending
+                            </div>
+                          ) : step.link ? (
+                            <Link href={step.link} className="flex items-center justify-between w-full btn-primary py-3 px-4 text-xs font-black rounded-xl">
+                              {step.status === 'todo' ? 'Get Started' : 'Go'} <ChevronRight size={16} />
+                            </Link>
+                          ) : step.title === 'Voter Registration Fee' ? (
+                            <button
+                              onClick={handleVoterPayment}
+                              disabled={paying}
+                              className="flex items-center justify-between w-full btn-primary py-3 px-4 text-xs font-black rounded-xl disabled:opacity-50"
+                            >
+                              {paying ? <Loader2 size={16} className="animate-spin" /> : 'Pay Now'} <ChevronRight size={16} />
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
+                    )
+                  })}
+                </div>
+              )}
 
-                      <div>
-                        <h3 className="text-lg font-black text-zed-foreground mb-1">{step.title}</h3>
-                        <p className="text-xs text-zed-foreground-secondary font-bold uppercase tracking-widest">{step.desc}</p>
-                      </div>
-
-                      <div className="mt-auto">
-                        {isCompleted ? (
-                          <div className="flex items-center gap-2 text-zed-success font-black text-xs uppercase tracking-tighter">
-                            <CheckCircle2 size={16} /> Done
-                          </div>
-                        ) : isPending ? (
-                          <div className="flex items-center gap-2 text-yellow-400 font-black text-xs uppercase tracking-tighter">
-                            <Clock size={16} /> Pending
-                          </div>
-                        ) : step.link ? (
-                          <Link href={step.link} className="flex items-center justify-between w-full btn-primary py-3 px-4 text-xs font-black rounded-xl">
-                            {step.status === 'todo' ? 'Get Started' : 'Go'} <ChevronRight size={16} />
-                          </Link>
-                        ) : step.title === 'Voter Registration Fee' ? (
-                          <button
-                            onClick={() => handleVoterPayment(localProfile?.competition_id || '')}
-                            disabled={paying}
-                            className="flex items-center justify-between w-full btn-primary py-3 px-4 text-xs font-black rounded-xl disabled:opacity-50"
-                          >
-                            {paying ? <Loader2 size={16} className="animate-spin" /> : 'Pay Now'} <ChevronRight size={16} />
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {(localProfile?.is_verified && localProfile?.voter_payment_status === 'paid') ? (
+              {(localProfile?.is_verified && hasPaidAnyComp) ? (
                 <div className="mt-12 p-8 glass-premium rounded-3xl border border-zed-success/20 animate-zed-fade-up">
                   <div className="flex flex-col md:flex-row items-center gap-8">
                     <div className="w-24 h-24 bg-zed-success/10 rounded-full flex items-center justify-center">
@@ -145,19 +176,21 @@ export default function VoterOnboardingPage() {
                     </Link>
                   </div>
                 </div>
-              ) : (
-                <div className="mt-12 p-8 bg-white/5 rounded-3xl border border-white/5 flex items-start gap-6">
-                  <div className="p-3 bg-white/10 rounded-xl">
-                    <ShieldCheck size={24} className="text-zed-foreground-secondary" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-black text-zed-foreground mb-1 uppercase tracking-widest">Why do we require this?</h4>
-                    <p className="text-xs text-zed-foreground-secondary leading-relaxed max-w-xl">
-                      ZedIdeaArena uses identity verification and a small entry fee to prevent bot manipulation and ensure that every vote comes from a real, committed person. This maintains the fairness of the competition.
-                    </p>
+              ) : localProfile?.onboarding_complete && !localProfile?.is_verified ? (
+                <div className="mt-12 p-8 glass-premium rounded-3xl border border-yellow-500/20">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-yellow-500/10 rounded-xl">
+                      <Clock size={24} className="text-yellow-500" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-zed-foreground mb-1 uppercase tracking-widest">Verification Pending</h4>
+                      <p className="text-sm text-zed-foreground-secondary">
+                        Your account is pending admin verification. You will be notified once approved.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           </main>
         </div>

@@ -1,53 +1,141 @@
-import type { Metadata } from 'next'
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
-import { notFound } from 'next/navigation'
-import { Trophy, Calendar, Clock, DollarSign, ArrowRight } from 'lucide-react'
+import { useParams, useRouter } from 'next/navigation'
+import { Trophy, Calendar, Clock, DollarSign, ArrowRight, Loader2, Users } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { CompetitionCountdown } from '@/components/CompetitionCountdown'
 
-interface Props {
-  params: Promise<{ id: string }>
+interface Competition {
+  id: string
+  title: string
+  description: string
+  thumbnail_url: string
+  prize_pool_cents: number
+  entry_fee_cents: number
+  voter_fee_cents: number
+  start_date: string
+  submission_deadline: string
+  end_date: string
+  calculatedStatus: string
 }
 
-async function getCompetition(id: string) {
-  try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
-    const res = await fetch(`${apiUrl}/competitions/${id}`, { next: { revalidate: 60 } })
-    const body = await res.json()
-    return body?.data?.data || body?.data || null
-  } catch {
-    return null
+interface Idea {
+  id: string
+  title: string
+  problem_statement: string
+  industry: string
+  image_url: string
+  votes_count: number
+  users: { full_name: string }
+}
+
+const statusConfig: Record<string, { label: string; bg: string }> = {
+  upcoming: { label: 'UPCOMING', bg: 'bg-blue-500/80' },
+  active: { label: 'ACTIVE', bg: 'bg-zed-success/80' },
+  closed: { label: 'CLOSED', bg: 'bg-gray-500/60' },
+}
+
+export default function CompetitionDetailPage() {
+  const { id } = useParams<{ id: string }>()
+  const router = useRouter()
+  const [comp, setComp] = useState<Competition | null>(null)
+  const [ideas, setIdeas] = useState<Idea[]>([])
+  const [loading, setLoading] = useState(true)
+  const [entering, setEntering] = useState(false)
+
+  useEffect(() => {
+    if (!id) return
+
+    const fetchData = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+
+        const [compRes, ideasRes] = await Promise.all([
+          fetch(`${baseUrl}/competitions/${id}`).then(r => r.json()),
+          fetch(`${baseUrl}/ideas/public`).then(r => r.json()),
+        ])
+
+        const competition = compRes?.data?.data || compRes?.data || null
+        setComp(competition)
+
+        if (competition) {
+          const allIdeas = ideasRes?.data || []
+          const filtered = allIdeas
+            .filter((idea: any) =>
+              idea.competition_id === id &&
+              idea.status === 'approved' &&
+              idea.is_public === true
+            )
+            .slice(0, 20)
+          setIdeas(filtered)
+        }
+      } catch {
+        setComp(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [id])
+
+  const handleEnterCompetition = async () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    if (!token) {
+      router.push(`/auth/login?redirect=/competitions/${id}`)
+      return
+    }
+
+    setEntering(true)
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+      const res = await fetch(`${baseUrl}/competitions/${id}/enter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      const body = await res.json()
+
+      if (body.status === 'success' && body.checkoutUrl) {
+        window.location.href = body.checkoutUrl
+      } else if (body.status === 'error' && body.message?.includes('create an idea')) {
+        router.push(`/dashboard/ideas/new?competitionId=${id}`)
+      } else {
+        const msg = body?.message || 'Failed to enter competition'
+        alert(msg)
+        setEntering(false)
+      }
+    } catch {
+      alert('Failed to enter competition. Please try again.')
+      setEntering(false)
+    }
   }
-}
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params
-  const comp = await getCompetition(id)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zed-background flex items-center justify-center">
+        <Loader2 size={48} className="animate-spin text-zed-primary" />
+      </div>
+    )
+  }
 
   if (!comp) {
-    return { title: 'Competition Not Found' }
+    return (
+      <div className="min-h-screen bg-zed-background flex items-center justify-center">
+        <div className="text-center">
+          <Trophy size={64} className="mx-auto text-zed-foreground-secondary mb-4 opacity-20" />
+          <h1 className="text-3xl font-black text-zed-foreground mb-2">Competition Not Found</h1>
+          <Link href="/competitions" className="text-zed-primary hover:underline">Back to competitions</Link>
+        </div>
+      </div>
+    )
   }
 
-  return {
-    title: comp.title,
-    description: comp.description || `Join the ${comp.title} competition on ZedIdeaArena. Submit your idea, compete for funding, and win big.`,
-    openGraph: {
-      title: comp.title,
-      description: comp.description || `Compete in ${comp.title} on ZedIdeaArena.`,
-      images: comp.thumbnail_url ? [{ url: comp.thumbnail_url, width: 1200, height: 630 }] : undefined,
-      url: `https://zedideaarena.com/competitions/${id}`,
-    },
-  }
-}
-
-export default async function CompetitionDetailPage({ params }: Props) {
-  const { id } = await params
-  const comp = await getCompetition(id)
-
-  if (!comp) {
-    notFound()
-  }
-
-  const isOpen = comp.calculatedStatus !== 'closed'
+  const cfg = statusConfig[comp.calculatedStatus] || statusConfig.upcoming
+  const isActive = comp.calculatedStatus === 'active'
 
   return (
     <div className="min-h-screen bg-zed-background">
@@ -67,19 +155,47 @@ export default async function CompetitionDetailPage({ params }: Props) {
                 sizes="(max-width: 1024px) 100vw, 66vw"
                 priority
               />
-              {isOpen && (
-                <div className="absolute top-6 right-6">
-                  <span className="bg-zed-success text-sm text-white px-4 py-2 rounded-full font-black uppercase tracking-widest">
-                    Open for Submissions
-                  </span>
-                </div>
-              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+              <div className="absolute top-6 right-6">
+                <span className={`${cfg.bg} text-sm text-white px-4 py-2 rounded-full font-black uppercase tracking-widest`}>
+                  {cfg.label}
+                </span>
+              </div>
             </div>
 
             <h1 className="text-4xl font-black text-zed-foreground mb-4">{comp.title}</h1>
-            <p className="text-lg text-zed-foreground-secondary leading-relaxed mb-8">
+            <p className="text-lg text-zed-foreground-secondary leading-relaxed mb-12">
               {comp.description}
             </p>
+
+            {ideas.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-black text-zed-foreground mb-6 flex items-center gap-3">
+                  <Users size={24} className="text-zed-primary" /> Submitted Ideas
+                </h2>
+                <div className="grid gap-4">
+                  {ideas.map((idea) => (
+                    <div key={idea.id} className="card-zed p-6 flex items-center gap-6 hover:border-zed-primary/30 transition-all">
+                      <div className="w-16 h-16 rounded-2xl bg-zed-primary/10 flex items-center justify-center text-zed-primary font-black text-lg flex-shrink-0">
+                        {idea.votes_count || 0}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-black text-zed-foreground mb-1 truncate">{idea.title}</h3>
+                        <p className="text-xs text-zed-foreground-secondary truncate">
+                          by {idea.users?.full_name || 'Unknown'} &middot; {idea.industry || 'General'}
+                        </p>
+                      </div>
+                      <Link
+                        href={`/dashboard/ideas/${idea.id}`}
+                        className="btn-secondary text-xs px-4 py-2 rounded-xl font-black"
+                      >
+                        View <ArrowRight size={14} className="inline ml-1" />
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
 
           <div className="space-y-6">
@@ -105,12 +221,19 @@ export default async function CompetitionDetailPage({ params }: Props) {
                 <div className="flex items-center gap-4">
                   <Calendar size={20} className="text-purple-400" />
                   <div>
+                    <p className="text-xs text-zed-foreground-secondary font-bold uppercase tracking-widest">Start Date</p>
+                    <p className="text-lg font-black text-zed-foreground">{new Date(comp.start_date).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Calendar size={20} className="text-blue-400" />
+                  <div>
                     <p className="text-xs text-zed-foreground-secondary font-bold uppercase tracking-widest">Submission Deadline</p>
                     <p className="text-lg font-black text-zed-foreground">{new Date(comp.submission_deadline).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <Clock size={20} className="text-blue-400" />
+                  <Clock size={20} className="text-gray-400" />
                   <div>
                     <p className="text-xs text-zed-foreground-secondary font-bold uppercase tracking-widest">End Date</p>
                     <p className="text-lg font-black text-zed-foreground">{new Date(comp.end_date).toLocaleDateString()}</p>
@@ -119,13 +242,36 @@ export default async function CompetitionDetailPage({ params }: Props) {
               </div>
             </div>
 
-            {isOpen && (
-              <Link
-                href={`/auth/signup`}
-                className="btn-primary w-full flex items-center justify-center gap-3 py-5 text-lg"
+            {comp.calculatedStatus === 'active' && (
+              <div className="card-zed glass-premium p-6">
+                <p className="text-xs text-zed-foreground-secondary font-bold uppercase tracking-widest mb-3">Time Remaining</p>
+                <CompetitionCountdown deadline={comp.submission_deadline} />
+              </div>
+            )}
+
+            {comp.calculatedStatus === 'upcoming' && (
+              <div className="card-zed glass-premium p-6">
+                <p className="text-xs text-zed-foreground-secondary font-bold uppercase tracking-widest mb-3">Starts In</p>
+                <CompetitionCountdown deadline={comp.start_date} />
+              </div>
+            )}
+
+            {isActive ? (
+              <button
+                onClick={handleEnterCompetition}
+                disabled={entering}
+                className="btn-primary w-full flex items-center justify-center gap-3 py-5 text-lg disabled:opacity-50"
               >
-                Enter Competition <ArrowRight size={22} />
-              </Link>
+                {entering ? <Loader2 size={22} className="animate-spin" /> : null}
+                {entering ? 'Processing...' : 'Enter Competition'} <ArrowRight size={22} />
+              </button>
+            ) : (
+              <button
+                disabled
+                className="btn-secondary w-full flex items-center justify-center gap-3 py-5 text-lg cursor-not-allowed opacity-50"
+              >
+                {comp.calculatedStatus === 'upcoming' ? 'Coming Soon' : 'Competition Closed'}
+              </button>
             )}
           </div>
         </div>

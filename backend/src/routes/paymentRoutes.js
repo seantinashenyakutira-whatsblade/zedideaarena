@@ -4,5 +4,6 @@ const paymentController = require('../controllers/paymentController');
 const { verifyToken } = require('../middleware/authMiddleware');
 
 router.get('/', verifyToken, paymentController.getPaymentHistory);
+router.get('/check-entry/:competitionId', verifyToken, paymentController.checkEntryPayment);
 
 module.exports = router;

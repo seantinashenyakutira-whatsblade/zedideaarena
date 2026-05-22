@@ -88,7 +88,7 @@ const syncUserProfile = async (req, res) => {
     return res.status(401).json({ success: false, error: 'Unauthorized: No user data found in token' });
   }
 
-  const { fullName, dob, nationality, country, city, phone, idType, idNumber, role, profession, bio, id_document_url } = req.body;
+  const { fullName, dob, nationality, country, city, phone, idType, idNumber, role, profession, bio, id_document_url, onboarding_complete, identity_document_url, address_document_url } = req.body;
 
   try {
     const profileData = {};
@@ -102,6 +102,9 @@ const syncUserProfile = async (req, res) => {
     if (bio !== undefined) profileData.bio = bio;
     if (role !== undefined) profileData.role = role;
     if (id_document_url !== undefined) profileData.id_document_url = id_document_url;
+    if (onboarding_complete !== undefined) profileData.onboarding_complete = onboarding_complete;
+    if (identity_document_url !== undefined) profileData.identity_document_url = identity_document_url;
+    if (address_document_url !== undefined) profileData.address_document_url = address_document_url;
     profileData.updated_at = new Date().toISOString();
 
     const { error } = await supabase
