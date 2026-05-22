@@ -11,7 +11,7 @@ const navItems = [
   { href: '/contestant/ideas', icon: FileText, label: 'My Ideas' },
   { href: '/contestant/competitions', icon: Trophy, label: 'Competitions' },
   { href: '/voter/voting', icon: Vote, label: 'Voting Arena' },
-  { href: '/admin/dashboard', icon: Settings, label: 'Admin Panel', role: 'admin' },
+  { href: '/admin', icon: Settings, label: 'Admin Panel', role: 'admin' },
   { href: '/contestant/settings', icon: Settings, label: 'Settings' },
 ]
 

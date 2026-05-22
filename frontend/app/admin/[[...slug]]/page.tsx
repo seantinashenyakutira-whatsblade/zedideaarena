@@ -7,5 +7,8 @@ export default async function AdminPage({
 }) {
   const { slug } = await params
   const path = slug?.join('/') || ''
-  redirect(`/dashboard${path ? `/${path}` : ''}`)
+  if (path === 'dashboard') {
+    redirect('/dashboard/admin')
+  }
+  redirect(`/dashboard/admin${path ? `/${path}` : ''}`)
 }

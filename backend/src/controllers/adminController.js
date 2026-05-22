@@ -1,6 +1,22 @@
 const { supabase } = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
 
+const logAdminAction = async (admin_id, action_type, target_id, target_type, note = '') => {
+  try {
+    await supabase.from('admin_actions').insert({
+      id: uuidv4(),
+      admin_id,
+      action_type,
+      target_id,
+      target_type,
+      note,
+      created_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('Failed to log admin action:', err);
+  }
+};
+
 const createCompetition = async (req, res) => {
   const { title, description, thumbnail_url, submission_deadline, start_date, end_date, entry_fee_cents, voter_fee_cents, prize_pool_cents } = req.body;
 
@@ -22,10 +38,13 @@ const createCompetition = async (req, res) => {
       voter_fee_cents: voter_fee_cents || 0,
       prize_pool_cents: prize_pool_cents || 0,
       created_by: req.user.uid,
+      is_deleted: false,
       created_at: new Date().toISOString(),
     });
 
     if (error) throw error;
+
+    await logAdminAction(req.user.uid, 'competition_created', compId, 'competition', title);
 
     res.json({ status: 'success', id: compId, message: 'Competition created successfully' });
   } catch (error) {
@@ -39,6 +58,7 @@ const getCompetitions = async (req, res) => {
     const { data, error } = await supabase
       .from('competitions')
       .select('*')
+      .neq('is_deleted', true)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -82,12 +102,31 @@ const getAdminStats = async (req, res) => {
       .select('*', { count: 'exact', head: true })
       .eq('payment_status', 'paid');
 
+    const { count: competitionsCount } = await supabase
+      .from('competitions')
+      .select('*', { count: 'exact', head: true })
+      .neq('is_deleted', true);
+
+    const { data: prizeSum } = await supabase
+      .from('competitions')
+      .select('prize_pool_cents')
+      .neq('is_deleted', true);
+
+    const totalPrizePoolCents = (prizeSum || []).reduce((sum, c) => sum + (c.prize_pool_cents || 0), 0);
+
+    const { count: votesCount } = await supabase
+      .from('votes')
+      .select('*', { count: 'exact', head: true });
+
     res.json({
       status: 'success',
       data: {
         users: usersCount || 0,
         ideas: ideasCount || 0,
         paidIdeas: paidIdeasCount || 0,
+        competitions: competitionsCount || 0,
+        totalPrizePoolCents,
+        votes: votesCount || 0,
       },
     });
   } catch (error) {
@@ -97,11 +136,22 @@ const getAdminStats = async (req, res) => {
 
 const getAllIdeas = async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { competition_id, status } = req.query;
+
+    let query = supabase
       .from('ideas')
       .select('*')
       .order('updated_at', { ascending: false })
       .limit(50);
+
+    if (competition_id) {
+      query = query.eq('competition_id', competition_id);
+    }
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
@@ -113,15 +163,37 @@ const getAllIdeas = async (req, res) => {
 
 const updateIdeaStatus = async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, note } = req.body;
+
+  const allowedStatuses = ['approved', 'rejected'];
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({ status: 'error', message: 'Status must be approved or rejected' });
+  }
 
   try {
+    const updateFields = { status, admin_note: note || '', updated_at: new Date().toISOString() };
+
+    if (status === 'approved') {
+      const { data: idea } = await supabase
+        .from('ideas')
+        .select('payment_status')
+        .eq('id', id)
+        .single();
+
+      if (idea && idea.payment_status === 'paid') {
+        updateFields.is_public = true;
+      }
+    }
+
     const { error } = await supabase
       .from('ideas')
-      .update({ status, updated_at: new Date().toISOString() })
+      .update(updateFields)
       .eq('id', id);
 
     if (error) throw error;
+
+    const actionType = status === 'approved' ? 'idea_approved' : 'idea_rejected';
+    await logAdminAction(req.user.uid, actionType, id, 'idea', note || `Status changed to ${status}`);
 
     res.json({ status: 'success', message: `Status updated to ${status}` });
   } catch (error) {
@@ -131,10 +203,18 @@ const updateIdeaStatus = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { unverified } = req.query;
+
+    let query = supabase
       .from('users')
-      .select('id, email, full_name, picture, role, is_verified, voter_payment_status, competition_participant, created_at')
+      .select('id, email, full_name, picture, role, is_verified, is_admin, voter_payment_status, competition_participant, country, created_at')
       .order('created_at', { ascending: false });
+
+    if (unverified === 'true') {
+      query = query.eq('is_verified', false);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
@@ -156,6 +236,9 @@ const verifyUser = async (req, res) => {
 
     if (error) throw error;
 
+    const actionType = is_verified ? 'user_verified' : 'user_unverified';
+    await logAdminAction(req.user.uid, actionType, id, 'user');
+
     res.json({ status: 'success', message: `User verification ${is_verified ? 'granted' : 'revoked'}` });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
@@ -174,7 +257,107 @@ const updateCompetition = async (req, res) => {
 
     if (error) throw error;
 
+    await logAdminAction(req.user.uid, 'competition_edited', id, 'competition', updates.title || '');
+
     res.json({ status: 'success' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+const deleteCompetition = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { error } = await supabase
+      .from('competitions')
+      .update({ is_deleted: true, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    await logAdminAction(req.user.uid, 'competition_deleted', id, 'competition');
+
+    res.json({ status: 'success', message: 'Competition deleted' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+const getAnalytics = async (req, res) => {
+  try {
+    const { data: competitions } = await supabase
+      .from('competitions')
+      .select('id, title, prize_pool_cents')
+      .neq('is_deleted', true);
+
+    const compAnalytics = await Promise.all((competitions || []).map(async (comp) => {
+      const { count: entriesCount } = await supabase
+        .from('ideas')
+        .select('*', { count: 'exact', head: true })
+        .eq('competition_id', comp.id);
+
+      const { count: votesCount } = await supabase
+        .from('votes')
+        .select('*', { count: 'exact', head: true })
+        .eq('competition_id', comp.id);
+
+      return {
+        id: comp.id,
+        title: comp.title,
+        prize_pool_cents: comp.prize_pool_cents || 0,
+        entries: entriesCount || 0,
+        votes: votesCount || 0,
+      };
+    }));
+
+    const { data: countries } = await supabase
+      .from('users')
+      .select('country')
+      .not('country', 'is', null);
+
+    const countryCount = {};
+    (countries || []).forEach((u) => {
+      const c = u.country.trim();
+      if (c) countryCount[c] = (countryCount[c] || 0) + 1;
+    });
+
+    const geographicBreakdown = Object.entries(countryCount)
+      .map(([country, count]) => ({ country, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const totalPrizePoolCents = (competitions || []).reduce((sum, c) => sum + (c.prize_pool_cents || 0), 0);
+
+    const { count: totalCompetitions } = await supabase
+      .from('competitions')
+      .select('*', { count: 'exact', head: true })
+      .neq('is_deleted', true);
+
+    res.json({
+      status: 'success',
+      data: {
+        competitions: compAnalytics,
+        geographicBreakdown,
+        revenueEstimateCents: totalPrizePoolCents,
+        totalCompetitions: totalCompetitions || 0,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+const getAuditLog = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('admin_actions')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    res.json({ status: 'success', data: data || [] });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
@@ -189,4 +372,7 @@ module.exports = {
   getAllUsers,
   verifyUser,
   updateCompetition,
+  deleteCompetition,
+  getAnalytics,
+  getAuditLog,
 };
