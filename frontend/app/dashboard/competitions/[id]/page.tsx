@@ -4,17 +4,20 @@ import { useState, useEffect } from 'react'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import { Trophy, Calendar, Users, ArrowRight, Loader2, FileText, Shield, Info, CheckCircle2 } from 'lucide-react'
+import { Trophy, Calendar, Users, ArrowRight, Loader2, FileText, Shield, Info, CheckCircle2, DollarSign } from 'lucide-react'
 import api from '@/lib/api'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { CompetitionCountdown } from '@/components/CompetitionCountdown'
+import { paymentService } from '@/services/payment'
+import { toast } from 'sonner'
 
 export default function CompetitionDetailPage() {
   const { id } = useParams()
   const router = useRouter()
   const [competition, setCompetition] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [entering, setEntering] = useState(false)
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -109,44 +112,59 @@ export default function CompetitionDetailPage() {
                    </div>
 
                    <div className="space-y-8">
-                      <div className="card-zed glass-premium p-8 sticky top-8">
-                          <div className="mb-8">
-                             <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1">Entry Fee</p>
-                             <p className="text-4xl font-black text-zed-foreground">${(competition.entry_fee_cents / 100).toFixed(2)}</p>
+                       <div className="card-zed glass-premium p-8 sticky top-8">
+                           <div className="mb-8">
+                              <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1">Prize Pool</p>
+                              <p className="text-4xl font-black text-zed-primary">${(competition.prize_pool_cents / 100).toLocaleString()}</p>
+                           </div>
+                           <div className="mb-8 p-4 bg-white/5 rounded-2xl">
+                              <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-2">Time Remaining</p>
+                              <CompetitionCountdown deadline={competition.submission_deadline} />
+                           </div>
+                          
+                          <div className="space-y-4 mb-8">
+                             <div className="flex justify-between text-sm">
+                                <span className="text-zed-foreground-secondary">Entry Fee</span>
+                                <span className="font-bold">${(competition.entry_fee_cents / 100).toFixed(2)}</span>
+                             </div>
+                             <div className="flex justify-between text-sm">
+                                <span className="text-zed-foreground-secondary">Voter Fee</span>
+                                <span className="font-bold">${(competition.voter_fee_cents / 100).toFixed(2)}</span>
+                             </div>
                           </div>
-                          <div className="mb-8 p-4 bg-white/5 rounded-2xl">
-                             <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-2">Time Remaining</p>
-                             <CompetitionCountdown deadline={competition.submission_deadline} />
-                          </div>
-                         
-                         <div className="space-y-4 mb-8">
-                            <div className="flex justify-between text-sm">
-                               <span className="text-zed-foreground-secondary">Participants</span>
-                               <span className="font-bold">{competition.participants_count || 0}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                               <span className="text-zed-foreground-secondary">Submissions</span>
-                               <span className="font-bold">{competition.ideas_count || 0}</span>
-                            </div>
-                         </div>
 
                          {competition.calculatedStatus === 'active' ? (
-                           <Link 
-                            href={`/dashboard/ideas/new?competitionId=${competition.id}`}
-                            className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-xs font-black"
-                           >
-                            Enter Arena Now <ArrowRight size={18} />
-                           </Link>
-                         ) : (
-                           <button className="btn-secondary w-full py-4 rounded-2xl cursor-not-allowed opacity-50 grayscale" disabled>
-                             Competition {competition.calculatedStatus}
-                           </button>
-                         )}
-                         
-                         <p className="mt-6 text-center text-[10px] text-zed-foreground-secondary uppercase font-bold tracking-widest">
-                           Secure checkout via Stripe
-                         </p>
-                      </div>
+                            <button
+                              onClick={async () => {
+                                setEntering(true);
+                                try {
+                                  const res: any = await paymentService.enterCompetition(competition.id);
+                                  window.location.href = res.checkoutUrl;
+                                } catch (err: any) {
+                                  if (err.message?.includes('create an idea')) {
+                                    router.push(`/dashboard/ideas/new?competitionId=${competition.id}`);
+                                  } else {
+                                    toast.error(err.message || 'Failed to enter competition');
+                                  }
+                                } finally {
+                                  setEntering(false);
+                                }
+                              }}
+                              disabled={entering}
+                              className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-xs font-black disabled:opacity-50"
+                            >
+                              {entering ? <Loader2 size={18} className="animate-spin" /> : <><DollarSign size={18} /> Enter Arena Now <ArrowRight size={18} /></>}
+                            </button>
+                          ) : (
+                            <button className="btn-secondary w-full py-4 rounded-2xl cursor-not-allowed opacity-50 grayscale" disabled>
+                              Competition {competition.calculatedStatus}
+                            </button>
+                          )}
+                          
+                          <p className="mt-6 text-center text-[10px] text-zed-foreground-secondary uppercase font-bold tracking-widest">
+                            Secure checkout via Stripe
+                          </p>
+                       </div>
 
                       <div className="p-6 bg-zed-primary/5 rounded-3xl border border-zed-primary/10 flex items-center gap-4">
                          <FileText className="text-zed-primary" />
