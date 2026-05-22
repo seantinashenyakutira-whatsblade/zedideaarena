@@ -2,6 +2,7 @@
 
 import { ArrowRight, Mail, Lock, User } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState } from 'react'
 import { authService } from '@/services/auth'
 import { useRouter } from 'next/navigation'
@@ -70,7 +71,7 @@ export default function SignupPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-6">
             <div className="flex items-center gap-3 justify-center floating">
-              <img src="/logo-icon.png" alt="ZedIdeaArena" className="w-10 h-10 object-contain drop-shadow-[0_0_8px_rgba(79,70,229,0.8)]" />
+              <Image src="/logo-icon.png" alt="ZedIdeaArena" width={40} height={40} className="object-contain drop-shadow-[0_0_8px_rgba(79,70,229,0.8)]" />
               <span className="font-bold text-2xl gradient-text tracking-tighter">ZedIdeaArena</span>
             </div>
           </Link>

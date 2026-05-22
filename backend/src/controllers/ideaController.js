@@ -1,4 +1,5 @@
 const { supabase } = require('../config/supabase');
+const { sendIdeaConfirmation } = require('../services/emailService');
 
 const saveIdeaDraft = async (req, res) => {
   const { uid } = req.user;
@@ -92,6 +93,8 @@ const submitIdea = async (req, res) => {
       .eq('id', id);
 
     if (error) throw error;
+
+    sendIdeaConfirmation(req.user.email, doc.title);
 
     res.json({ status: 'success', message: 'Idea submitted successfully and is now under review' });
   } catch (error) {

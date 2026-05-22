@@ -2,6 +2,7 @@
 
 import { ArrowRight, Zap, Users, Trophy, Moon, Sun } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import api from '@/lib/api'
 
@@ -41,10 +42,13 @@ export default function LandingPage() {
     <div className="min-h-screen overflow-hidden dark:bg-black bg-slate-50 relative">
       {/* 3D Background Layer */}
       <div className="fixed inset-0 z-0 opacity-40 dark:opacity-60 pointer-events-none">
-        <img 
-          src="/hero_3d_arena_bg_1777051043555.png" 
-          alt="Arena Background" 
-          className="w-full h-full object-cover scale-110 blur-[2px] floating"
+        <Image
+          src="/hero_3d_arena_bg_1777051043555.png"
+          alt="Arena Background"
+          fill
+          className="object-cover scale-110 blur-[2px] floating"
+          priority
+          sizes="100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/80" />
       </div>
@@ -52,7 +56,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 glass-premium border-b border-white/10">
         <div className="container-zed flex items-center justify-between h-16">
           <div className="flex items-center gap-3 floating">
-            <img src="/logo-icon.png" alt="ZedIdeaArena" className="w-8 h-8 object-contain drop-shadow-[0_0_8px_rgba(79,70,229,0.8)]" />
+            <Image src="/logo-icon.png" alt="ZedIdeaArena" width={32} height={32} className="object-contain drop-shadow-[0_0_8px_rgba(79,70,229,0.8)]" />
             <span className="font-bold text-lg gradient-text hidden sm:inline tracking-tighter">ZedIdeaArena</span>
           </div>
           <div className="flex items-center gap-4">
@@ -101,10 +105,13 @@ export default function LandingPage() {
           <div className="mt-20 relative h-96 flex items-center justify-center">
             <div className="absolute w-96 h-96 bg-indigo-500/20 rounded-full blur-[120px] animate-pulse" />
             <div className="absolute w-64 h-64 bg-purple-500/20 rounded-full blur-[100px] animate-pulse" />
-            <img
+            <Image
               src={isDark ? "/logo-full-dark.png" : "/logo-full-light.png"}
               alt="ZedIdeaArena Logo"
-              className="relative z-10 w-64 h-64 object-contain transition-all duration-500"
+              width={256}
+              height={256}
+              className="relative z-10 object-contain transition-all duration-500"
+              priority
             />
           </div>
         </div>
@@ -196,7 +203,7 @@ export default function LandingPage() {
       <footer className="py-12 px-4 border-t border-white/10 dark:border-white/10 text-center dark:text-gray-400 text-slate-600 bg-white/5 dark:bg-black/50 backdrop-blur-xl">
         <div className="container-zed max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <img src="/logo-icon.png" alt="ZedIdeaArena" className="w-6 h-6 object-contain grayscale opacity-50" />
+            <Image src="/logo-icon.png" alt="ZedIdeaArena" width={24} height={24} className="object-contain grayscale opacity-50" />
             <p className="text-sm font-medium">&copy; {new Date().getFullYear()} ZedIdeaArena. All rights reserved.</p>
           </div>
           <div className="flex items-center gap-6 text-sm font-bold uppercase tracking-widest text-xs">

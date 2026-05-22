@@ -7,7 +7,10 @@ import { AuthProvider } from '@/hooks/useAuth'
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'ZedIdeaArena - Pitch. Compete. Win.',
+  title: {
+    default: 'ZedIdeaArena — Win by Sharing Your Ideas',
+    template: '%s | ZedIdeaArena',
+  },
   description: 'A fintech-style idea competition and crowdfunding platform. Pitch your ideas, compete with others, and win funding.',
   generator: 'v0.app',
   icons: {
@@ -17,6 +20,21 @@ export const metadata: Metadata = {
         type: 'image/png',
       },
     ],
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    siteName: 'ZedIdeaArena',
+    title: 'ZedIdeaArena — Win by Sharing Your Ideas',
+    description: 'A fintech-style idea competition and crowdfunding platform. Pitch your ideas, compete with others, and win funding.',
+    images: [{ url: '/og-default.png', width: 1200, height: 630 }],
+    url: 'https://zedideaarena.com',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ZedIdeaArena — Win by Sharing Your Ideas',
+    description: 'Pitch your ideas, compete with others, and win funding.',
+    images: ['/og-default.png'],
   },
 }
 

@@ -1,5 +1,6 @@
 const { supabase } = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
+const { sendIdeaApproved, sendIdeaRejected, sendVoterVerified } = require('../services/emailService');
 
 const logAdminAction = async (admin_id, action_type, target_id, target_type, note = '') => {
   try {
@@ -195,6 +196,28 @@ const updateIdeaStatus = async (req, res) => {
     const actionType = status === 'approved' ? 'idea_approved' : 'idea_rejected';
     await logAdminAction(req.user.uid, actionType, id, 'idea', note || `Status changed to ${status}`);
 
+    const { data: ideaData } = await supabase
+      .from('ideas')
+      .select('title, user_id')
+      .eq('id', id)
+      .single();
+
+    if (ideaData) {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', ideaData.user_id)
+        .single();
+
+      if (userData?.email) {
+        if (status === 'approved') {
+          sendIdeaApproved(userData.email, ideaData.title);
+        } else {
+          sendIdeaRejected(userData.email, ideaData.title, note);
+        }
+      }
+    }
+
     res.json({ status: 'success', message: `Status updated to ${status}` });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
@@ -238,6 +261,18 @@ const verifyUser = async (req, res) => {
 
     const actionType = is_verified ? 'user_verified' : 'user_unverified';
     await logAdminAction(req.user.uid, actionType, id, 'user');
+
+    if (is_verified) {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', id)
+        .single();
+
+      if (userData?.email) {
+        sendVoterVerified(userData.email);
+      }
+    }
 
     res.json({ status: 'success', message: `User verification ${is_verified ? 'granted' : 'revoked'}` });
   } catch (error) {
