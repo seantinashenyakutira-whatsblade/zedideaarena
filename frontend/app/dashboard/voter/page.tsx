@@ -5,16 +5,35 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { useAuth } from '@/hooks/useAuth'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import { ShieldCheck, CreditCard, Vote, ChevronRight, CheckCircle2, Clock } from 'lucide-react'
+import { ShieldCheck, CreditCard, Vote, ChevronRight, CheckCircle2, Clock, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { paymentService } from '@/services/payment'
+import { toast } from 'sonner'
 
 export default function VoterOnboardingPage() {
   const { profile, refreshProfile } = useAuth()
   const [localProfile, setLocalProfile] = useState<any>(null)
+  const [paying, setPaying] = useState(false)
 
   useEffect(() => {
     setLocalProfile(profile)
   }, [profile])
+
+  const handleVoterPayment = async (competitionId: string) => {
+    if (!competitionId) {
+      toast.error('No active competition found. Please try again later.')
+      return
+    }
+    setPaying(true)
+    try {
+      const res: any = await paymentService.registerVoter(competitionId)
+      window.location.href = res.checkoutUrl
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to initiate voter payment')
+    } finally {
+      setPaying(false)
+    }
+  }
 
   const steps = [
     {
@@ -33,10 +52,10 @@ export default function VoterOnboardingPage() {
     },
     {
       title: 'Voter Registration Fee',
-      desc: '$15 one-time entry for the season',
+      desc: 'One-time entry for the season',
       icon: CreditCard,
       status: localProfile?.voter_payment_status === 'paid' ? 'completed' : localProfile?.is_verified ? 'todo' : 'locked',
-      link: `/dashboard/payment?type=voter&amount=15`,
+      link: '',
     },
     {
       title: 'Cast Your Votes',
@@ -92,11 +111,19 @@ export default function VoterOnboardingPage() {
                           <div className="flex items-center gap-2 text-yellow-400 font-black text-xs uppercase tracking-tighter">
                             <Clock size={16} /> Pending
                           </div>
-                        ) : (
+                        ) : step.link ? (
                           <Link href={step.link} className="flex items-center justify-between w-full btn-primary py-3 px-4 text-xs font-black rounded-xl">
                             {step.status === 'todo' ? 'Get Started' : 'Go'} <ChevronRight size={16} />
                           </Link>
-                        )}
+                        ) : step.title === 'Voter Registration Fee' ? (
+                          <button
+                            onClick={() => handleVoterPayment(localProfile?.competition_id || '')}
+                            disabled={paying}
+                            className="flex items-center justify-between w-full btn-primary py-3 px-4 text-xs font-black rounded-xl disabled:opacity-50"
+                          >
+                            {paying ? <Loader2 size={16} className="animate-spin" /> : 'Pay Now'} <ChevronRight size={16} />
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   )

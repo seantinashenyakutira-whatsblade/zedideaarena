@@ -179,7 +179,7 @@ function NewIdeaForm() {
       sessionStorage.removeItem(FORM_KEY)
       setIsSuccess(true)
       toast.success('Idea submitted!')
-      setTimeout(() => router.push(`/dashboard/payment?type=contestant&ideaId=${res.id}&amount=5`), 2500)
+      setTimeout(() => router.push(`/dashboard/payment?type=contestant&competitionId=${formData.competition_id}`), 2500)
     } catch (err: any) {
       toast.error(err.message || 'Submission failed')
     } finally {

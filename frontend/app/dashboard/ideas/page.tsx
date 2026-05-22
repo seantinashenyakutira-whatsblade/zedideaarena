@@ -111,14 +111,14 @@ export default function MyIdeasPage() {
                            <div className="flex-1" />
                            
                            <div className="flex items-center gap-3">
-                            {(idea.status === 'submitted' || idea.status === 'pending') && idea.payment_status !== 'paid' && (
-                                <Link 
-                                 href={`/dashboard/payment?type=contestant&ideaId=${idea.id}&amount=5`}
-                                 className="btn-primary py-2 px-6 rounded-xl text-xs font-black shadow-lg"
-                                >
-                                  Pay Entry Fee
-                                </Link>
-                              )}
+                             {(idea.status === 'submitted' || idea.status === 'pending') && idea.payment_status !== 'paid' && (
+                                 <Link 
+                                  href={`/dashboard/payment?type=contestant&competitionId=${idea.competition_id}`}
+                                  className="btn-primary py-2 px-6 rounded-xl text-xs font-black shadow-lg"
+                                 >
+                                   Pay Entry Fee
+                                 </Link>
+                               )}
                              <Link 
                                href={`/dashboard/ideas/${idea.id}`}
                                className="btn-secondary w-12 h-12 rounded-2xl flex items-center justify-center group-hover:bg-zed-primary group-hover:text-white transition-all"

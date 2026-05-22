@@ -11,7 +11,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 }));
-app.use(express.json());
 
 const { supabase } = require('./config/supabase');
 const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
@@ -46,14 +45,19 @@ app.get('/', (req, res) => {
   });
 });
 
+app.use('/api/webhooks', require('./routes/webhookRoutes'));
+
+app.use(express.json());
+
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/ideas', require('./routes/ideaRoutes'));
 app.use('/api/media', require('./routes/mediaRoutes'));
 app.use('/api/votes', require('./routes/voteRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
-app.use('/api/payment', require('./routes/paymentRoutes'));
+app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/competitions', require('./routes/competitionRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
+app.use('/api/voter', require('./routes/voterRoutes'));
 
 app.use((err, req, res, next) => {
   console.error('[UNHANDLED_ERROR]', err);

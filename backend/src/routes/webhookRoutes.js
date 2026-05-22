@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
-const { verifyToken } = require('../middleware/authMiddleware');
 
-router.get('/', verifyToken, paymentController.getPaymentHistory);
+router.post('/stripe', express.raw({ type: 'application/json' }), paymentController.handleStripeWebhook);
 
 module.exports = router;
