@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import { Trophy, Calendar, Users, ArrowRight, Loader2, FileText, Shield, Info, CheckCircle2, DollarSign } from 'lucide-react'
+import { Trophy, Calendar, Users, ArrowRight, Loader2, FileText, Shield, Info, CheckCircle2, DollarSign, BarChart3 } from 'lucide-react'
 import api from '@/lib/api'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
@@ -133,33 +133,40 @@ export default function CompetitionDetailPage() {
                              </div>
                           </div>
 
-                         {competition.calculatedStatus === 'active' ? (
-                            <button
-                              onClick={async () => {
-                                setEntering(true);
-                                try {
-                                  const res: any = await paymentService.enterCompetition(competition.id);
-                                  window.location.href = res.checkoutUrl;
-                                } catch (err: any) {
-                                  if (err.message?.includes('create an idea')) {
-                                    router.push(`/dashboard/ideas/new?competitionId=${competition.id}`);
-                                  } else {
-                                    toast.error(err.message || 'Failed to enter competition');
-                                  }
-                                } finally {
-                                  setEntering(false);
-                                }
-                              }}
-                              disabled={entering}
-                              className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-xs font-black disabled:opacity-50"
-                            >
-                              {entering ? <Loader2 size={18} className="animate-spin" /> : <><DollarSign size={18} /> Enter Arena Now <ArrowRight size={18} /></>}
-                            </button>
-                          ) : (
-                            <button className="btn-secondary w-full py-4 rounded-2xl cursor-not-allowed opacity-50 grayscale" disabled>
-                              Competition {competition.calculatedStatus}
-                            </button>
-                          )}
+                          {competition.calculatedStatus === 'active' ? (
+                             <button
+                               onClick={async () => {
+                                 setEntering(true);
+                                 try {
+                                   const res: any = await paymentService.enterCompetition(competition.id);
+                                   window.location.href = res.checkoutUrl;
+                                 } catch (err: any) {
+                                   if (err.message?.includes('create an idea')) {
+                                     router.push(`/dashboard/ideas/new?competitionId=${competition.id}`);
+                                   } else {
+                                     toast.error(err.message || 'Failed to enter competition');
+                                   }
+                                 } finally {
+                                   setEntering(false);
+                                 }
+                               }}
+                               disabled={entering}
+                               className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-xs font-black disabled:opacity-50"
+                             >
+                               {entering ? <Loader2 size={18} className="animate-spin" /> : <><DollarSign size={18} /> Enter Arena Now <ArrowRight size={18} /></>}
+                             </button>
+                           ) : competition.calculatedStatus === 'closed' ? (
+                             <Link
+                               href={`/competitions/${competition.id}/results`}
+                               className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-xs font-black"
+                             >
+                               <BarChart3 size={18} /> View Results <ArrowRight size={18} />
+                             </Link>
+                           ) : (
+                             <button className="btn-secondary w-full py-4 rounded-2xl cursor-not-allowed opacity-50 grayscale" disabled>
+                               Competition {competition.calculatedStatus}
+                             </button>
+                           )}
                           
                           <p className="mt-6 text-center text-[10px] text-zed-foreground-secondary uppercase font-bold tracking-widest">
                             Secure checkout via Stripe

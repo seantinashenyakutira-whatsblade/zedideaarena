@@ -12,7 +12,9 @@ export const mediaService = {
 
 export const voteService = {
   castVote: (ideaId: string, competitionId: string) => api.post('/votes/cast', { ideaId, competitionId }),
+  castVoteV2: (idea_id: string, competition_id: string) => api.post('/voter/vote', { idea_id, competition_id }),
   getUserVotes: () => api.get('/votes/user'),
+  getLeaderboard: (competitionId: string) => api.get(`/votes/${competitionId}/leaderboard`),
 };
 
 export const adminService = {

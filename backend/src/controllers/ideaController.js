@@ -121,17 +121,30 @@ const getUserIdeas = async (req, res) => {
 
 const getPublicIdeas = async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const statusFilter = req.query.status || 'submitted';
+
+    let query = supabase
       .from('ideas')
-      .select('*')
-      .eq('status', 'submitted')
-      .eq('payment_status', 'paid')
+      .select('*, users(full_name)')
+      .eq('status', statusFilter)
       .order('votes_count', { ascending: false });
+
+    if (statusFilter === 'submitted') {
+      query = query.eq('payment_status', 'paid');
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
-    res.json({ status: 'success', data: data || [] });
+    const mapped = (data || []).map((idea) => {
+      const { users, ...rest } = idea;
+      return { ...rest, users: { full_name: users?.full_name } };
+    });
+
+    res.json({ status: 'success', data: mapped });
   } catch (error) {
+    console.error('Error fetching public ideas:', error);
     res.status(500).json({ status: 'error', message: error.message });
   }
 };
