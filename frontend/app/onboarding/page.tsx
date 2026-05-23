@@ -187,41 +187,26 @@ export default function OnboardingPage() {
       setLoading(true)
       setError(null)
       try {
-        const payload = {
-          identity_document_url: data.identityDocumentUrl,
-          address_document_url: data.addressDocumentUrl,
-          onboarding_complete: true,
-        }
-        await authService.updateProfile(payload)
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError || !user) throw userError || new Error('No authenticated user')
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({
+            identity_document_url: data.identityDocumentUrl || null,
+            address_document_url: data.addressDocumentUrl || null,
+            onboarding_complete: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', user.id)
+        if (updateError) throw updateError
         toast.success('Onboarding complete!')
         router.push('/dashboard')
         setLoading(false)
       } catch (err) {
-        console.error('Backend API failed, trying direct Supabase update:', err)
-        try {
-          const { error: sessionError } = await supabase.auth.getSession()
-          if (sessionError) throw sessionError
-          const { data: session } = await supabase.auth.getSession()
-          if (!session?.session?.user?.id) throw new Error('No session')
-          const { error: updateError } = await supabase
-            .from('users')
-            .update({
-              identity_document_url: data.identityDocumentUrl || null,
-              address_document_url: data.addressDocumentUrl || null,
-              onboarding_complete: true,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', session.session.user.id)
-          if (updateError) throw updateError
-          toast.success('Onboarding complete!')
-          router.push('/dashboard')
-          setLoading(false)
-        } catch (fallbackErr) {
-          console.error('Direct Supabase update also failed:', fallbackErr)
-          toast.error('Failed to complete onboarding. Please try again.')
-          setError('Something went wrong. Please try again. If this persists, contact support.')
-          setLoading(false)
-        }
+        console.error('Onboarding submission failed:', err)
+        toast.error('Failed to complete onboarding. Please try again.')
+        setError('Something went wrong. Please try again. If this persists, contact support.')
+        setLoading(false)
       }
       return
     }
