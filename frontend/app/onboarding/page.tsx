@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronRight, ChevronLeft, Upload, Loader2, Check, User, Map, FileText, ClipboardCheck } from 'lucide-react'
 import { authService } from '@/services/auth'
+import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 
 interface OnboardingData {
@@ -186,19 +187,41 @@ export default function OnboardingPage() {
       setLoading(true)
       setError(null)
       try {
-        await authService.updateProfile({
+        const payload = {
           identity_document_url: data.identityDocumentUrl,
           address_document_url: data.addressDocumentUrl,
           onboarding_complete: true,
-        })
+        }
+        await authService.updateProfile(payload)
         toast.success('Onboarding complete!')
         router.push('/dashboard')
         setLoading(false)
       } catch (err) {
-        console.error('Onboarding submission failed:', err)
-        toast.error('Failed to complete onboarding. Please try again.')
-        setError('Something went wrong. Please try again. If this persists, contact support.')
-        setLoading(false)
+        console.error('Backend API failed, trying direct Supabase update:', err)
+        try {
+          const { error: sessionError } = await supabase.auth.getSession()
+          if (sessionError) throw sessionError
+          const { data: session } = await supabase.auth.getSession()
+          if (!session?.session?.user?.id) throw new Error('No session')
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({
+              identity_document_url: data.identityDocumentUrl || null,
+              address_document_url: data.addressDocumentUrl || null,
+              onboarding_complete: true,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', session.session.user.id)
+          if (updateError) throw updateError
+          toast.success('Onboarding complete!')
+          router.push('/dashboard')
+          setLoading(false)
+        } catch (fallbackErr) {
+          console.error('Direct Supabase update also failed:', fallbackErr)
+          toast.error('Failed to complete onboarding. Please try again.')
+          setError('Something went wrong. Please try again. If this persists, contact support.')
+          setLoading(false)
+        }
       }
       return
     }
@@ -492,8 +515,8 @@ export default function OnboardingPage() {
         </div>
 
         {error && (
-          <div className="mt-4 p-4 bg-red-500/20 border-2 border-red-500/50 rounded-2xl">
-            <p className="text-sm font-bold text-red-300">{error}</p>
+          <div className="mt-4 p-4 bg-red-600 border-2 border-red-400 rounded-2xl shadow-lg shadow-red-600/30">
+            <p className="text-sm font-bold text-white">{error}</p>
           </div>
         )}
 
