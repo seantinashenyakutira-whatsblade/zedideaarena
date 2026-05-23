@@ -3,7 +3,7 @@
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { VerificationBanner } from '@/components/dashboard/KycBanner'
-import { TrendingUp, FileText, Clock, CheckCircle, ArrowRight, Lightbulb, ChevronRight } from 'lucide-react'
+import { TrendingUp, FileText, Clock, CheckCircle, ArrowRight, Lightbulb, ChevronRight, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { ideaService } from '@/services/idea'
@@ -57,8 +57,27 @@ export default function DashboardPage() {
                 </Link>
               </div>
 
+              {profile && !profile.onboarding_complete && (
+                <div className="card-zed glass-premium border-yellow-500/40 mb-8 flex items-center justify-between animate-zed-fade-up">
+                  <div className="flex items-center gap-4">
+                    <div className="p-4 bg-yellow-500/20 rounded-2xl text-yellow-500 floating">
+                      <AlertTriangle size={32} className="drop-shadow-[0_0_12px_rgba(234,179,8,1)]" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-zed-foreground mb-1 tracking-tight">Onboarding Required</h3>
+                      <p className="text-sm text-zed-foreground-secondary max-w-sm leading-relaxed">
+                        Complete your profile onboarding to access all Arena features.
+                      </p>
+                    </div>
+                  </div>
+                  <Link href="/onboarding" className="btn-primary w-full md:w-auto flex items-center justify-center gap-2 px-8 py-4 text-sm glow-primary click-push">
+                    Complete Onboarding
+                  </Link>
+                </div>
+              )}
+
               <VerificationBanner
-                status={profile?.is_verified ? 'verified' : 'unverified'}
+                status={!profile?.onboarding_complete ? 'unverified' : profile?.is_verified ? 'verified' : 'pending'}
                 isVerified={profile?.is_verified}
               />
 

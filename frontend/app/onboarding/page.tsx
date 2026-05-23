@@ -187,14 +187,6 @@ export default function OnboardingPage() {
       setError(null)
       try {
         await authService.updateProfile({
-          fullName: data.fullName,
-          dob: data.dob,
-          nationality: data.nationality,
-          profession: data.profession,
-          bio: data.bio,
-          country: data.country,
-          city: data.city,
-          address: data.address,
           identity_document_url: data.identityDocumentUrl,
           address_document_url: data.addressDocumentUrl,
           onboarding_complete: true,
@@ -204,6 +196,7 @@ export default function OnboardingPage() {
         setLoading(false)
       } catch (err) {
         console.error('Onboarding submission failed:', err)
+        toast.error('Failed to complete onboarding. Please try again.')
         setError('Something went wrong. Please try again. If this persists, contact support.')
         setLoading(false)
       }
@@ -242,11 +235,16 @@ export default function OnboardingPage() {
             const isDone = currentStep > s.number
             return (
               <div key={idx} className="flex flex-col items-center gap-2 relative flex-1">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 text-sm font-black ${
-                  isActive ? 'bg-zed-primary text-white shadow-lg shadow-zed-primary/30' : 'bg-white/5 text-zed-foreground-secondary'
-                }`}>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(s.number)}
+                  disabled={loading}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 text-sm font-black disabled:opacity-50 ${
+                    isActive ? 'bg-zed-primary text-white shadow-lg shadow-zed-primary/30' : 'bg-white/5 text-zed-foreground-secondary hover:bg-white/10'
+                  }`}
+                >
                   {isDone ? <Check size={18} /> : <Icon size={18} />}
-                </div>
+                </button>
                 <span className={`text-[8px] font-black uppercase tracking-widest text-center ${isActive ? 'text-zed-primary' : 'text-zed-foreground-secondary'}`}>
                   {s.title}
                 </span>
@@ -494,8 +492,8 @@ export default function OnboardingPage() {
         </div>
 
         {error && (
-          <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-2xl">
-            <p className="text-sm font-bold text-red-400">{error}</p>
+          <div className="mt-4 p-4 bg-red-500/20 border-2 border-red-500/50 rounded-2xl">
+            <p className="text-sm font-bold text-red-300">{error}</p>
           </div>
         )}
 
