@@ -5,11 +5,10 @@ import { DashboardHeader } from '@/components/dashboard/header'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
 import { authService } from '@/services/auth'
-import { User, Mail, Shield, LogOut, Save, Loader2, MapPin } from 'lucide-react'
+import { User, Mail, Shield, LogOut, Save, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
-import { LocationAutocomplete } from '@/components/LocationAutocomplete'
 
 export default function SettingsPage() {
   const { profile, logout, refreshProfile } = useAuth()
@@ -78,22 +77,59 @@ export default function SettingsPage() {
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Location</label>
-                        <div className="relative">
-                          <MapPin className="absolute left-3 top-3.5 text-zed-foreground-secondary z-10" size={18} />
-                          <LocationAutocomplete
-                            value={profile?.country ? { country: profile.country, city: profile.city || '', address: profile.address || '' } : undefined}
-                            onChange={async (location) => {
+                        <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Address</label>
+                        <input
+                          type="text"
+                          defaultValue={profile?.address || ''}
+                          onBlur={async (e) => {
+                            try {
+                              await authService.updateProfile({ address: e.target.value })
+                              refreshProfile()
+                            } catch { /* silent */ }
+                          }}
+                          className="input-zed"
+                          placeholder="e.g. 123 Independence Ave, Lusaka"
+                        />
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">City / Town</label>
+                          <input
+                            type="text"
+                            defaultValue={profile?.city || ''}
+                            onBlur={async (e) => {
                               try {
-                                await authService.updateProfile({ country: location.country, city: location.city, address: location.address })
-                                toast.success('Location updated')
+                                await authService.updateProfile({ city: e.target.value })
                                 refreshProfile()
-                              } catch {
-                                toast.error('Failed to update location')
-                              }
+                              } catch { /* silent */ }
                             }}
-                            placeholder="Search your city or country"
+                            className="input-zed"
+                            placeholder="e.g. Lusaka"
                           />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Country</label>
+                          <select
+                            defaultValue={profile?.country || ''}
+                            onChange={async (e) => {
+                              try {
+                                await authService.updateProfile({ country: e.target.value })
+                                refreshProfile()
+                              } catch { /* silent */ }
+                            }}
+                            className="input-zed"
+                          >
+                            <option value="">Select country</option>
+                            <option value="Zambia">Zambia</option>
+                            <option value="Zimbabwe">Zimbabwe</option>
+                            <option value="South Africa">South Africa</option>
+                            <option value="Nigeria">Nigeria</option>
+                            <option value="Kenya">Kenya</option>
+                            <option value="Tanzania">Tanzania</option>
+                            <option value="Ghana">Ghana</option>
+                            <option value="Ethiopia">Ethiopia</option>
+                            <option value="Other">Other</option>
+                          </select>
                         </div>
                       </div>
 

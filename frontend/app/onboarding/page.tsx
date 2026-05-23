@@ -4,8 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ChevronRight, ChevronLeft, Upload, Loader2, Check, User, MapPin, FileText, ClipboardCheck } from 'lucide-react'
-import { LocationAutocomplete } from '@/components/LocationAutocomplete'
+import { ChevronRight, ChevronLeft, Upload, Loader2, Check, User, FileText, ClipboardCheck } from 'lucide-react'
 import { authService } from '@/services/auth'
 import { toast } from 'sonner'
 
@@ -313,29 +312,45 @@ export default function OnboardingPage() {
             <div className="space-y-6 animate-zed-fade-up">
               <h2 className="text-xl font-black text-zed-foreground mb-6">Your Location</h2>
               <p className="text-sm text-zed-foreground-secondary mb-4">
-                Search for your address below or use your current location. Your location helps us connect you with local innovation communities.
+                Enter your full address below. Your location helps us connect you with local innovation communities.
               </p>
               <div>
                 <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-2">Full Address</label>
-                <LocationAutocomplete
-                  value={data.address ? { country: data.country, city: data.city, address: data.address } : undefined}
-                  onChange={(loc) => update({ country: loc.country, city: loc.city, address: loc.address })}
-                  placeholder="Search your full address"
+                <input
+                  type="text"
+                  value={data.address}
+                  onChange={e => update({ address: e.target.value })}
+                  className="input-zed"
+                  placeholder="e.g. 123 Independence Ave, Lusaka"
                 />
               </div>
-              {data.address && (
-                <div className="p-4 bg-zed-primary/5 rounded-2xl border border-zed-primary/20">
-                  <p className="text-sm text-zed-foreground">
-                    <span className="font-black">Address:</span> {data.address}
-                  </p>
-                  <p className="text-sm text-zed-foreground mt-1">
-                    <span className="font-black">Country:</span> {data.country}
-                  </p>
-                  <p className="text-sm text-zed-foreground mt-1">
-                    <span className="font-black">City:</span> {data.city}
-                  </p>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-2">City / Town</label>
+                  <input
+                    type="text"
+                    value={data.city}
+                    onChange={e => update({ city: e.target.value })}
+                    className="input-zed"
+                    placeholder="e.g. Lusaka"
+                  />
                 </div>
-              )}
+                <div>
+                  <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-2">Country</label>
+                  <select value={data.country} onChange={e => update({ country: e.target.value })} className="input-zed">
+                    <option value="">Select country</option>
+                    <option value="Zambia">Zambia</option>
+                    <option value="Zimbabwe">Zimbabwe</option>
+                    <option value="South Africa">South Africa</option>
+                    <option value="Nigeria">Nigeria</option>
+                    <option value="Kenya">Kenya</option>
+                    <option value="Tanzania">Tanzania</option>
+                    <option value="Ghana">Ghana</option>
+                    <option value="Ethiopia">Ethiopia</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
             </div>
           )}
 
