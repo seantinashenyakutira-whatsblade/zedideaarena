@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ChevronRight, ChevronLeft, Upload, Loader2, Check, User, FileText, ClipboardCheck } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Upload, Loader2, Check, User, Map, FileText, ClipboardCheck } from 'lucide-react'
 import { authService } from '@/services/auth'
 import { toast } from 'sonner'
 
@@ -23,7 +23,7 @@ interface OnboardingData {
 
 const steps = [
   { number: 1, title: 'Personal Info', icon: User },
-  { number: 2, title: 'Location', icon: MapPin },
+  { number: 2, title: 'Location', icon: Map },
   { number: 3, title: 'Documents', icon: FileText },
   { number: 4, title: 'Review', icon: ClipboardCheck },
 ]
