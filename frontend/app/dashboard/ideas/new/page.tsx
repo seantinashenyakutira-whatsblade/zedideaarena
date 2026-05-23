@@ -90,7 +90,7 @@ function NewIdeaForm() {
         if (compId) {
           try {
             const payRes = await api.get(`/payments/check-entry/${compId}`)
-            setHasPaidEntry(payRes.paid === true)
+            setHasPaidEntry(payRes.data.paid === true)
           } catch { /* silent */ }
         }
       } catch (err) {
