@@ -82,10 +82,10 @@ export default function SettingsPage() {
                         <div className="relative">
                           <MapPin className="absolute left-3 top-3.5 text-zed-foreground-secondary z-10" size={18} />
                           <LocationAutocomplete
-                            value={profile?.country ? { country: profile.country, city: profile.city || '' } : undefined}
+                            value={profile?.country ? { country: profile.country, city: profile.city || '', address: profile.address || '' } : undefined}
                             onChange={async (location) => {
                               try {
-                                await authService.updateProfile({ country: location.country, city: location.city })
+                                await authService.updateProfile({ country: location.country, city: location.city, address: location.address })
                                 toast.success('Location updated')
                                 refreshProfile()
                               } catch {
