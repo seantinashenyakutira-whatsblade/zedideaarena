@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -49,6 +49,7 @@ export default function OnboardingPage() {
   const [profileLoaded, setProfileLoaded] = useState(false)
   const [uploadingIdentity, setUploadingIdentity] = useState(false)
   const [uploadingAddress, setUploadingAddress] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -164,7 +165,9 @@ export default function OnboardingPage() {
           profession: data.profession,
           bio: data.bio,
         })
-      } catch { /* silent */ }
+      } catch (err) {
+        console.error('Step 1 save failed:', err)
+      }
     }
 
     if (currentStep === 2) {
@@ -174,19 +177,34 @@ export default function OnboardingPage() {
           city: data.city,
           address: data.address,
         })
-      } catch { /* silent */ }
+      } catch (err) {
+        console.error('Step 2 save failed:', err)
+      }
     }
 
     if (currentStep === 4) {
       setLoading(true)
+      setError(null)
       try {
         await authService.updateProfile({
+          fullName: data.fullName,
+          dob: data.dob,
+          nationality: data.nationality,
+          profession: data.profession,
+          bio: data.bio,
+          country: data.country,
+          city: data.city,
+          address: data.address,
+          identity_document_url: data.identityDocumentUrl,
+          address_document_url: data.addressDocumentUrl,
           onboarding_complete: true,
         })
         toast.success('Onboarding complete!')
         router.push('/dashboard')
-      } catch {
-        toast.error('Failed to complete onboarding')
+        setLoading(false)
+      } catch (err) {
+        console.error('Onboarding submission failed:', err)
+        setError('Something went wrong. Please try again. If this persists, contact support.')
         setLoading(false)
       }
       return
@@ -474,6 +492,12 @@ export default function OnboardingPage() {
             </div>
           )}
         </div>
+
+        {error && (
+          <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-2xl">
+            <p className="text-sm font-bold text-red-400">{error}</p>
+          </div>
+        )}
 
         <div className="mt-6 flex justify-between gap-4">
           <button
