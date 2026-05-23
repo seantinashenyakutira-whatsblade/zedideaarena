@@ -42,6 +42,9 @@ export function LocationAutocomplete({ value, onChange, placeholder = 'Search yo
       autocompleteRef.current = new places.AutocompleteService()
       geocoderRef.current = new geocoding.Geocoder()
       setScriptLoaded(true)
+    }).catch((err) => {
+      console.error('Google Maps failed to load:', err)
+      setGeoError('Failed to load Google Maps. Check your API key in Vercel/ .env.local.')
     })
   }, [])
 
@@ -172,7 +175,7 @@ export function LocationAutocomplete({ value, onChange, placeholder = 'Search yo
           ))}
         </div>
       )}
-      {!scriptLoaded ? (
+      {!scriptLoaded && !geoError ? (
         <div className="flex items-center gap-2 text-xs text-zed-foreground-secondary">
           <Loader2 size={12} className="animate-spin" />
           Loading map services...
@@ -181,7 +184,7 @@ export function LocationAutocomplete({ value, onChange, placeholder = 'Search yo
         <button
           type="button"
           onClick={getCurrentLocation}
-          disabled={locating}
+          disabled={locating || !scriptLoaded}
           className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/[0.07] transition-colors text-xs font-black uppercase tracking-widest text-zed-primary disabled:opacity-50"
         >
           {locating ? (
