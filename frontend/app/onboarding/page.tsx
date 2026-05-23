@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronRight, ChevronLeft, Upload, Loader2, Check, User, Map, FileText, ClipboardCheck } from 'lucide-react'
 import { authService } from '@/services/auth'
-import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 import { toast } from 'sonner'
 
 interface OnboardingData {
@@ -44,6 +44,7 @@ const initialData: OnboardingData = {
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { refreshProfile } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [data, setData] = useState<OnboardingData>(initialData)
   const [loading, setLoading] = useState(false)
@@ -51,6 +52,9 @@ export default function OnboardingPage() {
   const [uploadingIdentity, setUploadingIdentity] = useState(false)
   const [uploadingAddress, setUploadingAddress] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmed, setConfirmed] = useState(false)
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false)
+  const logoRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -117,8 +121,11 @@ export default function OnboardingPage() {
       } else {
         toast.error(body.message || 'Upload failed')
       }
-    } catch {
-      toast.error('Upload failed. Please try again.')
+    } catch (err) {
+      console.error(`[${type} document upload error]:`, err)
+      const msg = err instanceof Error ? err.message : 'Upload failed. Please try again.'
+      toast.error(msg)
+      setError(msg)
     } finally {
       if (type === 'identity') setUploadingIdentity(false)
       else setUploadingAddress(false)
@@ -148,6 +155,9 @@ export default function OnboardingPage() {
       case 3:
         if (!data.identityDocumentUrl) { toast.error('Proof of identity is required'); return false }
         if (!data.addressDocumentUrl) { toast.error('Proof of address is required'); return false }
+        return true
+      case 4:
+        if (!confirmed) { toast.error('Please confirm that all information is accurate'); return false }
         return true
       default:
         return true
@@ -187,33 +197,32 @@ export default function OnboardingPage() {
       setLoading(true)
       setError(null)
       try {
-        const { data: sessionData } = await supabase.auth.getSession()
-        let uid = sessionData?.session?.user?.id
-        if (!uid) {
-          const { data: { user } } = await supabase.auth.getUser()
-          uid = user?.id
+        const response = await authService.updateProfile({
+          fullName: data.fullName,
+          dob: data.dob,
+          nationality: data.nationality,
+          profession: data.profession,
+          bio: data.bio,
+          country: data.country,
+          city: data.city,
+          address: data.address,
+          identity_document_url: data.identityDocumentUrl || null,
+          address_document_url: data.addressDocumentUrl || null,
+          onboarding_complete: true,
+        })
+        if (!response) {
+          throw new Error('Profile update failed — no response')
         }
-        if (!uid) {
-          const token = localStorage.getItem('token')
-          if (token) {
-            const payload = JSON.parse(atob(token.split('.')[1]))
-            uid = payload.sub
-          }
+        const resData: any = response
+        if (resData.status !== 'success' && !resData.success) {
+          throw new Error(resData.error || 'Profile update failed')
         }
-        if (!uid) throw new Error('Could not determine user identity')
-        const { error: updateError } = await supabase
-          .from('users')
-          .update({
-            identity_document_url: data.identityDocumentUrl || null,
-            address_document_url: data.addressDocumentUrl || null,
-            onboarding_complete: true,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', uid)
-        if (updateError) throw updateError
-        toast.success('Onboarding complete!')
-        router.push('/dashboard')
         setLoading(false)
+        await refreshProfile()
+        setShowSuccessPopup(true)
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 2500)
       } catch (err: any) {
         console.error('Onboarding submission failed:', err)
         const msg = err?.message || err?.error_description || 'Something went wrong. Please try again.'
@@ -240,7 +249,7 @@ export default function OnboardingPage() {
       <div className="container-zed py-12 max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-4">
-            <div className="flex items-center gap-3 justify-center">
+            <div ref={logoRef} className="flex items-center gap-3 justify-center animate-logo-entry">
               <Image src="/logo-icon.png" alt="ZedIdeaArena" width={36} height={36} className="object-contain" />
               <span className="font-bold text-xl gradient-text">ZedIdeaArena</span>
             </div>
@@ -503,7 +512,7 @@ export default function OnboardingPage() {
               </div>
 
               <label className="flex items-start gap-3 cursor-pointer p-4 bg-white/5 rounded-2xl border border-white/10">
-                <input type="checkbox" id="confirmCheck" className="mt-1" />
+                <input type="checkbox" id="confirmCheck" className="mt-1" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />
                 <span className="text-xs font-bold text-zed-foreground">
                   I confirm that all information provided above is accurate and complete.
                 </span>
@@ -544,6 +553,58 @@ export default function OnboardingPage() {
           </button>
         </div>
       </div>
+      {showSuccessPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-fade-in" onClick={() => {}}>
+          <div className="bg-zed-surface border border-white/10 rounded-3xl p-12 max-w-md w-full mx-4 text-center shadow-2xl shadow-zed-primary/20 animate-electric-pulse">
+            <div className="flex flex-col items-center gap-4 mb-6">
+              <div className="w-20 h-20 rounded-full bg-zed-primary/20 flex items-center justify-center">
+                <Image src="/logo-icon.png" alt="ZedIdeaArena" width={48} height={48} className="object-contain" />
+              </div>
+              <div className="w-16 h-16 rounded-full bg-zed-success/20 flex items-center justify-center -mt-10 relative">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" className="animate-draw-check" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-3xl font-black text-zed-foreground mb-3">You&apos;re In.</h2>
+            <p className="text-zed-foreground-secondary text-lg">Welcome to ZedIdeaArena. Let the best idea win.</p>
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes electricPulse {
+          0% { box-shadow: 0 0 0px rgba(99, 102, 241, 0); opacity: 0; transform: scale(0.8); }
+          50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.8); opacity: 1; transform: scale(1.05); }
+          100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); transform: scale(1); }
+        }
+        @keyframes logoEntry {
+          0% { transform: scale(0.5); opacity: 0; }
+          60% { transform: scale(1.1); opacity: 1; }
+          80% { transform: scale(0.95); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes drawCheck {
+          0% { stroke-dashoffset: 100; }
+          100% { stroke-dashoffset: 0; }
+        }
+        @keyframes fadeIn {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        .animate-logo-entry {
+          animation: logoEntry 0.8s ease-out forwards;
+        }
+        .animate-electric-pulse {
+          animation: electricPulse 1.2s ease-out forwards;
+        }
+        .animate-draw-check {
+          stroke-dasharray: 100;
+          animation: drawCheck 0.6s ease-out 0.3s forwards;
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.5s ease-out forwards;
+        }
+      `}</style>
     </div>
   )
 }

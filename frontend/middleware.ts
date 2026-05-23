@@ -41,19 +41,26 @@ export async function middleware(request: NextRequest) {
     .eq('id', session.user.id)
     .single()
 
-  if (path.startsWith('/admin') && !profile?.is_admin) {
+  if (!profile) {
+    if (path !== '/onboarding') {
+      return NextResponse.redirect(new URL('/onboarding', request.url))
+    }
+    return response
+  }
+
+  if (path.startsWith('/admin') && !profile.is_admin) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  if (path.startsWith('/voter') && !profile?.is_verified) {
+  if (path.startsWith('/voter') && !profile.is_verified) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  if (!profile?.onboarding_complete && path !== '/onboarding') {
+  if (!profile.onboarding_complete && path !== '/onboarding') {
     return NextResponse.redirect(new URL('/onboarding', request.url))
   }
 
-  if (profile?.onboarding_complete && path === '/onboarding') {
+  if (profile.onboarding_complete && path === '/onboarding') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
