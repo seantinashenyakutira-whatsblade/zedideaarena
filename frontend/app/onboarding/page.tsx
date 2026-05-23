@@ -187,8 +187,20 @@ export default function OnboardingPage() {
       setLoading(true)
       setError(null)
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        if (userError || !user) throw userError || new Error('No authenticated user')
+        const { data: sessionData } = await supabase.auth.getSession()
+        let uid = sessionData?.session?.user?.id
+        if (!uid) {
+          const { data: { user } } = await supabase.auth.getUser()
+          uid = user?.id
+        }
+        if (!uid) {
+          const token = localStorage.getItem('token')
+          if (token) {
+            const payload = JSON.parse(atob(token.split('.')[1]))
+            uid = payload.sub
+          }
+        }
+        if (!uid) throw new Error('Could not determine user identity')
         const { error: updateError } = await supabase
           .from('users')
           .update({
@@ -197,15 +209,16 @@ export default function OnboardingPage() {
             onboarding_complete: true,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', user.id)
+          .eq('id', uid)
         if (updateError) throw updateError
         toast.success('Onboarding complete!')
         router.push('/dashboard')
         setLoading(false)
-      } catch (err) {
+      } catch (err: any) {
         console.error('Onboarding submission failed:', err)
-        toast.error('Failed to complete onboarding. Please try again.')
-        setError('Something went wrong. Please try again. If this persists, contact support.')
+        const msg = err?.message || err?.error_description || 'Something went wrong. Please try again.'
+        toast.error(msg)
+        setError(msg)
         setLoading(false)
       }
       return
