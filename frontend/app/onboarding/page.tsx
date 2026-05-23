@@ -17,6 +17,7 @@ interface OnboardingData {
   bio: string
   country: string
   city: string
+  address: string
   identityDocumentUrl: string
   addressDocumentUrl: string
 }
@@ -36,6 +37,7 @@ const initialData: OnboardingData = {
   bio: '',
   country: '',
   city: '',
+  address: '',
   identityDocumentUrl: '',
   addressDocumentUrl: '',
 }
@@ -67,6 +69,7 @@ export default function OnboardingPage() {
             bio: p.bio || '',
             country: p.country || '',
             city: p.city || '',
+            address: p.address || '',
             identityDocumentUrl: p.identity_document_url || '',
             addressDocumentUrl: p.address_document_url || '',
           })
@@ -137,6 +140,7 @@ export default function OnboardingPage() {
         if (data.bio.length > 300) { toast.error('Bio must be 300 characters or less'); return false }
         return true
       case 2:
+        if (!data.address) { toast.error('Full address is required'); return false }
         if (!data.country) { toast.error('Country is required'); return false }
         if (!data.city) { toast.error('City is required'); return false }
         return true
@@ -169,6 +173,7 @@ export default function OnboardingPage() {
         await authService.updateProfile({
           country: data.country,
           city: data.city,
+          address: data.address,
         })
       } catch { /* silent */ }
     }
@@ -308,19 +313,22 @@ export default function OnboardingPage() {
             <div className="space-y-6 animate-zed-fade-up">
               <h2 className="text-xl font-black text-zed-foreground mb-6">Your Location</h2>
               <p className="text-sm text-zed-foreground-secondary mb-4">
-                Search for your city or town below. Your location helps us connect you with local innovation communities.
+                Search for your address below or use your current location. Your location helps us connect you with local innovation communities.
               </p>
               <div>
-                <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-2">Location</label>
+                <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-2">Full Address</label>
                 <LocationAutocomplete
-                  value={data.country ? { country: data.country, city: data.city } : undefined}
-                  onChange={(loc) => update({ country: loc.country, city: loc.city })}
-                  placeholder="Search your city or country"
+                  value={data.address ? { country: data.country, city: data.city, address: data.address } : undefined}
+                  onChange={(loc) => update({ country: loc.country, city: loc.city, address: loc.address })}
+                  placeholder="Search your full address"
                 />
               </div>
-              {data.country && (
+              {data.address && (
                 <div className="p-4 bg-zed-primary/5 rounded-2xl border border-zed-primary/20">
                   <p className="text-sm text-zed-foreground">
+                    <span className="font-black">Address:</span> {data.address}
+                  </p>
+                  <p className="text-sm text-zed-foreground mt-1">
                     <span className="font-black">Country:</span> {data.country}
                   </p>
                   <p className="text-sm text-zed-foreground mt-1">
@@ -413,6 +421,10 @@ export default function OnboardingPage() {
                 <div>
                   <p className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest">Bio</p>
                   <p className="text-sm text-zed-foreground-secondary">{data.bio}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest">Full Address</p>
+                  <p className="font-bold text-zed-foreground">{data.address}</p>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>

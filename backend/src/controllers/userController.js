@@ -88,7 +88,7 @@ const syncUserProfile = async (req, res) => {
     return res.status(401).json({ success: false, error: 'Unauthorized: No user data found in token' });
   }
 
-  const { fullName, dob, nationality, country, city, phone, idType, idNumber, role, profession, bio, id_document_url, onboarding_complete, identity_document_url, address_document_url } = req.body;
+  const { fullName, dob, nationality, country, city, address, phone, idType, idNumber, role, profession, bio, id_document_url, onboarding_complete, identity_document_url, address_document_url } = req.body;
 
   try {
     const profileData = {};
@@ -97,6 +97,7 @@ const syncUserProfile = async (req, res) => {
     if (nationality !== undefined) profileData.nationality = nationality;
     if (country !== undefined) profileData.country = country;
     if (city !== undefined) profileData.city = city;
+    if (address !== undefined) profileData.address = address;
     if (idNumber !== undefined) profileData.id_number = idNumber;
     if (profession !== undefined) profileData.profession = profession;
     if (bio !== undefined) profileData.bio = bio;

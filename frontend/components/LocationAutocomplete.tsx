@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Loader2, MapPin } from 'lucide-react'
+import { Loader2, MapPin, Crosshair } from 'lucide-react'
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
 
 interface LocationResult {
   country: string
   city: string
+  address: string
 }
 
 interface LocationAutocompleteProps {
@@ -19,8 +20,10 @@ export function LocationAutocomplete({ value, onChange, placeholder = 'Search yo
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [locating, setLocating] = useState(false)
   const [open, setOpen] = useState(false)
   const [scriptLoaded, setScriptLoaded] = useState(false)
+  const [geoError, setGeoError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const autocompleteRef = useRef<google.maps.places.AutocompleteService | null>(null)
   const geocoderRef = useRef<google.maps.Geocoder | null>(null)
@@ -64,29 +67,80 @@ export function LocationAutocomplete({ value, onChange, placeholder = 'Search yo
     )
   }, [query, scriptLoaded])
 
+  const extractCityCountry = (addr: google.maps.GeocoderResult) => {
+    let country = ''
+    let city = ''
+    for (const comp of addr.address_components) {
+      if (comp.types.includes('country')) country = comp.long_name
+      if (comp.types.includes('locality') || comp.types.includes('administrative_area_level_2') || comp.types.includes('postal_town')) {
+        city = comp.long_name
+      }
+    }
+    return { country, city }
+  }
+
   const selectPlace = (placeId: string) => {
     if (!geocoderRef.current) return
     geocoderRef.current.geocode({ placeId }, (results, status) => {
       if (status !== google.maps.GeocoderStatus.OK || !results?.[0]) return
       const addr = results[0]
-      let country = ''
-      let city = ''
-      for (const comp of addr.address_components) {
-        if (comp.types.includes('country')) country = comp.long_name
-        if (comp.types.includes('locality') || comp.types.includes('administrative_area_level_2') || comp.types.includes('postal_town')) {
-          city = comp.long_name
-        }
-      }
+      const { country, city } = extractCityCountry(addr)
       setQuery(addr.formatted_address || '')
       setOpen(false)
-      onChange({ country, city })
+      onChange({ country, city, address: addr.formatted_address || '' })
     })
   }
 
-  const displayValue = value ? `${value.city}, ${value.country}` : query
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setGeoError('Geolocation is not supported by your browser')
+      return
+    }
+    setLocating(true)
+    setGeoError('')
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        if (!geocoderRef.current) {
+          setLocating(false)
+          setGeoError('Map service not ready yet')
+          return
+        }
+        geocoderRef.current.geocode(
+          { location: { lat: latitude, lng: longitude } },
+          (results, status) => {
+            setLocating(false)
+            if (status !== google.maps.GeocoderStatus.OK || !results?.[0]) {
+              setGeoError('Could not determine your address')
+              return
+            }
+            const addr = results[0]
+            const { country, city } = extractCityCountry(addr)
+            setQuery(addr.formatted_address || '')
+            onChange({ country, city, address: addr.formatted_address || '' })
+          }
+        )
+      },
+      (err) => {
+        setLocating(false)
+        switch (err.code) {
+          case err.PERMISSION_DENIED:
+            setGeoError('Location permission denied. Please search manually.')
+            break
+          case err.POSITION_UNAVAILABLE:
+            setGeoError('Location unavailable. Please search manually.')
+            break
+          default:
+            setGeoError('Failed to get location. Please search manually.')
+        }
+      }
+    )
+  }
+
+  const displayValue = value?.address ? value.address : value ? `${value.city}, ${value.country}` : query
 
   return (
-    <div className="relative">
+    <div className="space-y-3">
       <div className="relative">
         <MapPin className="absolute left-3 top-3.5 text-zed-foreground-secondary" size={18} />
         <input
@@ -117,6 +171,28 @@ export function LocationAutocomplete({ value, onChange, placeholder = 'Search yo
             </button>
           ))}
         </div>
+      )}
+      {!scriptLoaded ? (
+        <div className="flex items-center gap-2 text-xs text-zed-foreground-secondary">
+          <Loader2 size={12} className="animate-spin" />
+          Loading map services...
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={getCurrentLocation}
+          disabled={locating}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/[0.07] transition-colors text-xs font-black uppercase tracking-widest text-zed-primary disabled:opacity-50"
+        >
+          {locating ? (
+            <><Loader2 size={14} className="animate-spin" /> Locating...</>
+          ) : (
+            <><Crosshair size={14} /> Use Current Location</>
+          )}
+        </button>
+      )}
+      {geoError && (
+        <p className="text-xs text-red-400">{geoError}</p>
       )}
     </div>
   )
