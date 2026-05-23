@@ -31,7 +31,7 @@ export function LocationAutocomplete({ value, onChange, placeholder = 'Search yo
   useEffect(() => {
     if (typeof window === 'undefined') return
     setOptions({
-      key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+      key: process.env.NEXT_PUBLIC_GOOGLE_PLACES_KEY || '',
       v: 'weekly',
       libraries: ['places', 'geocoding'],
     })
@@ -140,7 +140,7 @@ export function LocationAutocomplete({ value, onChange, placeholder = 'Search yo
   const displayValue = value?.address ? value.address : value ? `${value.city}, ${value.country}` : query
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 relative">
       <div className="relative">
         <MapPin className="absolute left-3 top-3.5 text-zed-foreground-secondary" size={18} />
         <input
