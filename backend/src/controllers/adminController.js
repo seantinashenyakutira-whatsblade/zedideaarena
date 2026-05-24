@@ -398,9 +398,42 @@ const getAuditLog = async (req, res) => {
   }
 };
 
+const getCompetitionById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase
+      .from('competitions')
+      .select('*')
+      .eq('id', id)
+      .neq('is_deleted', true)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({ status: 'error', message: 'Competition not found' });
+      }
+      throw error;
+    }
+
+    const now = new Date();
+    const startDate = new Date(data.start_date);
+    const deadline = new Date(data.submission_deadline);
+
+    let calculatedStatus = 'upcoming';
+    if (now > deadline) calculatedStatus = 'closed';
+    else if (now >= startDate) calculatedStatus = 'active';
+
+    res.json({ status: 'success', data: { ...data, calculatedStatus } });
+  } catch (error) {
+    console.error('Get competition by ID error:', error);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   createCompetition,
   getCompetitions,
+  getCompetitionById,
   getAdminStats,
   getAllIdeas,
   updateIdeaStatus,

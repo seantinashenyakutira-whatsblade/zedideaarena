@@ -14,7 +14,7 @@ export default function CompetitionsPage() {
     const fetchCompetitions = async () => {
       try {
         const res = await api.get('/competitions')
-        setCompetitions(res.data.data || [])
+        setCompetitions(res.data || [])
       } catch (err) {
         console.error('Failed to fetch competitions:', err)
       } finally {

@@ -20,7 +20,7 @@ export default function CompetitionDetailPage() {
     const fetchDetail = async () => {
       try {
         const res = await api.get(`/competitions/${id}`)
-        setCompetition(res.data.data)
+        setCompetition(res.data)
       } catch (err) {
         console.error('Failed to fetch competition detail:', err)
       } finally {
