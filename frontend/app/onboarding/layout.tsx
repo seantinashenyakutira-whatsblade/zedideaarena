@@ -1,11 +1,11 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { authService } from '@/services/auth'
-import { Check, User, Map, FileText, ClipboardCheck } from 'lucide-react'
+import { Check, User, Map, FileText, ClipboardCheck, RefreshCw } from 'lucide-react'
 
 const steps = [
   { number: 1, path: '/onboarding/personal', label: 'Personal', icon: User },
