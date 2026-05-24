@@ -23,9 +23,12 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
   const currentStepIndex = steps.findIndex(s => pathname.startsWith(s.path))
 
   useEffect(() => {
+    let cancelled = false
     const load = async () => {
+      setLoaded(false)
       try {
         const res: any = await authService.getProfile()
+        if (cancelled) return
         if (res?.status === 'success' && res?.data) {
           const p = res.data
           if (p.onboarding_complete) {
@@ -33,24 +36,22 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
             return
           }
           setProfile(p)
+          const step = p.onboarding_step || 0
+          const stepNum = steps[currentStepIndex]?.number || 0
+          if (stepNum > 0 && stepNum > step + 1) {
+            router.push(steps[Math.max(0, step)].path)
+            return
+          }
         }
       } catch {
-        router.push('/auth/login')
-      } finally {
-        setLoaded(true)
+        if (!cancelled) router.push('/auth/login')
+        return
       }
+      if (!cancelled) setLoaded(true)
     }
     load()
-  }, [router])
-
-  useEffect(() => {
-    if (!profile || !loaded) return
-    const step = profile.onboarding_step || 0
-    const stepNum = steps[currentStepIndex]?.number || 0
-    if (stepNum > 0 && stepNum > step + 1) {
-      router.push(steps[Math.max(0, step)].path)
-    }
-  }, [profile, loaded, pathname, router, currentStepIndex])
+    return () => { cancelled = true }
+  }, [router, pathname])
 
   if (!loaded) {
     return (
