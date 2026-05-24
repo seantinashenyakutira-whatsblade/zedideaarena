@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 export default function ReviewPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [confirmed, setConfirmed] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -20,6 +21,10 @@ export default function ReviewPage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error('No user')
+        setUserId(user.id)
+
         const res: any = await authService.getProfile()
         if (res?.status === 'success' && res?.data) {
           setProfile(res.data)
@@ -35,21 +40,32 @@ export default function ReviewPage() {
 
   const handleSubmit = async () => {
     if (!confirmed) { toast.error('Please confirm that all information is accurate'); return }
+    if (!userId) { toast.error('Session not found. Please login again.'); return }
     setIsSubmitting(true)
     setError(null)
 
     try {
-      const response: any = await authService.updateProfile({
-        onboarding_complete: true,
-        onboarding_step: 4,
-      })
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          onboarding_complete: true,
+          onboarding_step: 4,
+        })
+        .eq('id', userId)
 
-      if (response?.status !== 'success') {
-        throw new Error(response?.error || 'Profile update failed')
+      if (updateError) throw updateError
+
+      const { data: verify, error: verifyError } = await supabase
+        .from('users')
+        .select('onboarding_complete')
+        .eq('id', userId)
+        .single()
+
+      if (verifyError || !verify?.onboarding_complete) {
+        throw new Error('Could not confirm onboarding completion. Please try again.')
       }
 
       await supabase.auth.refreshSession()
-      await new Promise(r => setTimeout(r, 600))
 
       setShowSuccess(true)
 

@@ -35,11 +35,26 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('is_admin, is_verified, onboarding_complete')
-    .eq('id', session.user.id)
-    .single()
+  let profile = null
+  let profileError = null
+
+  try {
+    const result = await supabase
+      .from('users')
+      .select('is_admin, is_verified, onboarding_complete, onboarding_skipped, full_name, city')
+      .eq('id', session.user.id)
+      .single()
+    profile = result.data
+    profileError = result.error
+  } catch (err) {
+    console.error('Middleware profile fetch error:', err)
+    profileError = err
+  }
+
+  if (profileError) {
+    console.error('Profile query failed in middleware:', (profileError as any)?.message || profileError)
+    return NextResponse.next()
+  }
 
   if (!profile) {
     if (!path.startsWith('/onboarding')) {
@@ -56,11 +71,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  if (!profile.onboarding_complete && !path.startsWith('/onboarding')) {
+  const hasCompletedOnboarding =
+    profile.onboarding_complete === true ||
+    profile.onboarding_skipped === true ||
+    (profile.full_name && profile.full_name !== 'New Innovator' && profile.city)
+
+  if (!hasCompletedOnboarding && !path.startsWith('/onboarding')) {
     return NextResponse.redirect(new URL('/onboarding/personal', request.url))
   }
 
-  if (profile.onboarding_complete && path.startsWith('/onboarding')) {
+  if (hasCompletedOnboarding && path.startsWith('/onboarding')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
