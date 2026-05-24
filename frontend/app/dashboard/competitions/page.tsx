@@ -1,9 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sidebar } from '@/components/dashboard/sidebar'
-import { DashboardHeader } from '@/components/dashboard/header'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { Trophy, Calendar, Users, ArrowRight, Loader2, Star } from 'lucide-react'
 import api from '@/lib/api'
 import Link from 'next/link'
@@ -28,13 +25,7 @@ export default function CompetitionsPage() {
   }, [])
 
   return (
-    <ProtectedRoute>
-      <div className="flex h-screen bg-zed-background">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
-          <main className="flex-1 overflow-auto p-8 bg-zed-background-alt">
-            <div className="max-w-7xl mx-auto">
+          <div className="max-w-7xl mx-auto">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
                 <div>
                   <h1 className="text-4xl font-black text-zed-foreground mb-2 flex items-center gap-3">
@@ -129,9 +120,5 @@ export default function CompetitionsPage() {
                 </div>
               )}
             </div>
-          </main>
-        </div>
-      </div>
-    </ProtectedRoute>
   )
 }

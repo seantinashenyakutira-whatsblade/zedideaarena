@@ -1,9 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sidebar } from '@/components/dashboard/sidebar'
-import { DashboardHeader } from '@/components/dashboard/header'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
 import { AlertCircle, Loader2, Trophy, Vote, DollarSign, Globe, TrendingUp, Users } from 'lucide-react'
 import { adminService } from '@/services/core'
@@ -32,24 +29,21 @@ export default function AdminAnalytics() {
 
   if (!profile?.is_admin && profile?.role !== 'admin') {
     return (
-      <ProtectedRoute>
-        <div className="flex h-screen bg-zed-background">
-          <Sidebar /><div className="flex-1 flex items-center justify-center"><div className="text-center"><AlertCircle size={64} className="mx-auto mb-4 text-red-500" /><h1 className="text-2xl font-black">Access Denied</h1></div></div>
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <AlertCircle size={64} className="mx-auto mb-4 text-red-500" />
+          <h1 className="text-2xl font-black">Access Denied</h1>
+          <p className="text-zed-foreground-secondary">You do not have admin privileges.</p>
+          <Link href="/dashboard" className="btn-primary mt-6 inline-block">Back to Dashboard</Link>
         </div>
-      </ProtectedRoute>
+      </div>
     )
   }
 
   const revenue = ((analytics?.revenueEstimateCents ?? 0) / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 
   return (
-    <ProtectedRoute>
-      <div className="flex h-screen bg-zed-background">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
-          <main className="flex-1 overflow-auto p-8 bg-zed-background-alt">
-            <div className="max-w-7xl mx-auto">
+          <div className="max-w-7xl mx-auto">
               <div className="mb-12">
                 <h1 className="text-4xl font-black text-zed-foreground">Analytics</h1>
                 <p className="text-zed-foreground-secondary text-xs font-bold uppercase tracking-widest mt-1">System-wide metrics and breakdowns</p>
@@ -154,9 +148,5 @@ export default function AdminAnalytics() {
                 </>
               )}
             </div>
-          </main>
-        </div>
-      </div>
-    </ProtectedRoute>
   )
 }

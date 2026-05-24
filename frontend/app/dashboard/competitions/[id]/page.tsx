@@ -1,9 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sidebar } from '@/components/dashboard/sidebar'
-import { DashboardHeader } from '@/components/dashboard/header'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { Trophy, Calendar, Users, ArrowRight, Loader2, FileText, Shield, Info, CheckCircle2, DollarSign, BarChart3 } from 'lucide-react'
 import api from '@/lib/api'
 import Link from 'next/link'
@@ -44,12 +41,7 @@ export default function CompetitionDetailPage() {
   if (!competition) return null
 
   return (
-    <ProtectedRoute>
-      <div className="flex h-screen bg-zed-background">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
-          <main className="flex-1 overflow-auto">
+          <main>
              <div className="relative h-80 w-full">
                 <img 
                   src={competition.thumbnail_url || 'https://via.placeholder.com/1200x600?text=ZedIdeaArena'} 
@@ -184,9 +176,6 @@ export default function CompetitionDetailPage() {
                    </div>
                 </div>
              </div>
-          </main>
-        </div>
-      </div>
-    </ProtectedRoute>
+           </main>
   )
 }

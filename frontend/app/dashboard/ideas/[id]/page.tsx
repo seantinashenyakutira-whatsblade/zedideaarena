@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Sidebar } from '@/components/dashboard/sidebar'
-import { DashboardHeader } from '@/components/dashboard/header'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { 
   ArrowLeft, 
   ThumbsUp, 
@@ -84,12 +81,7 @@ export default function IdeaDetailPage() {
   if (!idea) return <div>Idea not found</div>
 
   return (
-    <ProtectedRoute>
-      <div className="flex h-screen bg-zed-background">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
-          <main className="flex-1 overflow-auto p-8 bg-zed-background-alt">
+          <main className="py-8">
             <div className="max-w-6xl mx-auto">
               {/* Back Button */}
               <button 
@@ -279,8 +271,5 @@ export default function IdeaDetailPage() {
               </div>
             </div>
           </main>
-        </div>
-      </div>
-    </ProtectedRoute>
   )
 }

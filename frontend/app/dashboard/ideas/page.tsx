@@ -1,12 +1,9 @@
 'use client'
 
-import { Sidebar } from '@/components/dashboard/sidebar'
-import { DashboardHeader } from '@/components/dashboard/header'
 import { FileText, Plus, ArrowRight, Clock, CheckCircle2, ShieldCheck, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { ideaService } from '@/services/idea'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export default function MyIdeasPage() {
   const [loading, setLoading] = useState(true)
@@ -27,15 +24,7 @@ export default function MyIdeasPage() {
   }, [])
 
   return (
-    <ProtectedRoute>
-      <div className="flex h-screen bg-zed-background">
-        <Sidebar />
-
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
-
-          <main className="flex-1 overflow-auto bg-zed-background-alt">
-            <div className="container-zed py-8">
+          <div className="container-zed py-8">
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 animate-zed-fade-up">
                 <div>
                   <h1 className="text-4xl font-black text-zed-foreground mb-2">My Visions</h1>
@@ -133,9 +122,5 @@ export default function MyIdeasPage() {
                 )}
               </div>
             </div>
-          </main>
-        </div>
-      </div>
-    </ProtectedRoute>
   )
 }

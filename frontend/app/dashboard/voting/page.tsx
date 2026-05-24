@@ -1,9 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sidebar } from '@/components/dashboard/sidebar'
-import { DashboardHeader } from '@/components/dashboard/header'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { Trophy, Vote, Calendar, Users, ArrowRight, Loader2 } from 'lucide-react'
 import api from '@/lib/api'
 import Link from 'next/link'
@@ -29,13 +26,7 @@ export default function VotingSelectorPage() {
   }, [])
 
   return (
-    <ProtectedRoute>
-      <div className="flex h-screen bg-zed-background">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
-          <main className="flex-1 overflow-auto p-8 bg-zed-background-alt">
-            <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto">
               <div className="mb-12">
                 <h1 className="text-4xl font-black text-zed-foreground mb-2 flex items-center gap-3">
                   <Vote className="text-zed-primary" size={32} /> Voting Arena
@@ -99,9 +90,5 @@ export default function VotingSelectorPage() {
                 </div>
               )}
             </div>
-          </main>
-        </div>
-      </div>
-    </ProtectedRoute>
   )
 }

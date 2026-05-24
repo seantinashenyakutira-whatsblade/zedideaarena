@@ -1,8 +1,5 @@
 'use client'
 
-import { Sidebar } from '@/components/dashboard/sidebar'
-import { DashboardHeader } from '@/components/dashboard/header'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
 import { authService } from '@/services/auth'
 import { User, Mail, Shield, LogOut, Save, Loader2 } from 'lucide-react'
@@ -30,13 +27,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <ProtectedRoute>
-      <div className="flex h-screen bg-zed-background">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
-          <main className="flex-1 overflow-auto p-8 bg-zed-background-alt">
-            <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto">
               <h1 className="text-4xl font-black text-zed-foreground mb-12">Account Settings</h1>
 
               <div className="grid gap-8">
@@ -187,9 +178,5 @@ export default function SettingsPage() {
                 </section>
               </div>
             </div>
-          </main>
-        </div>
-      </div>
-    </ProtectedRoute>
   )
 }

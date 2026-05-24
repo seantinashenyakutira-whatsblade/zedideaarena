@@ -1,9 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sidebar } from '@/components/dashboard/sidebar'
-import { DashboardHeader } from '@/components/dashboard/header'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
 import { Users, FileText, Trophy, Vote, DollarSign, AlertCircle, Loader2, ArrowRight, ShieldCheck } from 'lucide-react'
 import api from '@/lib/api'
@@ -69,13 +66,7 @@ export default function AdminOverview() {
   }
 
   return (
-    <ProtectedRoute>
-      <div className="flex h-screen bg-zed-background">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
-          <main className="flex-1 overflow-auto p-8 bg-zed-background-alt">
-            <div className="max-w-7xl mx-auto">
+          <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-12">
                 <div>
                   <h1 className="text-4xl font-black text-zed-foreground">Admin Overview</h1>
@@ -145,9 +136,5 @@ export default function AdminOverview() {
                 </>
               )}
             </div>
-          </main>
-        </div>
-      </div>
-    </ProtectedRoute>
   )
 }

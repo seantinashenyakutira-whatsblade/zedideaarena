@@ -2,9 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Sidebar } from '@/components/dashboard/sidebar'
-import { DashboardHeader } from '@/components/dashboard/header'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { CheckCircle2, Trophy, ArrowRight, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -28,12 +25,7 @@ export default function SubmitSuccessPage() {
   }, [id, router])
 
   return (
-    <ProtectedRoute>
-      <div className="flex h-screen bg-zed-background">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
-          <main className="flex-1 overflow-auto bg-zed-background-alt flex items-center justify-center">
+          <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center max-w-lg mx-auto p-12">
               <div className="w-24 h-24 bg-zed-success/20 rounded-full flex items-center justify-center mx-auto mb-8">
                 <CheckCircle2 size={64} className="text-zed-success" />
@@ -55,9 +47,6 @@ export default function SubmitSuccessPage() {
                 <Loader2 size={20} className="text-zed-primary animate-spin" />
               </div>
             </div>
-          </main>
-        </div>
-      </div>
-    </ProtectedRoute>
+          </div>
   )
 }

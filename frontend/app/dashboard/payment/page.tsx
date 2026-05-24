@@ -2,11 +2,8 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Sidebar } from '@/components/dashboard/sidebar'
-import { DashboardHeader } from '@/components/dashboard/header'
 import { paymentService } from '@/services/payment'
 import { Loader2, ShieldCheck, CreditCard, ArrowLeft } from 'lucide-react'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 function PaymentContent() {
   const searchParams = useSearchParams()
@@ -86,18 +83,8 @@ function PaymentContent() {
 
 export default function PaymentPage() {
   return (
-    <ProtectedRoute>
-      <div className="flex h-screen bg-zed-background">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader />
-          <main className="flex-1 overflow-auto bg-zed-background-alt">
-            <Suspense fallback={<div>Loading...</div>}>
-              <PaymentContent />
-            </Suspense>
-          </main>
-        </div>
-      </div>
-    </ProtectedRoute>
+    <Suspense fallback={<div>Loading...</div>}>
+      <PaymentContent />
+    </Suspense>
   )
 }
