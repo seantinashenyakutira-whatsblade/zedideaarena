@@ -1,20 +1,23 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Trophy, Calendar, Users, ArrowRight, Loader2, FileText, Shield, Info, CheckCircle2, DollarSign, BarChart3 } from 'lucide-react'
+import { Trophy, Calendar, Users, ArrowRight, Loader2, FileText, Shield, Info, CheckCircle2, DollarSign, BarChart3, CreditCard, X } from 'lucide-react'
 import api from '@/lib/api'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { CompetitionCountdown } from '@/components/CompetitionCountdown'
 import { paymentService } from '@/services/payment'
 import { toast } from 'sonner'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function CompetitionDetailPage() {
   const { id } = useParams()
   const router = useRouter()
+  const { profile, currentRole } = useAuth()
   const [competition, setCompetition] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [entering, setEntering] = useState(false)
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -108,6 +111,7 @@ export default function CompetitionDetailPage() {
                            <div className="mb-8">
                               <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1">Prize Pool</p>
                               <p className="text-4xl font-black text-zed-primary">${(competition.prize_pool_cents / 100).toLocaleString()}</p>
+                              <p className="text-[10px] text-zed-foreground-secondary mt-1">Grows with every entry</p>
                            </div>
                            <div className="mb-8 p-4 bg-white/5 rounded-2xl">
                               <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-2">Time Remaining</p>
@@ -117,52 +121,93 @@ export default function CompetitionDetailPage() {
                           <div className="space-y-4 mb-8">
                              <div className="flex justify-between text-sm">
                                 <span className="text-zed-foreground-secondary">Entry Fee</span>
-                                <span className="font-bold">${(competition.entry_fee_cents / 100).toFixed(2)}</span>
+                                <span className="font-bold">{competition.entry_fee_cents > 0 ? `$${(competition.entry_fee_cents / 100).toFixed(2)}` : 'Free'}</span>
                              </div>
                              <div className="flex justify-between text-sm">
                                 <span className="text-zed-foreground-secondary">Voter Fee</span>
-                                <span className="font-bold">${(competition.voter_fee_cents / 100).toFixed(2)}</span>
+                                <span className="font-bold">{competition.voter_fee_cents > 0 ? `$${(competition.voter_fee_cents / 100).toFixed(2)}` : 'Free'}</span>
                              </div>
                           </div>
 
-                          {competition.calculatedStatus === 'active' ? (
-                             <button
-                               onClick={async () => {
-                                 setEntering(true);
-                                 try {
-                                   const res: any = await paymentService.enterCompetition(competition.id);
-                                   window.location.href = res.checkoutUrl;
-                                 } catch (err: any) {
-                                   if (err.message?.includes('create an idea')) {
-                                     router.push(`/dashboard/ideas/new?competitionId=${competition.id}`);
-                                   } else {
-                                     toast.error(err.message || 'Failed to enter competition');
-                                   }
-                                 } finally {
-                                   setEntering(false);
-                                 }
-                               }}
-                               disabled={entering}
-                               className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-xs font-black disabled:opacity-50"
-                             >
-                               {entering ? <Loader2 size={18} className="animate-spin" /> : <><DollarSign size={18} /> Enter Arena Now <ArrowRight size={18} /></>}
-                             </button>
-                           ) : competition.calculatedStatus === 'closed' ? (
-                             <Link
-                               href={`/competitions/${competition.id}/results`}
-                               className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-xs font-black"
-                             >
-                               <BarChart3 size={18} /> View Results <ArrowRight size={18} />
-                             </Link>
-                           ) : (
-                             <button className="btn-secondary w-full py-4 rounded-2xl cursor-not-allowed opacity-50 grayscale" disabled>
-                               Competition {competition.calculatedStatus}
-                             </button>
+                           {competition.calculatedStatus === 'active' ? (
+                              <button
+                                onClick={async () => {
+                                  setEntering(true);
+                                  try {
+                                    const currentMode = currentRole === 'voter' ? 'voter' : 'contestant';
+                                    const res = await api.get(`/payments/check?competition_id=${competition.id}&type=${currentMode}`);
+                                    const { alreadyPaid } = res;
+
+                                    if (alreadyPaid) {
+                                      if (currentMode === 'contestant') {
+                                        router.push(`/dashboard/ideas/new?competition=${competition.id}`);
+                                      } else {
+                                        router.push(`/dashboard/vote?competition=${competition.id}`);
+                                      }
+                                      return;
+                                    }
+
+                                    if (currentMode === 'contestant') {
+                                      router.push(`/dashboard/payment?competition=${competition.id}&type=contestant`);
+                                    } else {
+                                      if (!profile?.is_verified) {
+                                        setShowVerificationModal(true);
+                                        setEntering(false);
+                                        return;
+                                      }
+                                      router.push(`/dashboard/payment?competition=${competition.id}&type=voter`);
+                                    }
+                                  } catch (err: any) {
+                                    console.error('Enter arena error:', err);
+                                    toast.error(err.message || 'Something went wrong. Please try again.');
+                                  } finally {
+                                    setEntering(false);
+                                  }
+                                }}
+                                disabled={entering}
+                                className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-xs font-black disabled:opacity-50"
+                              >
+                                {entering ? <Loader2 size={18} className="animate-spin" /> : <><DollarSign size={18} /> {currentRole === 'voter' ? 'Register to Vote' : 'Enter Arena Now'} <ArrowRight size={18} /></>}
+                              </button>
+                            ) : competition.calculatedStatus === 'closed' ? (
+                              <Link
+                                href={`/competitions/${competition.id}/results`}
+                                className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-xs font-black"
+                              >
+                                <BarChart3 size={18} /> View Results <ArrowRight size={18} />
+                              </Link>
+                            ) : (
+                              <button className="btn-secondary w-full py-4 rounded-2xl cursor-not-allowed opacity-50 grayscale" disabled>
+                                Competition {competition.calculatedStatus}
+                              </button>
+                            )}
+                           
+                           <p className="mt-6 text-center text-[10px] text-zed-foreground-secondary uppercase font-bold tracking-widest">
+                             Secure checkout via Stripe
+                           </p>
+                           <div className="flex items-center justify-center gap-2 mt-2">
+                             <span className="text-[9px] bg-white/5 px-2 py-0.5 rounded font-bold text-zed-foreground-secondary tracking-wider">VISA</span>
+                             <span className="text-[9px] bg-white/5 px-2 py-0.5 rounded font-bold text-zed-foreground-secondary tracking-wider">MC</span>
+                             <span className="text-[9px] bg-white/5 px-2 py-0.5 rounded font-bold text-zed-foreground-secondary tracking-wider">AMEX</span>
+                           </div>
+
+                           {showVerificationModal && (
+                             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                               <div className="glass-card p-8 max-w-sm mx-4 text-center">
+                                 <div className="icon-glow mx-auto mb-4 w-14 h-14">🔒</div>
+                                 <h3 className="text-xl font-bold mb-2">Verification Required</h3>
+                                 <p className="text-secondary text-sm mb-6">
+                                   Voter access requires admin verification. Your account is currently under review. You will be notified by email once approved.
+                                 </p>
+                                 <button
+                                   onClick={() => setShowVerificationModal(false)}
+                                   className="btn-primary w-full"
+                                 >
+                                   Got it
+                                 </button>
+                               </div>
+                             </div>
                            )}
-                          
-                          <p className="mt-6 text-center text-[10px] text-zed-foreground-secondary uppercase font-bold tracking-widest">
-                            Secure checkout via Stripe
-                          </p>
                        </div>
 
                       <div className="p-6 bg-zed-primary/5 rounded-3xl border border-zed-primary/10 flex items-center gap-4">

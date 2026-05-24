@@ -296,4 +296,33 @@ const checkEntryPayment = async (req, res) => {
   }
 };
 
-module.exports = { enterCompetition, registerVoter, handleStripeWebhook, getPaymentHistory, checkEntryPayment };
+const checkPayment = async (req, res) => {
+  try {
+    const { competition_id, type } = req.query;
+    const { uid } = req.user;
+
+    if (!competition_id || !type) {
+      return res.status(400).json({ error: 'Missing params' });
+    }
+
+    const { data, error } = await supabase
+      .from('payments')
+      .select('id, status')
+      .eq('user_id', uid)
+      .eq('competition_id', competition_id)
+      .eq('type', type)
+      .eq('status', 'completed')
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      throw error;
+    }
+
+    res.json({ alreadyPaid: !!data });
+  } catch (err) {
+    console.error('Payment check error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { enterCompetition, registerVoter, handleStripeWebhook, getPaymentHistory, checkEntryPayment, checkPayment };

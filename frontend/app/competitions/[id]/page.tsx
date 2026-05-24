@@ -198,7 +198,7 @@ export default function CompetitionDetailPage() {
             )}
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-6 sticky top-6">
             <div className="card-zed glass-premium p-8">
               <h3 className="text-sm font-black text-zed-foreground uppercase tracking-widest mb-6">Details</h3>
               <div className="space-y-4">
@@ -207,6 +207,7 @@ export default function CompetitionDetailPage() {
                   <div>
                     <p className="text-xs text-zed-foreground-secondary font-bold uppercase tracking-widest">Prize Pool</p>
                     <p className="text-2xl font-black text-zed-foreground">${(comp.prize_pool_cents / 100).toLocaleString()}</p>
+                    <p className="text-xs text-zed-foreground-secondary mt-1">Grows with every entry</p>
                   </div>
                 </div>
                 {comp.entry_fee_cents > 0 && (
