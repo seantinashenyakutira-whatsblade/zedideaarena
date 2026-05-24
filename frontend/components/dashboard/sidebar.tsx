@@ -2,28 +2,53 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, FileText, Trophy, Vote, Settings, LogOut, Menu, X } from 'lucide-react'
+import { Home, Trophy, Lightbulb, User, Vote, CheckCircle, Wallet, Settings, LogOut, Menu, X, ShieldCheck, AlertTriangle } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import api from '@/lib/api'
+import { toast } from 'sonner'
 
-const navItems = [
-  { href: '/contestant/dashboard', icon: Home, label: 'Dashboard' },
-  { href: '/contestant/ideas', icon: FileText, label: 'My Ideas' },
-  { href: '/contestant/competitions', icon: Trophy, label: 'Competitions' },
-  { href: '/voter/voting', icon: Vote, label: 'Voting Arena' },
-  { href: '/admin', icon: Settings, label: 'Admin Panel', role: 'admin' },
-  { href: '/contestant/settings', icon: Settings, label: 'Settings' },
+const contestantNav = [
+  { href: '/dashboard', icon: Home, label: 'Overview' },
+  { href: '/dashboard/competitions', icon: Trophy, label: 'My Competitions' },
+  { href: '/dashboard/ideas', icon: Lightbulb, label: 'My Ideas' },
+  { href: '/dashboard/settings', icon: User, label: 'My Profile' },
+]
+
+const voterNav = [
+  { href: '/dashboard/voter', icon: Home, label: 'Overview' },
+  { href: '/dashboard/voting', icon: Vote, label: 'Vote' },
+  { href: '/dashboard/voter', icon: CheckCircle, label: 'My Votes' },
+  { href: '/dashboard/payment', icon: Wallet, label: 'Earnings' },
+  { href: '/dashboard/settings', icon: User, label: 'My Profile' },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
-  const { profile, logout } = useAuth()
+  const [showVerifyModal, setShowVerifyModal] = useState(false)
+  const { profile, currentRole, setCurrentRole, refreshProfile, logout } = useAuth()
 
-  const filteredNavItems = navItems.filter(item => {
-    if (item.role === 'admin' && profile?.role !== 'admin' && !profile?.is_admin) return false
-    return true
-  })
+  const navItems = currentRole === 'voter' ? voterNav : contestantNav
+
+  const handleRoleChange = async (newRole: string) => {
+    if (profile?.current_mode === newRole) return
+
+    if (newRole === 'voter' && !profile?.is_verified) {
+      setShowVerifyModal(true)
+      return
+    }
+
+    try {
+      await api.patch('/user/profile', { current_mode: newRole })
+      setCurrentRole(newRole)
+      toast.success(`Switched to ${newRole} mode`)
+      refreshProfile()
+    } catch (err: any) {
+      const msg = err?.data?.error || err?.message || 'Failed to switch mode'
+      toast.error(msg)
+    }
+  }
 
   return (
     <>
@@ -31,24 +56,51 @@ export function Sidebar() {
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      <aside className={`fixed top-0 left-0 h-screen w-64 glass-premium border-r border-white/5 transition-all duration-300 z-40 md:relative md:translate-x-0 ${isOpen ? 'translate-x-0 overflow-auto' : '-translate-x-full md:translate-x-0'}`}>
-        <div className="h-16 flex items-center gap-3 px-6 border-b border-white/5 mt-12 md:mt-0 floating">
+      <aside className={`fixed top-0 left-0 h-screen w-64 glass-premium border-r border-white/5 transition-all duration-300 z-40 md:relative md:translate-x-0 flex flex-col ${isOpen ? 'translate-x-0 overflow-auto' : '-translate-x-full md:translate-x-0'}`}>
+        <div className="h-16 flex items-center gap-3 px-6 border-b border-white/5 mt-12 md:mt-0">
           <img src="/logo-icon.png" alt="ZedIdeaArena Icon" className="w-8 h-8 object-contain drop-shadow-[0_0_8px_rgba(79,70,229,0.8)]" />
           <span className="font-black text-xl gradient-text tracking-tighter uppercase">ZedArena</span>
         </div>
 
-        <nav className="flex-1 px-4 py-8 space-y-2">
-          {filteredNavItems.map((item) => {
-            const isActive = pathname === item.href
+        {/* Mode Switcher */}
+        <div className="px-4 py-4 border-b border-white/5">
+          <p className="text-[9px] font-bold text-zed-foreground-secondary uppercase tracking-widest mb-2 px-2">Arena Mode</p>
+          <div className="flex bg-white/5 rounded-full p-0.5 border border-white/10">
+            <button
+              onClick={() => handleRoleChange('contestant')}
+              className={`flex-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all ${
+                currentRole === 'contestant' ? 'bg-zed-primary text-white shadow-lg shadow-indigo-500/20' : 'text-zed-foreground-secondary hover:text-zed-foreground'
+              }`}
+            >
+              Contestant
+            </button>
+            <button
+              onClick={() => handleRoleChange('voter')}
+              className={`flex-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all ${
+                currentRole === 'voter' ? 'bg-zed-accent text-white shadow-lg shadow-pink-500/20' : 'text-zed-foreground-secondary hover:text-zed-foreground'
+              }`}
+            >
+              Voter
+            </button>
+          </div>
+        </div>
+
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
             const Icon = item.icon
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 click-push ${isActive ? 'bg-zed-primary text-white shadow-[0_4px_15px_rgba(79,70,229,0.4)] border border-white/10' : 'text-zed-foreground-secondary hover:bg-white/5 hover:text-zed-foreground'}`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 click-push ${
+                  isActive
+                    ? 'bg-zed-primary text-white shadow-[0_4px_15px_rgba(79,70,229,0.4)] border border-white/10'
+                    : 'text-zed-foreground-secondary hover:bg-white/5 hover:text-zed-foreground'
+                }`}
               >
-                <Icon size={20} className={isActive ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse' : ''} />
+                <Icon size={20} className={isActive ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]' : ''} />
                 <span className="font-bold text-sm tracking-wide">{item.label}</span>
               </Link>
             )
@@ -56,12 +108,36 @@ export function Sidebar() {
         </nav>
 
         <div className="p-4 border-t border-white/5">
-          <button onClick={logout} className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-zed-foreground-secondary hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 group">
+          <button
+            onClick={logout}
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-zed-foreground-secondary hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 group"
+          >
             <LogOut size={20} className="group-hover:translate-x-1 transition-transform" />
             <span className="font-bold text-sm">Exit Arena</span>
           </button>
         </div>
       </aside>
+
+      {/* Verification Required Modal */}
+      {showVerifyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowVerifyModal(false)}>
+          <div className="bg-zed-surface border border-white/10 rounded-3xl p-8 max-w-md w-full mx-4 text-center shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={32} className="text-yellow-500" />
+            </div>
+            <h3 className="text-xl font-black text-zed-foreground mb-3">Verification Required</h3>
+            <p className="text-sm text-zed-foreground-secondary mb-6">
+              Voter access requires admin verification. Your account is currently under review. You&apos;ll be notified by email once approved.
+            </p>
+            <button
+              onClick={() => setShowVerifyModal(false)}
+              className="btn-primary px-8 py-3 text-xs font-black"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
 
       {isOpen && (
         <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsOpen(false)} />

@@ -3,6 +3,7 @@
 
 -- Add onboarding columns to users table
 ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_complete BOOLEAN DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_step int DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS identity_document_url TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS address_document_url TEXT;
 

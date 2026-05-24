@@ -28,8 +28,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
         const profile = res.data
 
-        if (!profile.onboarding_complete && pathname !== '/onboarding') {
-          router.push('/onboarding')
+        if (!profile.onboarding_complete && !pathname.startsWith('/onboarding')) {
+          router.push('/onboarding/personal')
           return
         }
 

@@ -42,8 +42,8 @@ export async function middleware(request: NextRequest) {
     .single()
 
   if (!profile) {
-    if (path !== '/onboarding') {
-      return NextResponse.redirect(new URL('/onboarding', request.url))
+    if (!path.startsWith('/onboarding')) {
+      return NextResponse.redirect(new URL('/onboarding/personal', request.url))
     }
     return response
   }
@@ -56,11 +56,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  if (!profile.onboarding_complete && path !== '/onboarding') {
-    return NextResponse.redirect(new URL('/onboarding', request.url))
+  if (!profile.onboarding_complete && !path.startsWith('/onboarding')) {
+    return NextResponse.redirect(new URL('/onboarding/personal', request.url))
   }
 
-  if (profile.onboarding_complete && path === '/onboarding') {
+  if (profile.onboarding_complete && path.startsWith('/onboarding')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
@@ -68,5 +68,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/contestant/:path*', '/voter/:path*', '/admin/:path*', '/onboarding'],
+  matcher: ['/dashboard/:path*', '/contestant/:path*', '/voter/:path*', '/admin/:path*', '/onboarding/:path*', '/onboarding'],
 }
