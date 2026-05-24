@@ -19,7 +19,7 @@ const voterNav = [
   { href: '/dashboard/voter', icon: Home, label: 'Overview' },
   { href: '/dashboard/voting', icon: Vote, label: 'Vote' },
   { href: '/dashboard/voter', icon: CheckCircle, label: 'My Votes' },
-  { href: '/dashboard/payment', icon: Wallet, label: 'Earnings' },
+  { href: '/dashboard/earnings', icon: Wallet, label: 'Earnings' },
   { href: '/dashboard/settings', icon: User, label: 'My Profile' },
 ]
 

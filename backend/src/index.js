@@ -58,6 +58,7 @@ app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/competitions', require('./routes/competitionRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
 app.use('/api/voter', require('./routes/voterRoutes'));
+app.use('/api/withdrawals', require('./routes/withdrawalRoutes'));
 
 app.use((err, req, res, next) => {
   console.error('[UNHANDLED_ERROR]', err);
