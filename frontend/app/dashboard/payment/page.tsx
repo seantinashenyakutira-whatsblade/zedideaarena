@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { paymentService } from '@/services/payment'
-import { Loader2, ShieldCheck, CreditCard, ArrowLeft, Trophy, Calendar, AlertCircle } from 'lucide-react'
+import { Loader2, ShieldCheck, CreditCard, ArrowLeft, ArrowRight, Trophy, Calendar, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
 
