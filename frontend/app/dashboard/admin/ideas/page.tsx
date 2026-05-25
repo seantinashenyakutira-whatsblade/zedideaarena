@@ -39,7 +39,7 @@ export default function AdminIdeas() {
         const [compsRes] = await Promise.all([
           adminService.getCompetitions(),
         ])
-        setCompetitions(compsRes.data.data || [])
+        setCompetitions(compsRes.data || [])
       } catch (err) {
         console.error('Failed to load filters:', err)
       }

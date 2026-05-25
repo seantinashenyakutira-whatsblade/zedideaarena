@@ -22,7 +22,7 @@ export default function AdminCompetitions() {
   const fetchCompetitions = async () => {
     try {
       const res = await adminService.getCompetitions()
-      setCompetitions(res.data.data || [])
+      setCompetitions(res.data || [])
     } catch (err) {
       console.error('Failed to fetch competitions:', err)
     } finally {

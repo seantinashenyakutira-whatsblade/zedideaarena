@@ -135,8 +135,7 @@ export default function CompetitionDetailPage() {
                                   setEntering(true);
                                   try {
                                     const currentMode = currentRole === 'voter' ? 'voter' : 'contestant';
-                                    const res = await api.get(`/payments/check?competition_id=${competition.id}&type=${currentMode}`);
-                                    const { alreadyPaid } = res;
+                                    const { alreadyPaid } = await api.get(`/payments/check?competition_id=${competition.id}&type=${currentMode}`) as any;
 
                                     if (alreadyPaid) {
                                       if (currentMode === 'contestant') {

@@ -42,7 +42,7 @@ export default function CompetitionResultsPage() {
           api.get(`/competitions/${id}`),
           voteService.getLeaderboard(id as string),
         ])
-        setCompetition(compRes.data.data)
+        setCompetition(compRes.data)
         setLeaderboard(lbRes.data || [])
       } catch (err) {
         console.error('Failed to fetch results:', err)

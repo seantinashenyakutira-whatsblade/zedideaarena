@@ -13,7 +13,7 @@ export default function VotingSelectorPage() {
     const fetchComps = async () => {
       try {
         const res = await api.get('/competitions')
-        const all = res.data.data || []
+        const all = res.data || []
         const active = all.filter((c: any) => c.calculatedStatus !== 'upcoming')
         setCompetitions(active)
       } catch (err) {

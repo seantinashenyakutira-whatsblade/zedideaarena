@@ -15,7 +15,7 @@ export default function VoterDashboardPage() {
     const fetchCompetitions = async () => {
       try {
         const res = await api.get('/competitions')
-        const all = res.data.data || []
+        const all = res.data || []
         setCompetitions(all)
       } catch { /* silent */ }
       setLoading(false)

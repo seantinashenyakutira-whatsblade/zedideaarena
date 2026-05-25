@@ -41,7 +41,7 @@ export default function CompetitionVotingPage() {
     const fetchData = async () => {
       try {
         const compRes = await api.get(`/competitions/${competitionId}`)
-        const comp = compRes.data.data
+        const comp = compRes.data
         setCompetition(comp)
 
         const errors: string[] = []
