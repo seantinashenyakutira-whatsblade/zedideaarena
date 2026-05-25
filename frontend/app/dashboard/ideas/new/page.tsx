@@ -86,8 +86,8 @@ function NewIdeaForm() {
         const compId = searchParams.get('competitionId')
         if (compId) {
           try {
-            const payRes = await api.get(`/payments/check-entry/${compId}`)
-            setHasPaidEntry(payRes.paid === true)
+            const { paid } = await api.get(`/payments/check-entry/${compId}`) as any
+            setHasPaidEntry(paid === true)
           } catch { /* silent */ }
         }
       } catch (err) {
