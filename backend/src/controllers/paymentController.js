@@ -147,7 +147,7 @@ const registerVoter = async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/voting`,
+      success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/success?type=voter&competitionId=${competitionId}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/voter`,
       metadata: {
         user_id: uid,
@@ -325,4 +325,59 @@ const checkPayment = async (req, res) => {
   }
 };
 
-module.exports = { enterCompetition, registerVoter, handleStripeWebhook, getPaymentHistory, checkEntryPayment, checkPayment };
+const verifyPayment = async (req, res) => {
+  try {
+    const { session_id, competition_id, type } = req.query;
+    const { uid } = req.user;
+
+    if (!session_id) {
+      return res.status(400).json({ error: 'Missing session_id' });
+    }
+
+    const query = supabase
+      .from('payments')
+      .select('*')
+      .eq('stripe_session_id', session_id)
+      .eq('status', 'completed');
+
+    if (uid) query.eq('user_id', uid);
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error) {
+      console.error('Payment verification error:', error);
+      return res.status(500).json({ error: 'Verification failed' });
+    }
+
+    if (!data) {
+      return res.json({ verified: false, payment: null });
+    }
+
+    const result = {
+      verified: true,
+      payment: {
+        id: data.id,
+        type: data.type,
+        competition_id: data.competition_id,
+        amount_cents: data.amount_cents,
+        status: data.status,
+        created_at: data.created_at,
+      },
+    };
+
+    if (competition_id && data.competition_id !== competition_id) {
+      result.verified = false;
+    }
+
+    if (type && data.type !== type) {
+      result.verified = false;
+    }
+
+    res.json(result);
+  } catch (err) {
+    console.error('Payment verification error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { enterCompetition, registerVoter, handleStripeWebhook, getPaymentHistory, checkEntryPayment, checkPayment, verifyPayment };
