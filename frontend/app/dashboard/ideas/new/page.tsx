@@ -69,7 +69,7 @@ function NewIdeaForm() {
           api.get('/competitions'),
           authService.getProfile()
         ])
-        const allComps = compsRes.data.data || []
+        const allComps = compsRes.data || []
         setCompetitions(allComps.filter((c: any) => c.calculatedStatus === 'active'))
         const p = profileRes.data
         setProfile(p)
@@ -87,7 +87,7 @@ function NewIdeaForm() {
         if (compId) {
           try {
             const payRes = await api.get(`/payments/check-entry/${compId}`)
-            setHasPaidEntry(payRes.data.paid === true)
+            setHasPaidEntry(payRes.paid === true)
           } catch { /* silent */ }
         }
       } catch (err) {
