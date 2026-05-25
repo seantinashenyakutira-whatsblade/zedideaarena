@@ -43,7 +43,6 @@ export default function CompetitionDetailPage() {
   const [comp, setComp] = useState<Competition | null>(null)
   const [ideas, setIdeas] = useState<Idea[]>([])
   const [loading, setLoading] = useState(true)
-  const [entering, setEntering] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -80,38 +79,13 @@ export default function CompetitionDetailPage() {
     fetchData()
   }, [id])
 
-  const handleEnterCompetition = async () => {
+  const handleEnterCompetition = () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
     if (!token) {
       router.push(`/auth/login?redirect=/competitions/${id}`)
       return
     }
-
-    setEntering(true)
-    try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
-      const res = await fetch(`${baseUrl}/competitions/${id}/enter`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      const body = await res.json()
-
-      if (body.status === 'success' && body.checkoutUrl) {
-        window.location.href = body.checkoutUrl
-      } else if (body.status === 'error' && body.message?.includes('create an idea')) {
-        router.push(`/dashboard/ideas/new?competitionId=${id}`)
-      } else {
-        const msg = body?.message || 'Failed to enter competition'
-        alert(msg)
-        setEntering(false)
-      }
-    } catch {
-      alert('Failed to enter competition. Please try again.')
-      setEntering(false)
-    }
+    router.push(`/dashboard/ideas/new?competitionId=${id}`)
   }
 
   if (loading) {
@@ -260,11 +234,9 @@ export default function CompetitionDetailPage() {
             {isActive ? (
               <button
                 onClick={handleEnterCompetition}
-                disabled={entering}
-                className="btn-primary w-full flex items-center justify-center gap-3 py-5 text-lg disabled:opacity-50"
+                className="btn-primary w-full flex items-center justify-center gap-3 py-5 text-lg"
               >
-                {entering ? <Loader2 size={22} className="animate-spin" /> : null}
-                {entering ? 'Processing...' : 'Enter Competition'} <ArrowRight size={22} />
+                Enter Competition <ArrowRight size={22} />
               </button>
             ) : (
               <button

@@ -14,6 +14,7 @@ function PaymentContent() {
   const [error, setError] = useState('')
   const [competition, setCompetition] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
+  const [needsIdea, setNeedsIdea] = useState(false)
 
   const competitionId = searchParams.get('competition') || searchParams.get('competitionId')
   const type = searchParams.get('type')
@@ -56,7 +57,11 @@ function PaymentContent() {
       }
       window.location.href = res.checkoutUrl
     } catch (err: any) {
-      setError(err.message || 'Failed to initiate payment')
+      if (err.message?.includes('create an idea')) {
+        setNeedsIdea(true)
+      } else {
+        setError(err.message || 'Failed to initiate payment')
+      }
       setProcessing(false)
     }
   }
@@ -140,6 +145,23 @@ function PaymentContent() {
           </div>
         )}
 
+        {needsIdea ? (
+          <div className="space-y-6">
+            <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto">
+              <AlertCircle size={32} className="text-yellow-500" />
+            </div>
+            <h3 className="text-xl font-black">Idea Required First</h3>
+            <p className="text-zed-foreground-secondary text-sm">
+              You need to create an idea for this competition before making a payment.
+            </p>
+            <Link
+              href={`/dashboard/ideas/new?competitionId=${competitionId}`}
+              className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-sm font-black"
+            >
+              Create Your Idea <ArrowRight size={20} />
+            </Link>
+          </div>
+        ) : (
         <button
           onClick={handlePayment}
           disabled={processing}
@@ -151,6 +173,7 @@ function PaymentContent() {
             <><CreditCard size={20} /> Pay ${((feeCents || 0) / 100).toFixed(2)} with Card</>
           )}
         </button>
+        )}
 
         <div className="mt-8 flex items-center justify-center gap-4 text-[10px] text-zed-foreground-secondary font-bold uppercase tracking-widest opacity-50">
           <div className="flex items-center gap-1"><ShieldCheck size={12} /> SSL Secure</div>

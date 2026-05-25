@@ -55,7 +55,7 @@ export default function CompetitionDetailPage() {
                    <h1 className="text-5xl font-black text-white mb-4 drop-shadow-2xl">{competition.title}</h1>
                    <div className="flex items-center gap-6">
                       <span className="flex items-center gap-2 bg-zed-primary/20 backdrop-blur-md px-4 py-2 rounded-xl text-zed-primary font-bold border border-zed-primary/30">
-                        <Trophy size={18} /> Grand Prize: $50,000
+                         <Trophy size={18} /> Prize Pool: ${(competition.prize_pool_cents / 100).toLocaleString()}
                       </span>
                       <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-white font-bold border border-white/20">
                         <Calendar size={18} /> Deadline: {new Date(competition.submission_deadline).toLocaleDateString()}
@@ -148,7 +148,8 @@ export default function CompetitionDetailPage() {
                                     }
 
                                     if (currentMode === 'contestant') {
-                                      router.push(`/dashboard/payment?competition=${competition.id}&type=contestant`);
+                                      router.push(`/dashboard/ideas/new?competitionId=${competition.id}`);
+                                      return;
                                     } else {
                                       if (!profile?.is_verified) {
                                         setShowVerificationModal(true);
@@ -194,7 +195,7 @@ export default function CompetitionDetailPage() {
                            {showVerificationModal && (
                              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
                                <div className="glass-card p-8 max-w-sm mx-4 text-center">
-                                 <div className="icon-glow mx-auto mb-4 w-14 h-14">🔒</div>
+                                 <Shield size={32} className="text-zed-primary mx-auto mb-4" />
                                  <h3 className="text-xl font-bold mb-2">Verification Required</h3>
                                  <p className="text-secondary text-sm mb-6">
                                    Voter access requires admin verification. Your account is currently under review. You will be notified by email once approved.
