@@ -6,7 +6,7 @@ All Next.js App Router pages, layouts, and route groups.
 ## Key Files
 ### Root Layout & Global
 - `layout.tsx` — Root layout with theme provider, font, metadata
-- `page.tsx` — Landing page (hero, features, CTA)
+- `page.tsx` — Landing page (5-section SPA: hero with word-by-word animation, how-it-works horizontal scroll, team/mission, live competitions from API, CTA + footer)
 - `loading.tsx` — Global loading fallback
 - `error.tsx` — Global error boundary
 - `not-found.tsx` — 404 page
