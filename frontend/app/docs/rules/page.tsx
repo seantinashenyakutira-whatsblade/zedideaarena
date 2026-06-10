@@ -29,7 +29,7 @@ export default function RulesPage() {
           <section className="card-zed glass-premium p-8 border-white/5">
             <h2 className="text-2xl font-black mb-6 flex items-center gap-3"><FileText className="text-zed-primary" /> 2. Submission Guidelines</h2>
             <ul className="space-y-4 text-zed-foreground-secondary font-medium leading-relaxed">
-              <li className="flex items-start gap-3"><CheckCircle size={18} className="text-zed-success shrink-0 mt-1" /> Submissions require a non-refundable $100 entry fee to ensure high-quality participation.</li>
+              <li className="flex items-start gap-3"><CheckCircle size={18} className="text-zed-success shrink-0 mt-1" /> Submissions require a non-refundable entry fee of $5.00 to ensure high-quality participation.</li>
               <li className="flex items-start gap-3"><CheckCircle size={18} className="text-zed-success shrink-0 mt-1" /> Pitch videos must be between 2 to 5 minutes in length.</li>
               <li className="flex items-start gap-3"><CheckCircle size={18} className="text-zed-success shrink-0 mt-1" /> The problem statement and proposed solution must be clearly articulated.</li>
             </ul>
@@ -38,7 +38,7 @@ export default function RulesPage() {
           <section className="card-zed glass-premium p-8 border-white/5">
             <h2 className="text-2xl font-black mb-6 flex items-center gap-3"><ShieldCheck className="text-zed-primary" /> 3. Voting & Conduct</h2>
             <ul className="space-y-4 text-zed-foreground-secondary font-medium leading-relaxed">
-              <li className="flex items-start gap-3"><CheckCircle size={18} className="text-zed-success shrink-0 mt-1" /> Voters must pay a one-time $5 entry fee and pass KYC to ensure authentic votes.</li>
+              <li className="flex items-start gap-3"><CheckCircle size={18} className="text-zed-success shrink-0 mt-1" /> Voters must pay a one-time $15.00 voter registration fee and pass KYC to ensure authentic votes.</li>
               <li className="flex items-start gap-3"><CheckCircle size={18} className="text-zed-success shrink-0 mt-1" /> Self-voting or use of bot farms will result in immediate disqualification and a permanent ban.</li>
               <li className="flex items-start gap-3"><CheckCircle size={18} className="text-zed-success shrink-0 mt-1" /> Respectful engagement is required in all community interactions.</li>
             </ul>

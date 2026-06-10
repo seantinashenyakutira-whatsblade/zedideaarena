@@ -1,35 +1,25 @@
-# ZedIdeaArena — Project Agents Guide
+# ZedIdeaArena — Agent Documentation Root
 
-## PURPOSE
-ZedIdeaArena is a fintech-style idea competition platform where users pitch ideas, compete for funding, and vote on submissions. Think "Shark Tank meets hackathon platform."
+## Project Overview
+ZedIdeaArena is a monetized idea competition platform.
+Users enter as Contestant (submit ideas) or Voter (vote + earn).
+Revenue model: 40% of total pool goes to winners, 60% to business.
 
-## TECH STACK
-- **Frontend**: Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4
-- **Backend**: Express.js 5 (CommonJS) + Supabase (auth, DB, storage)
-- **Payments**: Stripe (entry fees, voter fees, prize pools)
-- **Auth**: Supabase Auth (email/password + Google OAuth)
-- **Hosting**: Vercel (frontend) + Render (backend)
+## Tech Stack
+- Frontend: Next.js 15, Tailwind, Framer Motion (Vercel)
+- Backend: Express.js, Node.js (Render)
+- Database: Supabase (PostgreSQL + Auth + Storage)
+- Payments: Stripe
+- Notifications: OneSignal (to be integrated)
 
-## TOP-LEVEL FOLDER INDEX
-| Folder | Purpose | Child Doc |
-|--------|---------|-----------|
-| `/frontend` | Next.js app — all UI, pages, components | [frontend/agents.md](frontend/agents.md) |
-| `/backend` | Express.js API — controllers, routes, middleware | [backend/agents.md](backend/agents.md) |
-| `/scripts` | SQL migrations for Supabase DB | [scripts/agents.md](scripts/agents.md) |
+## Global Rules
+- Never hardcode API keys or secrets
+- Always read agents.md before editing any folder
+- Always update agents.md after any edit
+- All auth checks server-side only
+- No mock data in production
 
-## RECENT CHANGES (June 2026)
-- **Login redirect blink fix**: replaced `router.push()` with `window.location.replace()` in auth flow to let middleware handle routing. Removed auth layout redirect. Added auth callback bypass in middleware.
-- **Success pages**: created `/onboarding/success`, `/dashboard/ideas/success`, `/dashboard/vote/success` with shared `SuccessPage` component.
-- **Mode switching**: added password confirmation modal before role switch in sidebar and header.
-- **Leaderboard**: created `/dashboard/competitions/[id]/leaderboard` with live polling every 30s.
-- **Database**: added `v8-notifications-comments.sql` migration for notifications, comments, reactions tables and platform_stats view.
-
-## GLOBAL RULES
-1. Read agents.md chain before any edit — start here, drill into subfolder docs
-2. Update agents.md files after every edit (PURPOSE, KEY FILES, NOTES)
-3. No hardcoded URLs — always use env vars (NEXT_PUBLIC_*, process.env.*)
-4. All API responses follow `{ status: 'success'|'error', data?, message? }` pattern
-5. Auth: Bearer token in Authorization header, verified via Supabase getUser()
-6. Every form/action must show loading state + error state + success feedback
-7. Types in frontend, no types in backend (CommonJS)
-8. Prefer supabase SSR client in middleware, browser client in pages
+## Child Docs Index
+- /frontend/agents.md — Next.js app
+- /backend/agents.md — Express API
+- /scripts/agents.md — Database migrations

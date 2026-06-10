@@ -1,31 +1,21 @@
-# Backend — Agents Guide
+# Backend — Agent Docs
 
-## PURPOSE
+## Purpose
 Express.js 5 REST API — handles business logic, payments, media uploads, and Supabase integration.
 
-## OWNERSHIP
-- Controllers (`src/controllers/`) — request handlers
-- Routes (`src/routes/`) — URL routing and middleware wiring
-- Middleware (`src/middleware/`) — auth, rate limiting
-- Services (`src/services/`) — email notifications
-- Config (`src/config/`) — Supabase client setup
+## Key Files
+- `package.json` — Dependencies (express, @supabase/supabase-js, stripe, cors, etc.)
+- `.env` — Environment variables (local dev)
+- `.env.example` — Environment variable template
+- `src/index.js` — Express app entry point; middleware setup, route mounting, error handler
 
-## RULES
-- CommonJS (`require`/`module.exports`) — no ES modules
-- All responses: `{ status: 'success'|'error', data?, message?, error? }`
-- Auth via Bearer token → `supabase.auth.getUser(token)` in middleware
-- Admin routes protected by `verifyToken` + `isAdmin` middleware
-- Rate limiting on auth, vote, and idea creation endpoints
-- Stripe webhook uses `express.raw()` body parser (not JSON)
+## Rules
+- All sensitive keys in environment variables only (SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY, etc.)
+- CORS configured with `origin: true` in production; restrict before launch
+- Global error handler at bottom of index.js catches all unhandled errors
+- express-rate-limit v8+ does not export defaultKeyGenerator; use req.ip directly
+- Webhook routes registered before express.json() to preserve raw body for Stripe signature verification
+- Health endpoints at /health and /api/health return service status only
 
-## KEY FILES
-| File | Purpose |
-|------|---------|
-| `src/index.js` | Express app setup, CORS, route mounting |
-| `src/config/supabase.js` | Supabase admin client with WebSocket transport |
-| `src/middleware/authMiddleware.js` | Token verification + admin check |
-| `src/middleware/rateLimiter.js` | Rate limiting for votes, ideas, auth |
-
-## CHILD DOCS
-- `src/controllers/agents.md` — controller functions
-- `src/routes/agents.md` — route definitions
+## Child Docs
+- /backend/src/agents.md — Source code organization

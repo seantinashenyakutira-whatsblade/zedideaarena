@@ -425,7 +425,7 @@ function NewIdeaForm() {
                             {hasPaidEntry ? (
                               <div className="flex items-center gap-2 text-zed-success"><CheckCircle size={24} /><span className="text-lg font-black">Fee Paid</span></div>
                             ) : (
-                              <><p className="text-5xl font-black text-white">${(() => { const c = competitions.find(x => x.id === formData.competition_id); return c ? (c.entry_fee_cents / 100).toFixed(2) : '5.00' })()}</p><p className="text-[10px] text-zed-foreground-secondary mt-2">Non-refundable competition fee</p></>
+                              <><p className="text-5xl font-black text-white">${(() => { const c = competitions.find(x => x.id === formData.competition_id); return c ? (c.entry_fee_cents / 100).toFixed(2) : (500 / 100).toFixed(2) })()}</p><p className="text-[10px] text-zed-foreground-secondary mt-2">Non-refundable competition fee</p></>
                             )}
                           </div>
                         </div>

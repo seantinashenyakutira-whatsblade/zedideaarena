@@ -106,28 +106,56 @@ export default function CompetitionDetailPage() {
                       </section>
                    </div>
 
-                   <div className="space-y-8">
-                       <div className="card-zed glass-premium p-8 sticky top-8">
-                           <div className="mb-8">
-                              <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1">Prize Pool</p>
-                              <p className="text-4xl font-black text-zed-primary">${(competition.prize_pool_cents / 100).toLocaleString()}</p>
-                              <p className="text-[10px] text-zed-foreground-secondary mt-1">Grows with every entry</p>
-                           </div>
-                           <div className="mb-8 p-4 bg-white/5 rounded-2xl">
-                              <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-2">Time Remaining</p>
-                              <CompetitionCountdown deadline={competition.submission_deadline} />
-                           </div>
-                          
-                          <div className="space-y-4 mb-8">
-                             <div className="flex justify-between text-sm">
-                                <span className="text-zed-foreground-secondary">Entry Fee</span>
-                                <span className="font-bold">{competition.entry_fee_cents > 0 ? `$${(competition.entry_fee_cents / 100).toFixed(2)}` : 'Free'}</span>
-                             </div>
-                             <div className="flex justify-between text-sm">
-                                <span className="text-zed-foreground-secondary">Voter Fee</span>
-                                <span className="font-bold">{competition.voter_fee_cents > 0 ? `$${(competition.voter_fee_cents / 100).toFixed(2)}` : 'Free'}</span>
-                             </div>
-                          </div>
+                    <div className="space-y-8">
+                        <div className="card-zed glass-premium p-8 sticky top-8">
+                            <div className="prize-pool-card mb-8">
+                               <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1">PRIZE POOL</p>
+                               <p className="amount text-4xl font-black text-zed-primary">
+                                 ${(competition.prize_pool_cents / 100).toLocaleString()}
+                               </p>
+                               <p className="subtext text-[10px] text-zed-foreground-secondary mt-1">Grows with every entry</p>
+
+                               <div className="divider h-px bg-white/10 my-6" />
+
+                               <p className="section-title text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-4">WINNER DISTRIBUTION</p>
+
+                               <div className="breakdown space-y-3 mb-6">
+                                 <div className="rank gold flex justify-between text-sm py-2 px-3 bg-yellow-500/10 rounded-xl border border-yellow-500/20">
+                                   <span>🥇 1st Place</span>
+                                   <span className="font-bold text-yellow-400">25% of pool</span>
+                                 </div>
+                                 <div className="rank silver flex justify-between text-sm py-2 px-3 bg-gray-300/10 rounded-xl border border-gray-300/20">
+                                   <span>🥈 2nd Place</span>
+                                   <span className="font-bold text-gray-300">10% of pool</span>
+                                 </div>
+                                 <div className="rank bronze flex justify-between text-sm py-2 px-3 bg-amber-700/10 rounded-xl border border-amber-700/20">
+                                   <span>🥉 3rd Place</span>
+                                   <span className="font-bold text-amber-600">5% of pool</span>
+                                 </div>
+                                 <div className="voter-share flex justify-between text-sm py-2 px-3 bg-zed-primary/10 rounded-xl border border-zed-primary/20">
+                                   <span>🗳️ Voter Rewards</span>
+                                   <span className="font-bold text-zed-primary">From platform share</span>
+                                 </div>
+                               </div>
+
+                               <p className="disclaimer text-[10px] text-zed-foreground-secondary leading-relaxed mb-6">
+                                 40% of total pool is distributed to winners. 60% covers platform operations, voter rewards, and taxes.
+                               </p>
+
+                               <div className="entry-row flex justify-between text-sm py-3 border-t border-white/10">
+                                 <span className="text-zed-foreground-secondary">Entry Fee</span>
+                                 <span className="amount font-bold">{competition.entry_fee_cents > 0 ? `$${(competition.entry_fee_cents / 100).toFixed(2)}` : 'Free'}</span>
+                               </div>
+                               <div className="voter-row flex justify-between text-sm py-3 border-t border-white/10">
+                                 <span className="text-zed-foreground-secondary">Voter Registration</span>
+                                 <span className="amount font-bold">{competition.voter_fee_cents > 0 ? `$${(competition.voter_fee_cents / 100).toFixed(2)}` : 'Free'}</span>
+                               </div>
+                            </div>
+
+                            <div className="mb-8 p-4 bg-white/5 rounded-2xl">
+                               <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-2">Time Remaining</p>
+                               <CompetitionCountdown deadline={competition.submission_deadline} />
+                            </div>
 
                             <Link
                               href={`/dashboard/competitions/${competition.id}/leaderboard`}
