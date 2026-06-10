@@ -6,7 +6,8 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
-import { Trophy, Vote, Search, ThumbsUp, Loader2, ArrowLeft, AlertTriangle } from 'lucide-react'
+import { Trophy, Vote, Search, ThumbsUp, Loader2, ArrowLeft, AlertTriangle, Sparkles, CheckCircle2 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { voteService } from '@/services/core'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -186,12 +187,18 @@ function IdeasGrid({
 }) {
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {ideas.map((idea) => {
+      {ideas.map((idea, i) => {
         const hasVoted = votedIdeas.includes(idea.id)
         const isOwn = idea.user_id === profile?.id
 
         return (
-          <div key={idea.id} className="card-zed group flex flex-col hover:border-zed-primary/30 transition-all duration-500">
+          <motion.div
+            key={idea.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: i * 0.06 }}
+            className="card-zed group flex flex-col hover:border-zed-primary/30 transition-all duration-500"
+          >
             <div className="relative aspect-video rounded-xl overflow-hidden mb-6">
               <Image
                 src={idea.image_url || 'https://via.placeholder.com/600x400?text=ZedIdeaArena'}
@@ -202,11 +209,19 @@ function IdeasGrid({
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-4">
-                <span className="bg-zed-primary/80 backdrop-blur-md text-[10px] text-white px-2 py-1 rounded-full font-black uppercase tracking-widest">
+              <div className="absolute bottom-4 left-4 flex items-center gap-2">
+                <span className="bg-black/60 backdrop-blur-md text-[10px] text-white px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-white/10">
                   {idea.industry || idea.category}
                 </span>
+                <span className="bg-black/60 backdrop-blur-md text-[10px] text-white px-2.5 py-1 rounded-full font-bold border border-white/10">
+                  #{idea.votes_count || 0} votes
+                </span>
               </div>
+              {hasVoted && (
+                <div className="absolute top-3 right-3 bg-zed-success/90 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <CheckCircle2 size={12} /> Voted
+                </div>
+              )}
             </div>
 
             <div className="flex-1 flex flex-col">
@@ -227,28 +242,33 @@ function IdeasGrid({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Link href={`/dashboard/ideas/${idea.id}`} className="btn-icon w-10 h-10">
-                    <ArrowLeft size={18} className="rotate-135" />
-                  </Link>
                   <button
                     onClick={() => handleVote(idea)}
                     disabled={hasVoted || isOwn || !!castingVote || guardErrors.length > 0}
-                    className={`flex items-center gap-2 h-10 px-6 rounded-xl font-black text-xs transition-all ${hasVoted ? 'bg-zed-success text-white' : isOwn ? 'bg-white/5 text-zed-foreground-secondary cursor-not-allowed' : 'bg-zed-primary text-white shadow-[0_4px_15px_rgba(79,70,229,0.3)] hover:scale-105 active:scale-95'}`}
+                    className={`flex items-center gap-2 h-11 px-6 rounded-xl font-black text-xs transition-all duration-200 ${
+                      hasVoted
+                        ? 'bg-zed-success/20 text-zed-success border border-zed-success/30 cursor-default'
+                        : isOwn
+                        ? 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10'
+                        : guardErrors.length > 0
+                        ? 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10'
+                        : 'bg-zed-primary text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95'
+                    }`}
                   >
                     {castingVote === idea.id ? (
-                      <Loader2 size={16} className="animate-spin" />
+                      <Loader2 size={14} className="animate-spin" />
                     ) : hasVoted ? (
-                      <>Voted <ThumbsUp size={14} /></>
+                      <><CheckCircle2 size={14} /> Voted</>
                     ) : isOwn ? (
                       'Your Idea'
                     ) : (
-                      <>Vote <ThumbsUp size={14} /></>
+                      <><ThumbsUp size={14} /> Vote</>
                     )}
                   </button>
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         )
       })}
     </div>

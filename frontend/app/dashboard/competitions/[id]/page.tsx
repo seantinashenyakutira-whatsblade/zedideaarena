@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Trophy, Calendar, Users, ArrowRight, Loader2, FileText, Shield, Info, CheckCircle2, DollarSign, BarChart3, CreditCard, X } from 'lucide-react'
+import { Trophy, Calendar, Users, ArrowRight, Loader2, FileText, Shield, Info, CheckCircle2, DollarSign, BarChart3, CreditCard, X, Lightbulb, ThumbsUp } from 'lucide-react'
 import api from '@/lib/api'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { CompetitionCountdown } from '@/components/CompetitionCountdown'
 import { paymentService } from '@/services/payment'
 import { toast } from 'sonner'
@@ -15,6 +17,7 @@ export default function CompetitionDetailPage() {
   const router = useRouter()
   const { profile, currentRole } = useAuth()
   const [competition, setCompetition] = useState<any>(null)
+  const [ideas, setIdeas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [entering, setEntering] = useState(false)
   const [showVerificationModal, setShowVerificationModal] = useState(false)
@@ -22,8 +25,15 @@ export default function CompetitionDetailPage() {
   useEffect(() => {
     const fetchDetail = async () => {
       try {
-        const res = await api.get(`/competitions/${id}`)
-        setCompetition(res.data)
+        const [compRes, ideasRes] = await Promise.all([
+          api.get(`/competitions/${id}`),
+          api.get('/ideas/public?status=submitted'),
+        ])
+        setCompetition(compRes.data)
+        const compIdeas = (ideasRes.data || []).filter(
+          (i: any) => i.competition_id === id && i.is_public
+        )
+        setIdeas(compIdeas.slice(0, 6))
       } catch (err) {
         console.error('Failed to fetch competition detail:', err)
       } finally {
@@ -256,6 +266,55 @@ export default function CompetitionDetailPage() {
                    </div>
                 </div>
              </div>
-           </main>
+
+             {/* Submitted Ideas Section */}
+             {ideas.length > 0 && (
+               <section className="mt-20">
+                 <div className="flex items-center justify-between mb-10">
+                   <div>
+                     <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                       <Lightbulb size={24} style={{ color: '#6366F1' }} /> Submitted Ideas
+                     </h2>
+                     <p className="text-sm text-white/40 mt-1">Browse all entries in this competition</p>
+                   </div>
+                   <Link href={`/vote/${id}`} className="text-sm font-bold hover:underline" style={{ color: '#6366F1' }}>
+                     View All &rarr;
+                   </Link>
+                 </div>
+                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                   {ideas.map((idea, i) => (
+                     <motion.div
+                       key={idea.id}
+                       initial={{ opacity: 0, y: 20 }}
+                       whileInView={{ opacity: 1, y: 0 }}
+                       viewport={{ once: true }}
+                       transition={{ duration: 0.4, delay: i * 0.08 }}
+                       className="p-6 rounded-3xl border border-white/10 backdrop-blur-sm hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300 group"
+                       style={{ background: 'rgba(255,255,255,0.02)' }}
+                     >
+                       <div className="flex items-center gap-3 mb-4">
+                         <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-black flex-shrink-0" style={{ background: 'rgba(99,102,241,0.15)', color: '#6366F1' }}>
+                           {String(i + 1).padStart(2, '0')}
+                         </div>
+                         <div className="min-w-0">
+                           <h3 className="font-bold text-sm text-white truncate group-hover:text-zed-primary transition-colors">{idea.title}</h3>
+                           <p className="text-[10px] text-white/40 font-semibold">by {idea.users?.full_name || 'Unknown'}</p>
+                         </div>
+                       </div>
+                       <p className="text-xs text-white/40 leading-relaxed line-clamp-2 mb-4">{idea.problem || idea.problem_statement}</p>
+                       <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                         <span className="text-[10px] font-bold uppercase tracking-widest text-white/30">
+                           {idea.industry || idea.category || 'General'}
+                         </span>
+                         <span className="flex items-center gap-1 text-xs font-bold" style={{ color: '#6366F1' }}>
+                           <ThumbsUp size={12} /> {idea.votes_count || 0}
+                         </span>
+                       </div>
+                     </motion.div>
+                   ))}
+                 </div>
+               </section>
+             )}
+         </main>
   )
 }
