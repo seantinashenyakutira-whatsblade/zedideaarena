@@ -2,11 +2,14 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const protectedPaths = ['/dashboard', '/contestant', '/voter', '/admin']
-
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next()
   const path = request.nextUrl.pathname
+
+  // Bypass middleware on auth callback — session may not be ready
+  if (path.startsWith('/auth/callback')) {
+    return NextResponse.next()
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,15 +28,18 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-  if (!session) {
+  // If session is loading or errored, let the client page handle it
+  if (sessionError || !session) {
+    if (path.startsWith('/auth/')) return NextResponse.next()
     const loginUrl = new URL('/auth/login', request.url)
     loginUrl.searchParams.set('redirect', path)
     return NextResponse.redirect(loginUrl)
   }
+
+  // Skip profile check for auth pages
+  if (path.startsWith('/auth/')) return NextResponse.next()
 
   let profile = null
   let profileError = null
@@ -48,7 +54,7 @@ export async function middleware(request: NextRequest) {
     profileError = result.error
   } catch (err) {
     console.error('Middleware profile fetch error:', err)
-    profileError = err
+    profileError = err as any
   }
 
   if (profileError) {

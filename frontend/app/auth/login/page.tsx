@@ -5,11 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
 import { authService } from '@/services/auth'
-import { useRouter } from 'next/navigation'
 import { loginSchema } from '@/lib/validators/login'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -37,7 +35,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await authService.login(result.data)
-      router.push('/dashboard')
+      window.location.replace('/dashboard')
     } catch (err: any) {
       setError(err?.message || 'Login failed')
       setLoading(false)

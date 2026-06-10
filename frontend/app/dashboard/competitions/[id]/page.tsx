@@ -129,9 +129,16 @@ export default function CompetitionDetailPage() {
                              </div>
                           </div>
 
-                           {competition.calculatedStatus === 'active' ? (
-                              <button
-                                onClick={async () => {
+                            <Link
+                              href={`/dashboard/competitions/${competition.id}/leaderboard`}
+                              className="btn-secondary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-xs font-black mb-3"
+                            >
+                              <Trophy size={18} /> View Leaderboard
+                            </Link>
+
+                            {competition.calculatedStatus === 'active' ? (
+                               <button
+                                 onClick={async () => {
                                   setEntering(true);
                                   try {
                                     const currentMode = currentRole === 'voter' ? 'voter' : 'contestant';

@@ -5,11 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
 import { authService } from '@/services/auth'
-import { useRouter } from 'next/navigation'
 import { signupSchema } from '@/lib/validators/signup'
 
 export default function SignupPage() {
-  const router = useRouter()
   const [formData, setFormData] = useState({ fullName: '', email: '', password: '', confirmPassword: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +44,7 @@ export default function SignupPage() {
     setLoading(true)
     try {
       await authService.signup(result.data)
-      router.push('/auth/login?signup=success')
+      window.location.replace('/auth/login?signup=success')
     } catch (err: any) {
       setError(err?.message || 'Failed to create account.')
     } finally {

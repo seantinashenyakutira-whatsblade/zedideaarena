@@ -204,12 +204,9 @@ function NewIdeaForm() {
       })
       sessionStorage.removeItem(FORM_KEY)
       setIsSuccess(true)
-      toast.success('Idea submitted!')
-      if (!hasPaidEntry && formData.competition_id) {
-        setTimeout(() => router.push(`/dashboard/payment?type=contestant&competitionId=${formData.competition_id}`), 2500)
-      } else {
-        setTimeout(() => router.push(`/dashboard/ideas/${res.id}`), 2500)
-      }
+      const competitionName = competitions.find(c => c.id === formData.competition_id)?.title || ''
+      const params = new URLSearchParams({ title: formData.title, competition: competitionName, id: res.id })
+      router.replace(`/dashboard/ideas/success?${params}`)
     } catch (err: any) {
       toast.error(err.message || 'Submission failed')
     } finally {

@@ -5,31 +5,28 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { VerificationBanner } from '@/components/dashboard/KycBanner'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { profile, loading } = useAuth()
-  const router = useRouter()
   const [authorized, setAuthorized] = useState(false)
 
   useEffect(() => {
     if (loading) return
     const token = localStorage.getItem('token')
     if (!token) {
-      router.push('/auth/login')
+      window.location.replace('/auth/login')
       return
     }
     if (!profile) {
-      router.push('/auth/login')
+      window.location.replace('/auth/login')
       return
     }
-    if (!profile.onboarding_complete) {
-      router.push('/onboarding/personal')
+    if (!profile.onboarding_complete && !profile.onboarding_skipped) {
+      window.location.replace('/onboarding/personal')
       return
     }
     setAuthorized(true)
-  }, [loading, profile, router])
+  }, [loading, profile])
 
   if (!authorized) {
     return (

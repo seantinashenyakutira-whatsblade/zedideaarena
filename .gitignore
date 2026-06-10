@@ -38,3 +38,4 @@ supabase/.branches/
 # Cursor
 .cursor/
 .vercel
+.env*

@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { authService } from '@/services/auth'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 interface AuthContextType {
@@ -23,7 +22,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [currentRole, setCurrentRole] = useState<string>('contestant')
-  const router = useRouter()
 
   const fetchProfile = useCallback(async () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
@@ -52,9 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (credentials: any) => {
     await authService.login(credentials)
-    await fetchProfile()
-    router.push('/dashboard')
-    toast.success('Welcome back!')
+    window.location.replace('/dashboard')
   }
 
   const logout = async () => {
@@ -62,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await authService.logout()
       setProfile(null)
       setUser(null)
-      router.push('/auth/login')
+      window.location.replace('/auth/login')
       toast.info('Logged out.')
     } catch (err) {
       localStorage.removeItem('token')

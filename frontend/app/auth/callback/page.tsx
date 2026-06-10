@@ -1,12 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Loader2 } from 'lucide-react'
 
 export default function AuthCallbackPage() {
-  const router = useRouter()
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -15,7 +13,7 @@ export default function AuthCallbackPage() {
 
       if (error || !session) {
         setError(error?.message || 'No session found')
-        setTimeout(() => router.push('/auth/login'), 2000)
+        setTimeout(() => window.location.replace('/auth/login'), 2000)
         return
       }
 
@@ -38,11 +36,11 @@ export default function AuthCallbackPage() {
         // backend sync failure is non-blocking for OAuth
       }
 
-      router.push('/dashboard')
+      window.location.replace('/dashboard')
     }
 
     handleCallback()
-  }, [router])
+  }, [])
 
   return (
     <div className="min-h-screen bg-zed-background flex items-center justify-center">
