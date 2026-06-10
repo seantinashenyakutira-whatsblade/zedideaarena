@@ -1,14 +1,13 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { CheckCircle2, Loader2, Trophy, Vote, ArrowRight, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const [status, setStatus] = useState<'verifying' | 'verified' | 'error'>('verifying')
   const [countdown, setCountdown] = useState(5)
   const [payment, setPayment] = useState<any>(null)
@@ -50,13 +49,13 @@ function PaymentSuccessContent() {
       const target = type === 'voter'
         ? `/vote/${competitionId}`
         : `/dashboard/ideas/new?competitionId=${competitionId}`
-      router.replace(target)
+      window.location.replace(target)
       return
     }
 
     const t = setTimeout(() => setCountdown(c => c - 1), 1000)
     return () => clearTimeout(t)
-  }, [status, countdown, type, competitionId, router])
+  }, [status, countdown, type, competitionId])
 
   if (status === 'verifying') {
     return (
