@@ -1,10 +1,10 @@
 'use client'
 
-import { ChevronRight, ChevronLeft, Upload, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy, CheckCircle } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy, CheckCircle } from 'lucide-react'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { ideaService } from '@/services/idea'
-import { mediaService } from '@/services/core'
 import { authService } from '@/services/auth'
+import PitchVideoGuide from '@/components/pitch/PitchVideoGuide'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import api from '@/lib/api'
@@ -98,25 +98,7 @@ function NewIdeaForm() {
     setHasMounted(true)
   }, [])
 
-  const [uploading, setUploading] = useState(false)
   const [hasPaidEntry, setHasPaidEntry] = useState(false)
-
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    try {
-      const response: any = await mediaService.uploadFile(file)
-      if (response.status === 'success') {
-        setFormData(prev => ({ ...prev, pitch_video_url: response.url }))
-        toast.success('Video uploaded!')
-      }
-    } catch {
-      toast.error('Upload failed.')
-    } finally {
-      setUploading(false)
-    }
-  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
@@ -353,24 +335,14 @@ function NewIdeaForm() {
                 </div>
               )}
 
-              {currentStep === 3 && (
+               {currentStep === 3 && (
                 <div className="space-y-12 animate-zed-fade-up">
                   <div className="grid md:grid-cols-2 gap-12">
                     <div className="space-y-6">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary">Video Pitch (2-5 mins)</label>
-                      <div className="aspect-video bg-white/5 rounded-3xl border border-white/10 flex flex-col items-center justify-center relative group overflow-hidden">
-                        {formData.pitch_video_url ? (
-                          <video src={formData.pitch_video_url} controls className="w-full h-full" />
-                        ) : (
-                          <label className="cursor-pointer flex flex-col items-center gap-3">
-                            <div className="w-16 h-16 bg-zed-primary/20 rounded-2xl flex items-center justify-center text-zed-primary">
-                              {uploading ? <Loader2 className="animate-spin" /> : <Upload />}
-                            </div>
-                            <span className="text-[10px] font-black uppercase">Upload Video</span>
-                            <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={handleVideoUpload} className="hidden" />
-                          </label>
-                        )}
-                      </div>
+                      <PitchVideoGuide
+                        value={formData.pitch_video_url}
+                        onChange={(url) => setFormData(prev => ({ ...prev, pitch_video_url: url }))}
+                      />
                     </div>
                     <div className="space-y-6">
                       <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary">Links</label>

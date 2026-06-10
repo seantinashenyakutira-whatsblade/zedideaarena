@@ -68,6 +68,7 @@ Reusable React components — shadcn/ui primitives + custom business components.
 - `LocationAutocomplete.tsx` — Location search with autocomplete
 - `theme-provider.tsx` — Theme provider wrapper
 - `ui/SuccessPage.tsx` — Shared success page template
+- `pitch/PitchVideoGuide.tsx` — YouTube link input + recording guide accordion
 
 ### Auth
 - `auth/ProtectedRoute.tsx` — Auth guard wrapper component

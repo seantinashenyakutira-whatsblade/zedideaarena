@@ -30,7 +30,7 @@ All Next.js App Router pages, layouts, and route groups.
 - `dashboard/competitions/[id]/leaderboard/page.tsx` — Competition leaderboard
 - `dashboard/ideas/page.tsx` — User's ideas list
 - `dashboard/ideas/[id]/page.tsx` — Idea detail/edit
-- `dashboard/ideas/new/page.tsx` — Create new idea
+- `dashboard/ideas/new/page.tsx` — Create new idea (5-step wizard: identity, concept, YouTube pitch link, guidelines, commit)
 - `dashboard/ideas/success/page.tsx` — Idea submission success
 - `dashboard/payment/page.tsx` — Payment history
 - `dashboard/payment/success/page.tsx` — Stripe checkout success verification
