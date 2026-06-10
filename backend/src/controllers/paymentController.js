@@ -212,7 +212,7 @@ const handleStripeWebhook = async (req, res) => {
       if (type === 'contestant') {
         await supabase
           .from('ideas')
-          .update({ is_public: true, updated_at: new Date().toISOString() })
+          .update({ is_public: true, status: 'submitted', payment_status: 'paid', updated_at: new Date().toISOString() })
           .eq('user_id', user_id)
           .eq('competition_id', competition_id);
 

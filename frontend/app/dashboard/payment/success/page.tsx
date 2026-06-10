@@ -5,9 +5,11 @@ import { useSearchParams } from 'next/navigation'
 import { CheckCircle2, Loader2, Trophy, Vote, ArrowRight, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
+import { useAuth } from '@/hooks/useAuth'
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams()
+  const { refreshProfile } = useAuth()
   const [status, setStatus] = useState<'verifying' | 'verified' | 'error'>('verifying')
   const [countdown, setCountdown] = useState(5)
   const [payment, setPayment] = useState<any>(null)
@@ -32,6 +34,7 @@ function PaymentSuccessContent() {
         if (res.verified) {
           setPayment(res.payment)
           setStatus('verified')
+          refreshProfile()
         } else {
           setStatus('error')
         }

@@ -165,19 +165,6 @@ function NewIdeaForm() {
       return
     }
 
-    if (!hasPaidEntry && formData.competition_id) {
-      try {
-        const res: any = await api.post(`/competitions/${formData.competition_id}/enter`)
-        if (res.checkoutUrl) {
-          sessionStorage.removeItem(FORM_KEY)
-          window.location.href = res.checkoutUrl
-          return
-        }
-      } catch {
-        // fall through to default flow
-      }
-    }
-
     setIsSubmitting(true)
     try {
       const res: any = await ideaService.createIdea({
@@ -185,9 +172,20 @@ function NewIdeaForm() {
         competition_id: formData.competition_id || undefined,
       })
       sessionStorage.removeItem(FORM_KEY)
-      setIsSuccess(true)
+
+      const ideaId = res.id
       const competitionName = competitions.find(c => c.id === formData.competition_id)?.title || ''
-      const params = new URLSearchParams({ title: formData.title, competition: competitionName, id: res.id })
+
+      if (!hasPaidEntry && formData.competition_id) {
+        const payRes: any = await api.post(`/competitions/${formData.competition_id}/enter`)
+        if (payRes.checkoutUrl) {
+          window.location.href = payRes.checkoutUrl
+          return
+        }
+      }
+
+      setIsSuccess(true)
+      const params = new URLSearchParams({ title: formData.title, competition: competitionName, id: ideaId })
       router.replace(`/dashboard/ideas/success?${params}`)
     } catch (err: any) {
       toast.error(err.message || 'Submission failed')

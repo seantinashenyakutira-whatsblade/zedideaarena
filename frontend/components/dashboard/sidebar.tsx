@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Trophy, Lightbulb, User, Vote, CheckCircle, Wallet, Settings, LogOut, Menu, X, AlertTriangle, Lock } from 'lucide-react'
+import { Home, Trophy, Lightbulb, User, Vote, CheckCircle, Wallet, Settings, LogOut, Menu, X, AlertTriangle, Lock, Shield, Users, FileText, BarChart3 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
@@ -23,6 +23,13 @@ const voterNav = [
   { href: '/dashboard/settings', icon: User, label: 'My Profile' },
 ]
 
+const adminNav = [
+  { href: '/dashboard/admin', icon: Shield, label: 'Overview' },
+  { href: '/dashboard/admin/users', icon: Users, label: 'Users' },
+  { href: '/dashboard/admin/ideas', icon: FileText, label: 'Ideas' },
+  { href: '/dashboard/admin/analytics', icon: BarChart3, label: 'Analytics' },
+]
+
 export function Sidebar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
@@ -34,7 +41,7 @@ export function Sidebar() {
   const [pendingRole, setPendingRole] = useState<string | null>(null)
   const { profile, currentRole, setCurrentRole, refreshProfile, logout } = useAuth()
 
-  const navItems = currentRole === 'voter' ? voterNav : contestantNav
+  const navItems = profile?.is_admin ? adminNav : (currentRole === 'voter' ? voterNav : contestantNav)
 
   const handleRoleChange = async (newRole: string) => {
     if (profile?.current_mode === newRole) return
@@ -120,27 +127,29 @@ export function Sidebar() {
           <span className="font-black text-xl gradient-text tracking-tighter uppercase">ZedArena</span>
         </div>
 
-        <div className="px-4 py-4 border-b border-white/5">
-          <p className="text-[9px] font-bold text-zed-foreground-secondary uppercase tracking-widest mb-2 px-2">Arena Mode</p>
-          <div className="flex bg-white/5 rounded-full p-0.5 border border-white/10">
-            <button
-              onClick={() => handleRoleChange('contestant')}
-              className={`flex-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all ${
-                currentRole === 'contestant' ? 'bg-zed-primary text-white shadow-lg shadow-indigo-500/20' : 'text-zed-foreground-secondary hover:text-zed-foreground'
-              }`}
-            >
-              Contestant
-            </button>
-            <button
-              onClick={() => handleRoleChange('voter')}
-              className={`flex-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all ${
-                currentRole === 'voter' ? 'bg-zed-accent text-white shadow-lg shadow-pink-500/20' : 'text-zed-foreground-secondary hover:text-zed-foreground'
-              }`}
-            >
-              Voter
-            </button>
+        {!profile?.is_admin && (
+          <div className="px-4 py-4 border-b border-white/5">
+            <p className="text-[9px] font-bold text-zed-foreground-secondary uppercase tracking-widest mb-2 px-2">Arena Mode</p>
+            <div className="flex bg-white/5 rounded-full p-0.5 border border-white/10">
+              <button
+                onClick={() => handleRoleChange('contestant')}
+                className={`flex-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all ${
+                  currentRole === 'contestant' ? 'bg-zed-primary text-white shadow-lg shadow-indigo-500/20' : 'text-zed-foreground-secondary hover:text-zed-foreground'
+                }`}
+              >
+                Contestant
+              </button>
+              <button
+                onClick={() => handleRoleChange('voter')}
+                className={`flex-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all ${
+                  currentRole === 'voter' ? 'bg-zed-accent text-white shadow-lg shadow-pink-500/20' : 'text-zed-foreground-secondary hover:text-zed-foreground'
+                }`}
+              >
+                Voter
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {navItems.map((item) => {

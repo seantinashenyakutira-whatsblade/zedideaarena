@@ -54,12 +54,12 @@ export default function CompetitionVotingPage() {
         setGuardErrors(errors)
 
         const [ideasRes, votesRes] = await Promise.all([
-          api.get('/ideas/public?status=approved'),
+          api.get('/ideas/public?status=submitted'),
           api.get('/votes/user'),
         ])
 
         const compIdeas = (ideasRes.data || []).filter(
-          (idea: any) => idea.competition_id === competitionId && idea.status === 'approved' && idea.is_public
+          (idea: any) => idea.competition_id === competitionId && idea.is_public
         )
         setIdeas(compIdeas)
         const votedIds = (votesRes.data || []).map((v: any) => v.idea_id)

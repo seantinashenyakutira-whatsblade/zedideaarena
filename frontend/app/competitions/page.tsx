@@ -33,7 +33,7 @@ export default function CompetitionsPage() {
   useEffect(() => {
     const fetchCompetitions = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://zedideaarena.onrender.com/api'
         const res = await fetch(`${baseUrl}/competitions`)
         const body = await res.json()
         setCompetitions(body?.data?.data || body?.data || [])

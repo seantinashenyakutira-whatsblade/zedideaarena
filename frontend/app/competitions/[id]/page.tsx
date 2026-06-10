@@ -49,7 +49,7 @@ export default function CompetitionDetailPage() {
 
     const fetchData = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://zedideaarena.onrender.com/api'
 
         const [compRes, ideasRes] = await Promise.all([
           fetch(`${baseUrl}/competitions/${id}`).then(r => r.json()),
@@ -64,7 +64,6 @@ export default function CompetitionDetailPage() {
           const filtered = allIdeas
             .filter((idea: any) =>
               idea.competition_id === id &&
-              idea.status === 'approved' &&
               idea.is_public === true
             )
             .slice(0, 20)

@@ -3,6 +3,8 @@ import { Plus_Jakarta_Sans } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { AuthProvider } from '@/hooks/useAuth'
+import { CookieConsent } from '@/components/CookieConsent'
+import { ChatBot } from '@/components/ChatBot'
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
@@ -52,6 +54,8 @@ export default function RootLayout({
       <body className={`${jakarta.className} font-sans antialiased bg-zed-background text-zed-foreground`}>
         <AuthProvider>
           {children}
+          <CookieConsent />
+          <ChatBot />
         </AuthProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
