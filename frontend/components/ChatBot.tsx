@@ -2,59 +2,12 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, X, Send, Bot, User, Sparkles, Play } from 'lucide-react'
+import { MessageCircle, X, Send, Bot, User, Sparkles } from 'lucide-react'
+import { YouTubeEmbed, getYouTubeId } from '@/components/YouTubeEmbed'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
-}
-
-function getYouTubeId(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-    /^([a-zA-Z0-9_-]{11})$/,
-  ]
-  for (const p of patterns) {
-    const m = url.match(p)
-    if (m) return m[1]
-  }
-  return null
-}
-
-function YouTubeEmbed({ url }: { url: string }) {
-  const videoId = getYouTubeId(url)
-  const [play, setPlay] = useState(false)
-  if (!videoId) return null
-  if (play) {
-    return (
-      <div className="relative w-full aspect-video rounded-xl overflow-hidden mt-2 mb-2">
-        <iframe
-          src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          className="absolute inset-0 w-full h-full"
-        />
-      </div>
-    )
-  }
-  return (
-    <button
-      onClick={() => setPlay(true)}
-      className="relative w-full aspect-video rounded-xl overflow-hidden mt-2 mb-2 group cursor-pointer border-0 p-0"
-    >
-      <img
-        src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
-        alt="YouTube video"
-        className="absolute inset-0 w-full h-full object-cover"
-      />
-      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform group-active:scale-95">
-          <Play size={26} className="text-black ml-0.5" />
-        </div>
-      </div>
-    </button>
-  )
 }
 
 const SYSTEM_PROMPT = `You are the ZedIdeaArena AI assistant. You help users understand how the platform works.

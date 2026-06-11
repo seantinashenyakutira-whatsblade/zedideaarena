@@ -17,6 +17,7 @@ import {
   Calendar,
   Users
 } from 'lucide-react'
+import { YouTubeEmbed, getYouTubeId } from '@/components/YouTubeEmbed'
 import { useAuth } from '@/hooks/useAuth'
 import api from '@/lib/api'
 import { toast } from 'sonner'
@@ -97,11 +98,15 @@ export default function IdeaDetailPage() {
                   {/* Hero / Video */}
                   <div className="relative aspect-video rounded-3xl overflow-hidden bg-black shadow-2xl border border-white/5 group">
                     {(idea.pitch_video_url || idea.video_url) ? (
-                      <video 
-                        src={idea.pitch_video_url || idea.video_url} 
-                        controls 
-                        className="w-full h-full object-contain"
-                      />
+                      (getYouTubeId(idea.pitch_video_url || idea.video_url)) ? (
+                        <YouTubeEmbed url={idea.pitch_video_url || idea.video_url} className="rounded-3xl" />
+                      ) : (
+                        <video 
+                          src={idea.pitch_video_url || idea.video_url} 
+                          controls 
+                          className="w-full h-full object-contain"
+                        />
+                      )
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-white/20">
                         <Play size={64} className="opacity-20" />

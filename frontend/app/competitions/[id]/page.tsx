@@ -3,9 +3,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
-import { Trophy, Calendar, Clock, DollarSign, ArrowRight, Loader2, Users } from 'lucide-react'
+import { Trophy, Calendar, Clock, DollarSign, ArrowRight, Loader2, Users, Play } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { CompetitionCountdown } from '@/components/CompetitionCountdown'
+import { getYouTubeThumbnail } from '@/components/YouTubeEmbed'
 
 interface Competition {
   id: string
@@ -27,6 +28,8 @@ interface Idea {
   problem_statement: string
   industry: string
   image_url: string
+  video_url: string
+  pitch_video_url: string
   votes_count: number
   users: { full_name: string }
 }
@@ -172,25 +175,39 @@ export default function CompetitionDetailPage() {
                   <Users size={24} className="text-zed-primary" /> Submitted Ideas
                 </h2>
                 <div className="grid gap-4">
-                  {ideas.map((idea) => (
-                    <div key={idea.id} className="card-zed p-6 flex items-center gap-6 hover:border-zed-primary/30 transition-all">
-                      <div className="w-16 h-16 rounded-2xl bg-zed-primary/10 flex items-center justify-center text-zed-primary font-black text-lg flex-shrink-0">
-                        {idea.votes_count || 0}
+                  {ideas.map((idea) => {
+                    const thumbUrl = idea.image_url || getYouTubeThumbnail(idea.pitch_video_url || idea.video_url) || ''
+                    return (
+                      <div key={idea.id} className="card-zed p-4 sm:p-6 flex items-center gap-4 sm:gap-6 hover:border-zed-primary/30 transition-all">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-zed-primary/10 flex-shrink-0 relative">
+                          {thumbUrl ? (
+                            <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-zed-primary font-black text-lg">
+                              {idea.votes_count || 0}
+                            </div>
+                          )}
+                          {idea.pitch_video_url && (
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                              <Play size={18} className="text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-black text-zed-foreground mb-1 truncate text-sm sm:text-base">{idea.title}</h3>
+                          <p className="text-xs text-zed-foreground-secondary truncate">
+                            by {idea.users?.full_name || 'Unknown'} &middot; {idea.industry || 'General'} &middot; {idea.votes_count || 0} votes
+                          </p>
+                        </div>
+                        <Link
+                          href={`/dashboard/ideas/${idea.id}`}
+                          className="btn-secondary text-xs px-3 sm:px-4 py-2 rounded-xl font-black whitespace-nowrap"
+                        >
+                          View <ArrowRight size={14} className="inline ml-1" />
+                        </Link>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-black text-zed-foreground mb-1 truncate">{idea.title}</h3>
-                        <p className="text-xs text-zed-foreground-secondary truncate">
-                          by {idea.users?.full_name || 'Unknown'} &middot; {idea.industry || 'General'}
-                        </p>
-                      </div>
-                      <Link
-                        href={`/dashboard/ideas/${idea.id}`}
-                        className="btn-secondary text-xs px-4 py-2 rounded-xl font-black"
-                      >
-                        View <ArrowRight size={14} className="inline ml-1" />
-                      </Link>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </section>
             )}
