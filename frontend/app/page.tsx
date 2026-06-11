@@ -1,11 +1,13 @@
 'use client'
 
-import { ArrowRight, ChevronLeft, ChevronRight, Users, Trophy, Zap, Play, Clock, DollarSign, Star, Glasses, Camera, Linkedin, Twitter, Sparkles, TrendingUp, Lightbulb, Shield, Menu, X } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight, Users, Trophy, Zap, Play, Clock, DollarSign, Star, Glasses, Sparkles, TrendingUp, Lightbulb, Shield, Menu, X, Linkedin, Twitter, Camera, MessageCircle, Award } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import api from '@/lib/api'
+import { team } from '@/lib/team'
+import { social } from '@/lib/social'
 
 const fadeUp = {
   initial: { opacity: 0, y: 40 },
@@ -14,54 +16,14 @@ const fadeUp = {
   transition: { duration: 0.6 },
 }
 
-const howItWorks = [
-  { num: '01', title: 'Sign Up', desc: 'Create your account in seconds. No credit card required.', icon: Users },
-  { num: '02', title: 'Choose Your Role', desc: 'Enter as a Contestant or judge as a Voter.', icon: Star },
-  { num: '03', title: 'Enter a Competition', desc: 'Pay the entry fee and join an active arena.', icon: Trophy },
-  { num: '04', title: 'Contestant: Submit', desc: 'Your idea pitch goes live for the world to see.', icon: Zap },
-  { num: '04', title: 'Voter: Judge', desc: 'Watch pitches and vote for the best ideas.', icon: Glasses },
-  { num: '05', title: 'Winners Paid', desc: 'Prize pool distributed to top ideas automatically.', icon: DollarSign },
+const steps = [
+  { num: '01', icon: '👤', title: 'Sign Up', desc: 'Create your account in seconds. Free forever. No credit card needed.' },
+  { num: '02', icon: '🎭', title: 'Choose Your Role', desc: 'Contestant: submit your idea. Voter: judge entries and earn rewards.' },
+  { num: '03', icon: '🏟️', title: 'Enter a Competition', desc: 'Pay the entry fee. It goes straight to the prize pool.' },
+  { num: '04', icon: '💡', title: 'Submit Your Idea', desc: 'Pitch your idea with a title, problem statement, solution, and YouTube video.' },
+  { num: '05', icon: '🗳️', title: 'Get Voted On', desc: 'Verified voters review and judge every submission fairly.' },
+  { num: '06', icon: '💰', title: 'Winners Get Paid', desc: 'Top ideas split the prize pool. 1st: 25%, 2nd: 10%, 3rd: 5%.' },
 ]
-
-const team = [
-  { name: 'Sean Nyakutira', role: 'Founder & CEO', bio: 'Visionary behind ZedIdeaArena' },
-  { name: 'Tinashe Shumba', role: 'Lead Developer', bio: 'Full-stack architect' },
-  { name: 'Chenai Nyakutira', role: 'Community Lead', bio: 'Growing the innovator network' },
-  { name: 'Dylan Ibrahimovic', role: 'Head of Operations', bio: 'Scaling the platform' },
-]
-
-function useCountUp(end: number, duration = 2) {
-  const [count, setCount] = useState(0)
-  const ref = useRef<HTMLSpanElement>(null)
-  const [entered, setEntered] = useState(false)
-
-  useEffect(() => {
-    if (!ref.current || entered) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !entered) {
-          setEntered(true)
-          let start = 0
-          const step = Math.ceil(end / (duration * 60))
-          const timer = setInterval(() => {
-            start += step
-            if (start >= end) {
-              setCount(end)
-              clearInterval(timer)
-            } else {
-              setCount(start)
-            }
-          }, 16)
-        }
-      },
-      { threshold: 0.3 }
-    )
-    observer.observe(ref.current)
-    return () => observer.disconnect()
-  }, [end, duration, entered])
-
-  return { count, ref }
-}
 
 function SectionDivider() {
   return (
@@ -83,41 +45,96 @@ function FloatingOrb({ className, color }: { className?: string; color: string }
   )
 }
 
+function AnimatedStat({ value, prefix = '', suffix = '+', label, icon: Icon }: { value: number; prefix?: string; suffix?: string; label: string; icon: any }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [entered, setEntered] = useState(false)
+  const [display, setDisplay] = useState(0)
+
+  useEffect(() => {
+    if (!ref.current || entered) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !entered) {
+          setEntered(true)
+          const end = value
+          const duration = 1500
+          const step = end / (duration / 16)
+          const timer = setInterval(() => {
+            setDisplay(prev => {
+              const next = prev + step
+              if (next >= end) { clearInterval(timer); return end }
+              return Math.floor(next)
+            })
+          }, 16)
+        }
+      },
+      { threshold: 0.3 }
+    )
+    observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [value, entered])
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5 }}
+      className="text-center p-6 rounded-2xl border border-white/5"
+      style={{ background: 'rgba(255,255,255,0.02)' }}
+    >
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(99,102,241,0.1)' }}>
+        <Icon size={18} style={{ color: '#6366F1' }} />
+      </div>
+      <p className="text-2xl sm:text-3xl font-black mb-1">
+        {prefix}{display.toLocaleString()}{suffix}
+      </p>
+      <p className="text-xs text-white/40 font-semibold">{label}</p>
+    </motion.div>
+  )
+}
+
 export default function LandingPage() {
   const [competitions, setCompetitions] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [compLoading, setCompLoading] = useState(true)
+  const [stats, setStats] = useState({ activeIdeas: 0, communityMembers: 0, fundingDistributed: 0, countries: 0 })
   const scrollRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const heroRef = useRef<HTMLDivElement>(null)
 
+  // Drag scroll state
+  const [isDragging, setIsDragging] = useState(false)
+  const dragStartX = useRef(0)
+  const dragScrollLeft = useRef(0)
+
   const { scrollYProgress } = useScroll()
   const bgOpacity = useTransform(scrollYProgress, [0, 0.12], [1, 0])
   const heroScale = useTransform(scrollYProgress, [0, 0.15], [1, 1.05])
   const navBg = useTransform(scrollYProgress, [0, 0.05], ['rgba(10,10,15,0.5)', 'rgba(10,10,15,0.95)'])
   const navBlur = useTransform(scrollYProgress, [0, 0.05], ['blur(0px)', 'blur(24px)'])
-
   const heroTextY = useTransform(scrollYProgress, [0, 0.1], [0, 60])
   const heroTextOpacity = useTransform(scrollYProgress, [0, 0.1], [1, 0])
 
-  const stats = [
-    { label: 'Active Users', value: 1250, suffix: '+', icon: Users },
-    { label: 'Ideas Submitted', value: 340, suffix: '+', icon: Lightbulb },
-    { label: 'Prize Pool', value: 5000, prefix: '$', suffix: '+', icon: DollarSign },
-    { label: 'Countries', value: 12, suffix: '', icon: TrendingUp },
-  ]
+  useEffect(() => {
+    api.get('/stats/global')
+      .then((res: any) => {
+        if (res?.data?.data) setStats(res.data.data)
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
-    const fetchComps = async () => {
-      try {
-        const res: any = await api.get('/competitions')
-        const active = (res.data || []).filter((c: any) => c.calculatedStatus === 'active')
-        setCompetitions(active.slice(0, 3))
-      } catch { /* silent */ }
-      setLoading(false)
-    }
-    fetchComps()
+    api.get('/competitions')
+      .then((res: any) => {
+        const list = res?.data?.data || []
+        const active = list.filter((c: any) => c.calculatedStatus === 'active' || c.calculatedStatus === 'upcoming').slice(0, 3)
+        setCompetitions(active)
+      })
+      .catch(() => {})
+      .finally(() => setCompLoading(false))
   }, [])
 
   const checkScroll = () => {
@@ -132,6 +149,23 @@ export default function LandingPage() {
     const amount = 360
     scrollRef.current.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' })
   }
+
+  const handleDragStart = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return
+    setIsDragging(true)
+    dragStartX.current = e.pageX - scrollRef.current.offsetLeft
+    dragScrollLeft.current = scrollRef.current.scrollLeft
+  }
+
+  const handleDragMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return
+    e.preventDefault()
+    const x = e.pageX - scrollRef.current.offsetLeft
+    const walk = (x - dragStartX.current) * 1.5
+    scrollRef.current.scrollLeft = dragScrollLeft.current - walk
+  }
+
+  const handleDragEnd = () => setIsDragging(false)
 
   return (
     <div className="bg-[#0A0A0F] text-white min-h-screen overflow-x-hidden">
@@ -159,6 +193,9 @@ export default function LandingPage() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
+            <Link href="/about" className="text-sm font-semibold text-white/50 hover:text-white transition-colors">About</Link>
+            <Link href="/how-it-works" className="text-sm font-semibold text-white/50 hover:text-white transition-colors">How It Works</Link>
+            <Link href="/pricing" className="text-sm font-semibold text-white/50 hover:text-white transition-colors">Pricing</Link>
             <Link href="/competitions" className="text-sm font-semibold text-white/50 hover:text-white transition-colors">Competitions</Link>
             <Link href="/docs/rules" className="text-sm font-semibold text-white/50 hover:text-white transition-colors">Rules</Link>
             <div className="w-px h-4 bg-white/10" />
@@ -185,10 +222,13 @@ export default function LandingPage() {
               style={{ background: 'rgba(10,10,15,0.98)' }}
             >
               <div className="px-6 py-6 space-y-4">
-                <Link href="/competitions" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-white/70 hover:text-white transition-colors">Competitions</Link>
-                <Link href="/docs/rules" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-white/70 hover:text-white transition-colors">Rules</Link>
+                <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-white/70 hover:text-white">About</Link>
+                <Link href="/how-it-works" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-white/70 hover:text-white">How It Works</Link>
+                <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-white/70 hover:text-white">Pricing</Link>
+                <Link href="/competitions" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-white/70 hover:text-white">Competitions</Link>
+                <Link href="/docs/rules" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-semibold text-white/70 hover:text-white">Rules</Link>
                 <div className="border-t border-white/5 pt-4 flex flex-col gap-3">
-                  <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)} className="text-sm font-semibold text-white/70 hover:text-white transition-colors px-4 py-2">Sign In</Link>
+                  <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)} className="text-sm font-semibold text-white/70 hover:text-white px-4 py-2">Sign In</Link>
                   <Link href="/auth/signup" onClick={() => setMobileMenuOpen(false)} className="text-sm font-bold px-5 py-2.5 rounded-full text-center btn-glow" style={{ background: 'linear-gradient(135deg,#6366F1,#22D3EE)' }}>
                     Join Now
                   </Link>
@@ -200,18 +240,27 @@ export default function LandingPage() {
       </motion.nav>
 
       {/* SECTION 1 — HERO */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden px-6">
+      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden px-6 hero-bg">
         <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0 pointer-events-none">
-          <Image
-            src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1920&q=80"
-            alt=""
-            fill
-            className="object-cover"
-            priority
+          {/* Animated floating orbs */}
+          <motion.div
+            className="absolute w-96 h-96 rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.2), transparent)', top: '10%', left: '20%' }}
+            animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
           />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(10,10,15,0.92) 0%, rgba(10,10,15,0.6) 50%, rgba(10,10,15,0.92) 100%)' }} />
-          <FloatingOrb className="top-1/4 left-1/4 w-[500px] h-[500px]" color="rgba(99,102,241,0.15)" />
-          <FloatingOrb className="bottom-1/3 right-1/4 w-[400px] h-[400px]" color="rgba(34,211,238,0.1)" />
+          <motion.div
+            className="absolute w-64 h-64 rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(34,211,238,0.1), transparent)', bottom: '20%', right: '15%' }}
+            animate={{ x: [0, -20, 0], y: [0, 30, 0] }}
+            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className="absolute w-80 h-80 rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.1), transparent)', top: '60%', left: '60%' }}
+            animate={{ x: [0, 25, 0], y: [0, 20, 0] }}
+            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+          />
         </motion.div>
 
         <motion.div style={{ y: heroTextY, opacity: heroTextOpacity }} className="relative z-10 max-w-5xl mx-auto text-center pt-24 pb-16">
@@ -234,33 +283,18 @@ export default function LandingPage() {
 
           <motion.h1 className="text-5xl sm:text-7xl lg:text-8xl font-black leading-[0.95] mb-8 tracking-tight">
             <span className="inline-block overflow-hidden">
-              <motion.span
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                className="inline-block"
-              >
+              <motion.span initial={{ y: '100%' }} animate={{ y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="inline-block">
                 Where Ideas
               </motion.span>
             </span>{' '}
             <span className="inline-block overflow-hidden">
-              <motion.span
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.6, delay: 0.7 }}
-                className="inline-block gradient-text"
-              >
+              <motion.span initial={{ y: '100%' }} animate={{ y: 0 }} transition={{ duration: 0.6, delay: 0.7 }} className="inline-block gradient-text">
                 Compete.
               </motion.span>
             </span>{' '}
             <br className="sm:hidden" />
             <span className="inline-block overflow-hidden">
-              <motion.span
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.6, delay: 1.1 }}
-                className="inline-block"
-              >
+              <motion.span initial={{ y: '100%' }} animate={{ y: 0 }} transition={{ duration: 0.6, delay: 1.1 }} className="inline-block">
                 And Win.
               </motion.span>
             </span>
@@ -341,33 +375,14 @@ export default function LandingPage() {
 
       <SectionDivider />
 
-      {/* Stats Bar */}
+      {/* Stats Bar — Live Data */}
       <section className="py-16 px-6 relative">
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {stats.map((stat, i) => {
-              const { count, ref } = useCountUp(stat.value, 2.5)
-              const Icon = stat.icon
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: i * 0.1 }}
-                  className="text-center p-6 rounded-2xl border border-white/5"
-                  style={{ background: 'rgba(255,255,255,0.02)' }}
-                >
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(99,102,241,0.1)' }}>
-                    <Icon size={18} style={{ color: '#6366F1' }} />
-                  </div>
-                  <p className="text-2xl sm:text-3xl font-black mb-1">
-                    <span ref={ref}>{stat.prefix || ''}{count}{stat.suffix || ''}</span>
-                  </p>
-                  <p className="text-xs text-white/40 font-semibold">{stat.label}</p>
-                </motion.div>
-              )
-            })}
+            <AnimatedStat value={stats.communityMembers} label="Community Members" icon={Users} />
+            <AnimatedStat value={stats.activeIdeas} label="Ideas Submitted" icon={Lightbulb} />
+            <AnimatedStat value={stats.fundingDistributed} prefix="$" suffix="+" label="Funding Distributed" icon={DollarSign} />
+            <AnimatedStat value={stats.countries} label="Countries" icon={TrendingUp} />
           </div>
         </div>
       </section>
@@ -382,11 +397,9 @@ export default function LandingPage() {
             <motion.span {...fadeUp} className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 mb-4 block">How It Works</motion.span>
             <motion.h2 {...fadeUp} className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight">
               From idea to{' '}
-              <span className="gradient-text">
-                funding
-              </span>
+              <span className="gradient-text">funding</span>
               <br className="hidden sm:block" />
-              <span className="text-white/30 text-2xl sm:text-3xl lg:text-4xl font-bold block mt-4">in 5 simple steps</span>
+              <span className="text-white/30 text-2xl sm:text-3xl lg:text-4xl font-bold block mt-4">in 6 simple steps</span>
             </motion.h2>
           </div>
 
@@ -400,39 +413,43 @@ export default function LandingPage() {
               </button>
             </div>
 
-            <div ref={scrollRef} onScroll={checkScroll} className="flex gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              <style>{`div[data-scroll-container]::-webkit-scrollbar { display: none; }`}</style>
-              {howItWorks.map((step, i) => {
-                const Icon = step.icon
-                return (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 40 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: i * 0.1 }}
-                    className="min-w-[300px] sm:min-w-[360px] p-8 rounded-3xl border border-white/10 flex-shrink-0 backdrop-blur-sm hover:border-white/20 transition-all duration-300 group snap-start"
-                    style={{ background: 'rgba(255,255,255,0.03)' }}
-                  >
-                    <div className="flex items-center gap-4 mb-8">
-                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg" style={{ background: 'rgba(99,102,241,0.15)', color: '#6366F1', boxShadow: '0 0 20px rgba(99,102,241,0.1)' }}>
-                        {step.num}
-                      </div>
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.1)' }}>
-                        <Icon size={22} style={{ color: '#22D3EE' }} />
-                      </div>
+            <div
+              ref={scrollRef}
+              onScroll={checkScroll}
+              onMouseDown={handleDragStart}
+              onMouseMove={handleDragMove}
+              onMouseUp={handleDragEnd}
+              onMouseLeave={handleDragEnd}
+              className={`flex gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory scrollbar-hide ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            >
+              {steps.map((step, i) => (
+                <motion.div
+                  key={step.num}
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  className="min-w-[300px] sm:min-w-[360px] p-8 rounded-3xl border border-white/10 flex-shrink-0 backdrop-blur-sm hover:border-white/20 transition-all duration-300 group snap-start"
+                  style={{ background: 'rgba(255,255,255,0.03)' }}
+                >
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg" style={{ background: 'rgba(99,102,241,0.15)', color: '#6366F1', boxShadow: '0 0 20px rgba(99,102,241,0.1)' }}>
+                      {step.num}
                     </div>
-                    <h3 className="text-2xl font-bold mb-3">{step.title}</h3>
-                    <p className="text-sm text-white/50 leading-relaxed">{step.desc}</p>
-                    <div className="mt-6 h-1 w-12 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: 'linear-gradient(90deg,#6366F1,#22D3EE)' }} />
-                  </motion.div>
-                )
-              })}
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: 'rgba(99,102,241,0.1)' }}>
+                      {step.icon}
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-3">{step.title}</h3>
+                  <p className="text-sm text-white/50 leading-relaxed">{step.desc}</p>
+                  <div className="mt-6 h-1 w-12 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: 'linear-gradient(90deg,#6366F1,#22D3EE)' }} />
+                </motion.div>
+              ))}
             </div>
 
             {/* Dots */}
             <div className="flex justify-center gap-2 mt-8">
-              {howItWorks.map((_, i) => (
+              {steps.map((_, i) => (
                 <div key={i} className="w-2 h-2 rounded-full transition-all duration-300" style={{ background: i === 0 ? '#6366F1' : 'rgba(255,255,255,0.1)' }} />
               ))}
             </div>
@@ -454,7 +471,7 @@ export default function LandingPage() {
             </motion.h2>
           </div>
 
-          <motion.div {...fadeUp} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+          <motion.div {...fadeUp} className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-20">
             {team.map((member, i) => (
               <motion.div
                 key={i}
@@ -470,7 +487,7 @@ export default function LandingPage() {
                   style={{ background: 'rgba(99,102,241,0.1)' }}
                   whileHover={{ scale: 1.05 }}
                 >
-                  <Image src="/placeholder-user.jpg" alt={member.name} width={80} height={80} className="w-full h-full object-cover opacity-70" />
+                  <Image src={member.image} alt={member.name} width={80} height={80} className="w-full h-full object-cover opacity-70" />
                 </motion.div>
                 <h4 className="font-bold text-sm mb-1">{member.name}</h4>
                 <p className="text-xs font-semibold" style={{ color: '#6366F1' }}>{member.role}</p>
@@ -510,7 +527,7 @@ export default function LandingPage() {
             </motion.h2>
           </div>
 
-          {loading ? (
+          {compLoading ? (
             <div className="text-center py-20">
               <div className="w-10 h-10 border-2 border-zed-primary border-t-transparent rounded-full animate-spin mx-auto" />
             </div>
@@ -586,7 +603,14 @@ export default function LandingPage() {
                 <Trophy size={32} style={{ color: '#6366F1' }} />
               </motion.div>
               <h3 className="text-2xl font-bold mb-3">First competition launching soon</h3>
-              <p className="text-white/50 max-w-md mx-auto">Be the first to know. Sign up and get notified when we go live.</p>
+              <p className="text-white/50 max-w-md mx-auto">Sign up to be notified when we go live.</p>
+              <Link
+                href="/auth/signup"
+                className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold transition-all hover:scale-105 btn-glow"
+                style={{ background: 'linear-gradient(135deg,#6366F1,#22D3EE)' }}
+              >
+                Get Notified <ArrowRight size={16} />
+              </Link>
             </motion.div>
           )}
         </motion.div>
@@ -635,7 +659,7 @@ export default function LandingPage() {
           viewport={{ once: true }}
           className="relative z-10 w-full max-w-5xl mx-auto border-t border-white/10 pt-12"
         >
-          <div className="grid sm:grid-cols-3 gap-8 mb-12 text-center sm:text-left">
+          <div className="grid sm:grid-cols-4 gap-8 mb-12 text-center sm:text-left">
             <div>
               <div className="flex items-center gap-3 justify-center sm:justify-start mb-4">
                 <Image src="/logo-icon.png" alt="ZedIdeaArena" width={24} height={24} className="object-contain opacity-50" />
@@ -646,25 +670,58 @@ export default function LandingPage() {
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-white/30 mb-4">Platform</p>
               <div className="flex flex-col gap-3">
+                <Link href="/about" className="text-sm text-white/50 hover:text-white transition-colors">About</Link>
+                <Link href="/how-it-works" className="text-sm text-white/50 hover:text-white transition-colors">How It Works</Link>
+                <Link href="/pricing" className="text-sm text-white/50 hover:text-white transition-colors">Pricing</Link>
                 <Link href="/competitions" className="text-sm text-white/50 hover:text-white transition-colors">Competitions</Link>
                 <Link href="/docs/rules" className="text-sm text-white/50 hover:text-white transition-colors">Rules</Link>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-white/30 mb-4">Legal</p>
+              <div className="flex flex-col gap-3">
                 <Link href="/docs/terms" className="text-sm text-white/50 hover:text-white transition-colors">Terms of Service</Link>
-                <Link href="/docs/privacy" className="text-sm text-white/50 hover:text-white transition-colors">Privacy</Link>
+                <Link href="/docs/privacy" className="text-sm text-white/50 hover:text-white transition-colors">Privacy Policy</Link>
+                <Link href="/docs/rules" className="text-sm text-white/50 hover:text-white transition-colors">Competition Rules</Link>
               </div>
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-white/30 mb-4">Connect</p>
               <div className="flex items-center gap-4 justify-center sm:justify-start">
-                {[Twitter, Linkedin, Camera].map((Icon, i) => (
-                  <motion.a
-                    key={i}
-                    href="#"
-                    className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/10 hover:border-white/30 transition-all text-white/50 hover:text-white"
-                    whileHover={{ scale: 1.1, y: -2 }}
-                  >
-                    <Icon size={18} />
-                  </motion.a>
-                ))}
+                <motion.a
+                  href={social.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/10 hover:border-white/30 transition-all text-white/50 hover:text-white"
+                  whileHover={{ scale: 1.1, y: -2 }}
+                >
+                  <Twitter size={18} />
+                </motion.a>
+                <motion.a
+                  href={social.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/10 hover:border-white/30 transition-all text-white/50 hover:text-white"
+                  whileHover={{ scale: 1.1, y: -2 }}
+                >
+                  <Camera size={18} />
+                </motion.a>
+                <motion.a
+                  href={social.tiktok}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/10 hover:border-white/30 transition-all text-white/50 hover:text-white"
+                  whileHover={{ scale: 1.1, y: -2 }}
+                >
+                  <MessageCircle size={18} />
+                </motion.a>
+                <motion.a
+                  href={`mailto:${social.email}`}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/10 hover:border-white/30 transition-all text-white/50 hover:text-white"
+                  whileHover={{ scale: 1.1, y: -2 }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                </motion.a>
               </div>
             </div>
           </div>
@@ -676,5 +733,3 @@ export default function LandingPage() {
     </div>
   )
 }
-
-

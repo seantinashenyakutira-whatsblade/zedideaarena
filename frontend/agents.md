@@ -10,6 +10,8 @@ Next.js 16 App Router application — all user-facing UI, pages, components, and
 - `lib/supabase-browser.ts` — Browser-side Supabase client (anon key)
 - `lib/supabase-server.ts` — Server-side Supabase client (service role)
 - `lib/utils.ts` — Tailwind CSS class merge utility
+- `lib/team.ts` — Team member data (name, role, bio, image, social links)
+- `lib/social.ts` — Social media URLs (tiktok, instagram, twitter, email)
 - `lib/validators/` — Zod schemas for login, signup, profile, idea forms
 - `hooks/useAuth.ts` — Auth context provider + session/profile state
 - `hooks/use-toast.ts` — Sonner toast notification hook
@@ -17,7 +19,13 @@ Next.js 16 App Router application — all user-facing UI, pages, components, and
 - `services/core.ts` — Admin API service (stats, users, ideas, audit)
 - `services/idea.ts` — Idea CRUD API service
 - `services/payment.js` — Payment API service (Stripe checkout, verify)
-- `app/` — All App Router pages and layouts
+- `app/page.tsx` — Landing page (hero-bg gradient, live stats from /api/stats/global, horizontal scroll How It Works, team from lib/team, real competitions, social links from lib/social, nav links to all pages)
+- `app/about/page.tsx` — About page (mission, story, values grid, full team)
+- `app/how-it-works/page.tsx` — How It Works page (contestant/voter flows, 10-question FAQ accordion)
+- `app/pricing/page.tsx` — Pricing page (tier cards, prize breakdown table, pricing FAQ)
+- `app/docs/rules/page.tsx` — Competition rules (eligibility, submission, voting)
+- `app/docs/terms/page.tsx` — Terms of Service
+- `app/docs/privacy/page.tsx` — Privacy Policy
 - `components/` — Reusable UI and business components
 - `public/` — Static assets (logos, images, icons)
 - `next.config.mjs` — Next.js configuration
@@ -31,6 +39,9 @@ Next.js 16 App Router application — all user-facing UI, pages, components, and
 - Form validation uses Zod schemas in `lib/validators/`
 - shadcn/ui components go in `components/ui/`; business components go in their own folders
 - Environment variables prefixed with `NEXT_PUBLIC_` are client-safe; secrets go only to backend
+- Landing page stats fetch from `/api/stats/global` (returns activeIdeas, communityMembers, fundingDistributed, countries)
+- Landing page competitions fetch from `/api/competitions` (filter by calculatedStatus: 'active' | 'upcoming')
+- Nav includes: About, How It Works, Pricing, Competitions, Rules, Sign In, Join Now
 
 ## Child Docs
 - /frontend/app/agents.md — Pages and routes

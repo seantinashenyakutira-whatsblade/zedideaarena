@@ -1,0 +1,42 @@
+export const team = [
+  {
+    name: 'Sean Tinashe Nyakutira',
+    role: 'Founder & CEO',
+    bio: 'Lead developer and visionary behind ZedIdeaArena. Building the future of African innovation.',
+    image: '/placeholder-user.jpg',
+    linkedin: '#',
+    twitter: '#',
+  },
+  {
+    name: 'Dylan Ibrahimovic',
+    role: 'Head of Operations',
+    bio: 'Scaling the platform and managing day-to-day operations across Southern Africa.',
+    image: '/placeholder-user.jpg',
+    linkedin: '#',
+    twitter: '#',
+  },
+  {
+    name: 'Chenai Nyakutira',
+    role: 'Community Lead',
+    bio: 'Growing the innovator network and building partnerships across the region.',
+    image: '/placeholder-user.jpg',
+    linkedin: '#',
+    twitter: '#',
+  },
+  {
+    name: 'TBA',
+    role: 'Assistant Developer',
+    bio: 'Building and maintaining platform features for a seamless experience.',
+    image: '/placeholder-user.jpg',
+    linkedin: '#',
+    twitter: '#',
+  },
+  {
+    name: 'TBA',
+    role: 'Marketing Director',
+    bio: 'Driving growth and brand awareness across Southern Africa and beyond.',
+    image: '/placeholder-user.jpg',
+    linkedin: '#',
+    twitter: '#',
+  },
+]

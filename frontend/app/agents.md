@@ -1,93 +1,52 @@
-# Frontend App — Agent Docs
+# App Pages & Routes — Subdomain Architecture
 
-## Purpose
-All Next.js App Router pages, layouts, and route groups.
+## Subdomain → Route Mapping
+- **Main domain (zedideaarena.com)** — Marketing pages: `/`, `/about`, `/how-it-works`, `/pricing`, `/competitions`, `/docs/*`
+- **login.*** → `/auth/*` (login, signup, onboarding, auth callback)
+- **hub.*** → `/dashboard/*` (contestant dashboard, competitions, ideas, profile, payment)
+- **vote.*** → `/voter/*` (voter pages, competition listing, idea cards, voting)
+- **admin.*** → `/admin/*` (admin panel, users, ideas, competitions, stats)
 
-## Key Files
-### Root Layout & Global
-- `layout.tsx` — Root layout with theme provider, font, metadata
-- `page.tsx` — Landing page (5-section SPA: hero with word-by-word animation, how-it-works horizontal scroll, team/mission, live competitions from API, CTA + footer)
-- `loading.tsx` — Global loading fallback
-- `error.tsx` — Global error boundary
-- `not-found.tsx` — 404 page
-- `globals.css` — Global Tailwind imports and custom CSS
-- `robots.ts` — SEO robots configuration
-- `sitemap.ts` — SEO sitemap generation
+## Marketing Pages
+- `page.tsx` — Landing page. Hero with CSS gradient bg (no Unsplash). Live stats from `/api/stats/global`. Horizontal scroll How It Works (6 steps, drag + wheel). Team from `lib/team.ts`. Live competitions from `/api/competitions`. Empty state: "First competition launching soon". Social links from `lib/social.ts`. Nav: About, How It Works, Pricing, Competitions, Rules.
+- `about/page.tsx` — Mission, story section, values grid (4 values), team grid (5 members from lib/team.ts).
+- `how-it-works/page.tsx` — Contestant flow (6 steps), Voter flow (6 steps), FAQ accordion (10 questions).
+- `pricing/page.tsx` — Two tier cards (Contestant $5/comp, Voter $15/once), prize breakdown table (1st 25%, 2nd 10%, 3rd 5%), pricing FAQ (5 questions).
 
-### Auth (served at login.zedideaarena.com)
-- `auth/login/page.tsx` — Email/password + Google OAuth login
-- `auth/signup/page.tsx` — Registration form
-- `auth/callback/page.tsx` — OAuth callback handler; redirects to hub.zedideaarena.com
-- `auth/verify-otp/page.tsx` — OTP verification
-- `auth/layout.tsx` — Auth pages layout wrapper (split panel)
-
-### Dashboard (served at hub.zedideaarena.com; authenticated)
-- `dashboard/layout.tsx` — Sidebar + header + KYC banner
-- `dashboard/page.tsx` — User dashboard overview
-- `dashboard/competitions/page.tsx` — Competition listing
-- `dashboard/competitions/[id]/page.tsx` — Competition detail
-- `dashboard/competitions/[id]/submit/page.tsx` — Idea submission
-- `dashboard/competitions/[id]/leaderboard/page.tsx` — Competition leaderboard
-- `dashboard/ideas/page.tsx` — User's ideas list
-- `dashboard/ideas/[id]/page.tsx` — Idea detail/edit
-- `dashboard/ideas/new/page.tsx` — Create new idea (5-step wizard: identity, concept, YouTube pitch link, guidelines, commit)
-- `dashboard/ideas/success/page.tsx` — Idea submission success
-- `dashboard/payment/page.tsx` — Payment history
-- `dashboard/payment/success/page.tsx` — Stripe checkout success verification
-- `dashboard/voting/page.tsx` — Active voting interface
-- `dashboard/voter/page.tsx` — Voter registration/dashboard
-- `dashboard/vote/success/page.tsx` — Vote submission success
-- `dashboard/admin/page.tsx` — Admin overview (stats, audit log)
-- `dashboard/admin/users/page.tsx` — Admin user management
-- `dashboard/admin/ideas/page.tsx` — Admin idea moderation
-- `dashboard/admin/competitions/page.tsx` — Admin competition management
-- `dashboard/admin/analytics/page.tsx` — Platform analytics
-- `dashboard/earnings/page.tsx` — Earnings and withdrawals
-- `dashboard/settings/page.tsx` — Profile settings
-- `dashboard/kyc/page.tsx` — KYC document upload
-- `dashboard/loading.tsx` — Dashboard loading state
-
-### Onboarding
-- `onboarding/layout.tsx` — Onboarding flow layout
-- `onboarding/personal/page.tsx` — Personal info step
-- `onboarding/documents/page.tsx` — Document upload step
-- `onboarding/location/page.tsx` — Location step
-- `onboarding/review/page.tsx` — Review step
-- `onboarding/success/page.tsx` — Onboarding complete
-
-### Competition & Voting (vote.zedideaarena.com)
-- `competitions/page.tsx` — Public competition listing
-- `competitions/[id]/page.tsx` — Public competition detail
-- `competitions/[id]/results/page.tsx` — Competition results
-- `vote/[competitionId]/page.tsx` — Voting page
-- `contestant/[[...slug]]/page.tsx` — Contestant area
-- `voter/[[...slug]]/page.tsx` — Voter area
-
-### Admin Catch-All (admin.zedideaarena.com)
-- `admin/[[...slug]]/page.tsx` — Legacy admin fallback route
-
-### Docs & Legal
-- `docs/page.tsx` — Documentation hub
-- `docs/privacy/page.tsx` — Privacy policy
-- `docs/terms/page.tsx` — Terms of service
-- `docs/rules/page.tsx` — Competition rules
+## Docs Pages
+- `docs/rules/page.tsx` — Competition rules (eligibility, submission guidelines, voting & conduct)
+- `docs/terms/page.tsx` — Terms of Service (agreement, IP, fees)
+- `docs/privacy/page.tsx` — Privacy Policy (data collection, data protection)
 - `docs/video-guidelines/page.tsx` — Video submission guidelines
+- `docs/page.tsx` — Docs index/landing
 
-## Rules
-- Auth callback page is excluded from middleware redirect to prevent loops
-- All dashboard pages check authentication via useAuth hook + middleware
-- Payment success page verifies with backend before showing success
-- Admin pages check `profile.is_admin` on mount
-- Onboarding flow is sequential (personal → documents → location → review)
-- Use `window.location.replace()` for post-auth redirects, not `router.replace()`
-- **Subdomain routing** handled by middleware.ts; rewrites subdomain paths to app routes:
-  - login.* → /auth/*
-  - hub.* → /dashboard/*
-  - vote.* → /voter/*
-  - admin.* → /admin/*
-  - Main domain (zedideaarena.com) → marketing pages only
-- Mode switching redirects to correct subdomain (hub for contestant, vote for voter)
-- All subdomain URLs sourced from `lib/routes.ts` — never hardcode them
+## Auth Pages (login.* subdomain)
+- `auth/login/page.tsx` — Split-panel login
+- `auth/signup/page.tsx` — Split-panel signup with role toggle
+- `auth/callback/page.tsx` — OAuth callback handler
+- `onboarding/personal/page.tsx` — Personal info form
+- `onboarding/verify/page.tsx` — KYC/identity verification
+- `onboarding/review/page.tsx` — Review & submit
+- `onboarding/layout.tsx` — Onboarding flow layout (redirects to hub if complete)
 
-## Child Docs
-(none — leaf node)
+## Dashboard Pages (hub.* subdomain)
+- `dashboard/page.tsx` — Dashboard homepage/overview
+- `dashboard/competitions/page.tsx` — Competition listing
+- `dashboard/competitions/[id]/page.tsx` — Competition detail + submitted ideas
+- `dashboard/ideas/new/page.tsx` — New idea submission form
+- `dashboard/ideas/page.tsx` — My ideas listing
+- `dashboard/payment/success/page.tsx` — Payment success page
+- `dashboard/profile/page.tsx` — Profile settings
+
+## Voter Pages (vote.* subdomain)
+- `voter/page.tsx` — Voter home
+- `voter/competition/[id]/page.tsx` — Idea cards with staggered animation, vote count, checkmark
+
+## Admin Pages (admin.* subdomain)
+- (Routes defined in admin dashboard components)
+
+## Cross-Subdomain Redirects
+- All redirects that cross subdomains use `window.location.href` (client-side) or `window.location.replace()`
+- `routes.ts` provides all subdomain URLs with dev/prod awareness
+- Same-subdomain navigation uses `router.push()`
+- Auth redirects: login → hub.href, logout → login.href, mode switch → hub.href or vote.href
