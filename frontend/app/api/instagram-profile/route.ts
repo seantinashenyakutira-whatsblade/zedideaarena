@@ -25,7 +25,6 @@ async function fetchInstagramProfilePic(username: string): Promise<string | null
           'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
           'Accept': 'application/json, text/html, image/*',
         },
-        next: { revalidate: 3600 },
       })
 
       if (!res.ok) continue
@@ -90,16 +89,13 @@ export async function GET(request: Request) {
   const picUrl = await fetchInstagramProfilePic(username)
 
   if (picUrl) {
-    const res = await fetch(picUrl, { next: { revalidate: 3600 } })
-    if (res.ok) {
-      return new Response(res.body, {
-        headers: {
-          'Content-Type': res.headers.get('Content-Type') || 'image/jpeg',
-          'Cache-Control': 'public, max-age=3600, s-maxage=3600',
-          'Access-Control-Allow-Origin': '*',
-        },
-      })
-    }
+    // Redirect to the Instagram CDN URL — no proxying needed,
+    // Vercel handles caching and image optimization automatically.
+    return NextResponse.redirect(picUrl, {
+      headers: {
+        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      },
+    })
   }
 
   // Fallback: redirect to placeholder
