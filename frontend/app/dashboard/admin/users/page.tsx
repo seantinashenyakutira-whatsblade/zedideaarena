@@ -100,7 +100,7 @@ export default function AdminUsers() {
               ) : users.length === 0 ? (
                 <tr><td colSpan={9} className="p-12 text-center text-zed-foreground-secondary text-sm">No users found</td></tr>
               ) : users.map((user: any) => (
-                <tr key={user.id} className={`hover:bg-white/5 transition-colors ${user.is_banned || user.is_deleted ? 'opacity-40' : ''}`}>
+                <tr key={user.id} className={`hover:bg-white/5 transition-colors ${user.role === 'banned' ? 'opacity-40' : ''}`}>
                   <td className="p-4 font-bold text-sm">{user.full_name || 'N/A'}</td>
                   <td className="p-4 text-xs text-zed-foreground-secondary">{user.email || 'N/A'}</td>
                   <td className="p-4">

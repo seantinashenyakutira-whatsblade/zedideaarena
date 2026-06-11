@@ -181,8 +181,7 @@ const createIdea = async (req, res) => {
   const { uid } = req.user;
   const {
     title, problem, solution, industry, business_model,
-    competition_id, pitch_video_url, github_url, linkedin_url, instagram_url,
-    collaborators
+    competition_id, pitch_video_url, github_url, linkedin_url, instagram_url
   } = req.body;
 
   if (!title || !problem || !solution) {
@@ -215,7 +214,6 @@ const createIdea = async (req, res) => {
       github_url: github_url || '',
       linkedin_url: linkedin_url || '',
       instagram_url: instagram_url || '',
-      collaborators: collaborators || [],
       status: 'pending',
       payment_status: 'unpaid',
       is_public: false,

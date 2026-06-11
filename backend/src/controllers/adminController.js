@@ -92,19 +92,16 @@ const getAdminStats = async (req, res) => {
   try {
     const { count: usersCount } = await supabase
       .from('users')
-      .select('*', { count: 'exact', head: true })
-      .neq('is_deleted', true);
+      .select('*', { count: 'exact', head: true });
 
     const { count: ideasCount } = await supabase
       .from('ideas')
-      .select('*', { count: 'exact', head: true })
-      .neq('is_deleted', true);
+      .select('*', { count: 'exact', head: true });
 
     const { count: paidIdeasCount } = await supabase
       .from('ideas')
       .select('*', { count: 'exact', head: true })
-      .eq('payment_status', 'paid')
-      .neq('is_deleted', true);
+      .eq('payment_status', 'paid');
 
     const { count: competitionsCount } = await supabase
       .from('competitions')
@@ -236,7 +233,7 @@ const deleteUser = async (req, res) => {
   try {
     const { error } = await supabase
       .from('users')
-      .update({ is_deleted: true, is_banned: true, updated_at: new Date().toISOString() })
+      .update({ role: 'banned', updated_at: new Date().toISOString() })
       .eq('id', id);
 
     if (error) throw error;
@@ -253,7 +250,7 @@ const deleteIdea = async (req, res) => {
   try {
     const { error } = await supabase
       .from('ideas')
-      .update({ is_deleted: true, status: 'rejected', updated_at: new Date().toISOString() })
+      .update({ status: 'rejected', updated_at: new Date().toISOString() })
       .eq('id', id);
 
     if (error) throw error;
@@ -271,7 +268,7 @@ const getAllUsers = async (req, res) => {
 
     let query = supabase
       .from('users')
-      .select('id, email, full_name, picture, role, is_verified, is_admin, voter_payment_status, competition_participant, country, created_at, is_banned, is_deleted')
+      .select('id, email, full_name, picture, role, is_verified, is_admin, voter_payment_status, competition_participant, country, created_at')
       .order('created_at', { ascending: false });
 
     if (unverified === 'true') {
