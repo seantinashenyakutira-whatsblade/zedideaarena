@@ -181,7 +181,8 @@ const createIdea = async (req, res) => {
   const { uid } = req.user;
   const {
     title, problem, solution, industry, business_model,
-    competition_id, pitch_video_url, github_url, linkedin_url, instagram_url
+    competition_id, pitch_video_url, github_url, linkedin_url, instagram_url,
+    collaborators
   } = req.body;
 
   if (!title || !problem || !solution) {
@@ -189,6 +190,19 @@ const createIdea = async (req, res) => {
   }
 
   try {
+    // 3-ideas-per-competition limit
+    if (competition_id) {
+      const { count } = await supabase
+        .from('ideas')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', uid)
+        .eq('competition_id', competition_id);
+
+      if (count && count >= 3) {
+        return res.status(400).json({ status: 'error', message: 'You can only submit up to 3 ideas per competition' });
+      }
+    }
+
     const ideaData = {
       user_id: uid,
       title,
@@ -201,6 +215,7 @@ const createIdea = async (req, res) => {
       github_url: github_url || '',
       linkedin_url: linkedin_url || '',
       instagram_url: instagram_url || '',
+      collaborators: collaborators || [],
       status: 'pending',
       payment_status: 'unpaid',
       is_public: false,
@@ -220,7 +235,7 @@ const createIdea = async (req, res) => {
     res.json({ status: 'success', id: data.id, message: 'Idea submitted successfully and is pending review' });
   } catch (error) {
     console.error('Error creating idea:', error);
-    res.status(500).json({ status: 'error', message: 'Failed to submit idea' });
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 

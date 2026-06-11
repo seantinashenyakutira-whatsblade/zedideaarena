@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { AlertCircle, Loader2, ShieldCheck, Eye, Filter } from 'lucide-react'
+import { AlertCircle, Loader2, ShieldCheck, Eye, Filter, Trash2, Ban } from 'lucide-react'
 import { adminService } from '@/services/core'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -36,6 +36,17 @@ export default function AdminUsers() {
       fetchUsers()
     } catch (err: any) {
       toast.error(err.message || 'Failed to update user')
+    }
+  }
+
+  const handleDeleteUser = async (userId: string, name: string) => {
+    if (!confirm(`Ban/delete "${name}"? This will remove their access permanently.`)) return
+    try {
+      await adminService.deleteUser(userId)
+      toast.success('User banned/deleted')
+      fetchUsers()
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete user')
     }
   }
 
@@ -80,15 +91,16 @@ export default function AdminUsers() {
                 <th className="p-4">Country</th>
                 <th className="p-4">Joined</th>
                 <th className="p-4">Actions</th>
+                <th className="p-4">Ban</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {loading ? (
-                <tr><td colSpan={8} className="p-12 text-center"><Loader2 size={32} className="animate-spin mx-auto opacity-20" /></td></tr>
+                <tr><td colSpan={9} className="p-12 text-center"><Loader2 size={32} className="animate-spin mx-auto opacity-20" /></td></tr>
               ) : users.length === 0 ? (
-                <tr><td colSpan={8} className="p-12 text-center text-zed-foreground-secondary text-sm">No users found</td></tr>
+                <tr><td colSpan={9} className="p-12 text-center text-zed-foreground-secondary text-sm">No users found</td></tr>
               ) : users.map((user: any) => (
-                <tr key={user.id} className="hover:bg-white/5 transition-colors">
+                <tr key={user.id} className={`hover:bg-white/5 transition-colors ${user.is_banned || user.is_deleted ? 'opacity-40' : ''}`}>
                   <td className="p-4 font-bold text-sm">{user.full_name || 'N/A'}</td>
                   <td className="p-4 text-xs text-zed-foreground-secondary">{user.email || 'N/A'}</td>
                   <td className="p-4">
@@ -119,6 +131,15 @@ export default function AdminUsers() {
                         {user.is_verified ? 'Revoke' : 'Verify'}
                       </button>
                     </div>
+                  </td>
+                  <td className="p-4">
+                    <button
+                      onClick={() => handleDeleteUser(user.id, user.full_name)}
+                      className="btn-icon w-8 h-8 text-red-400 hover:bg-red-500/10"
+                      title="Ban/Delete user"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </td>
                 </tr>
               ))}

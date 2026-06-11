@@ -195,7 +195,13 @@ function IdeasGrid({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.06 }}
-            className="card-zed group flex flex-col hover:border-zed-primary/30 transition-all duration-500"
+            className={`card-zed group flex flex-col transition-all duration-500 ${
+              hasVoted
+                ? 'border-zed-success/50 shadow-[0_0_30px_rgba(34,197,94,0.25)] hover:shadow-[0_0_50px_rgba(34,197,94,0.4)]'
+                : isOwn
+                ? 'border-zed-primary/20'
+                : 'hover:border-zed-primary/30'
+            }`}
           >
             <div className="relative aspect-video rounded-xl overflow-hidden mb-6">
               <Image

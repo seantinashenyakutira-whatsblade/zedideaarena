@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { AlertCircle, Loader2, CheckCircle, XCircle, Settings, Filter, MessageSquare } from 'lucide-react'
+import { AlertCircle, Loader2, CheckCircle, XCircle, Settings, Filter, MessageSquare, Trash2 } from 'lucide-react'
 import { adminService } from '@/services/core'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -78,6 +78,17 @@ export default function AdminIdeas() {
   const openRejectModal = (id: string) => {
     setRejectModal({ id, open: true })
     setRejectNote('')
+  }
+
+  const handleDeleteIdea = async (ideaId: string, title: string) => {
+    if (!confirm(`Delete idea "${title}"? This action is permanent.`)) return
+    try {
+      await adminService.deleteIdea(ideaId)
+      toast.success('Idea deleted')
+      fetchIdeas()
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete idea')
+    }
   }
 
   if (!profile?.is_admin && profile?.role !== 'admin') {
@@ -177,6 +188,7 @@ export default function AdminIdeas() {
                         <Link href={`/dashboard/ideas/${idea.id}`} className="btn-icon w-8 h-8"><Settings size={14} /></Link>
                         <button onClick={() => handleApprove(idea.id)} className="text-zed-success hover:scale-110 transition-transform"><CheckCircle size={18} /></button>
                         <button onClick={() => openRejectModal(idea.id)} className="text-red-500 hover:scale-110 transition-transform"><XCircle size={18} /></button>
+                        <button onClick={() => handleDeleteIdea(idea.id, idea.title)} className="text-red-500 hover:scale-110 transition-transform" title="Delete idea"><Trash2 size={18} /></button>
                       </div>
                     </td>
                   </tr>

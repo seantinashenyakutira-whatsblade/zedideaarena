@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { Users, FileText, Trophy, Vote, DollarSign, AlertCircle, Loader2, ArrowRight, ShieldCheck } from 'lucide-react'
+import { Users, FileText, Trophy, Vote, DollarSign, AlertCircle, Loader2, ArrowRight, ShieldCheck, Medal, Crown, Award } from 'lucide-react'
 import api from '@/lib/api'
 import { adminService } from '@/services/core'
 import Link from 'next/link'
@@ -97,6 +97,26 @@ export default function AdminOverview() {
                       )
                     })}
                   </div>
+
+                  {/* Prize Distribution */}
+                  {stats?.prizeDistribution && (
+                    <div className="grid md:grid-cols-3 gap-6 mb-12">
+                      {(stats.prizeDistribution as any[]).map((dist: any, i: number) => {
+                        const icons = [Crown, Medal, Award]
+                        const Icon = icons[i] || Trophy
+                        const colors = ['text-yellow-500', 'text-gray-400', 'text-amber-700']
+                        const bgColors = ['bg-yellow-500/10', 'bg-gray-400/10', 'bg-amber-700/10']
+                        return (
+                          <div key={dist.position} className={`card-zed p-6 border-white/5 ${bgColors[i]} text-center`}>
+                            <Icon size={36} className={`${colors[i]} mx-auto mb-3`} />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1">{dist.label}</p>
+                            <p className="text-3xl font-black text-zed-foreground">${(dist.amount_cents / 100).toLocaleString()}</p>
+                            <p className="text-xs text-zed-foreground-secondary mt-1">{(dist.share * 100)}% of prize pool</p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
 
                   <div className="card-zed overflow-hidden border-white/5">
                     <div className="p-6 border-b border-white/5 flex justify-between items-center">

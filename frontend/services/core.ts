@@ -25,6 +25,7 @@ export const adminService = {
   getStats: () => api.get('/admin/stats'),
   getAllUsers: (unverified?: boolean) => api.get(`/admin/users${unverified ? '?unverified=true' : ''}`),
   verifyUser: (id: string, isVerified: boolean) => api.post(`/admin/users/${id}/verify`, { is_verified: isVerified }),
+  deleteUser: (id: string) => api.delete(`/admin/users/${id}`),
   getAllIdeas: (filters?: { competition_id?: string; status?: string }) => {
     const params = new URLSearchParams();
     if (filters?.competition_id) params.set('competition_id', filters.competition_id);
@@ -33,6 +34,7 @@ export const adminService = {
     return api.get(`/admin/ideas${qs ? `?${qs}` : ''}`);
   },
   updateIdeaStatus: (id: string, status: string, note?: string) => api.post(`/admin/ideas/${id}/status`, { status, note }),
+  deleteIdea: (id: string) => api.delete(`/admin/ideas/${id}`),
   getAnalytics: () => api.get('/admin/analytics'),
   getAuditLog: () => api.get('/admin/audit-log'),
 };

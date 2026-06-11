@@ -11,5 +11,7 @@ router.post('/users/:id/verify', verifyToken, isAdmin, adminController.verifyUse
 router.get('/analytics', verifyToken, isAdmin, adminController.getAnalytics);
 router.get('/audit-log', verifyToken, isAdmin, adminController.getAuditLog);
 router.delete('/competitions/:id', verifyToken, isAdmin, adminController.deleteCompetition);
+router.delete('/users/:id', verifyToken, isAdmin, adminController.deleteUser);
+router.delete('/ideas/:id', verifyToken, isAdmin, adminController.deleteIdea);
 
 module.exports = router;

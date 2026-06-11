@@ -92,32 +92,38 @@ const getAdminStats = async (req, res) => {
   try {
     const { count: usersCount } = await supabase
       .from('users')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .neq('is_deleted', true);
 
     const { count: ideasCount } = await supabase
       .from('ideas')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .neq('is_deleted', true);
 
     const { count: paidIdeasCount } = await supabase
       .from('ideas')
       .select('*', { count: 'exact', head: true })
-      .eq('payment_status', 'paid');
+      .eq('payment_status', 'paid')
+      .neq('is_deleted', true);
 
     const { count: competitionsCount } = await supabase
       .from('competitions')
       .select('*', { count: 'exact', head: true })
       .neq('is_deleted', true);
 
-    const { data: prizeSum } = await supabase
-      .from('competitions')
-      .select('prize_pool_cents')
-      .neq('is_deleted', true);
-
-    const totalPrizePoolCents = (prizeSum || []).reduce((sum, c) => sum + (c.prize_pool_cents || 0), 0);
+    // Prize pool = $5 per paid idea (500 cents each)
+    const prizePoolCents = (paidIdeasCount || 0) * 500;
 
     const { count: votesCount } = await supabase
       .from('votes')
       .select('*', { count: 'exact', head: true });
+
+    // Prize distribution breakdown
+    const prizeDistribution = [
+      { position: 1, label: '1st Place', share: 0.5, icon: 'trophy', amount_cents: Math.round(prizePoolCents * 0.5) },
+      { position: 2, label: '2nd Place', share: 0.3, icon: 'trophy', amount_cents: Math.round(prizePoolCents * 0.3) },
+      { position: 3, label: '3rd Place', share: 0.2, icon: 'trophy', amount_cents: Math.round(prizePoolCents * 0.2) },
+    ];
 
     res.json({
       status: 'success',
@@ -126,8 +132,9 @@ const getAdminStats = async (req, res) => {
         ideas: ideasCount || 0,
         paidIdeas: paidIdeasCount || 0,
         competitions: competitionsCount || 0,
-        totalPrizePoolCents,
+        totalPrizePoolCents: prizePoolCents,
         votes: votesCount || 0,
+        prizeDistribution,
       },
     });
   } catch (error) {
@@ -224,13 +231,47 @@ const updateIdeaStatus = async (req, res) => {
   }
 };
 
+const deleteUser = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ is_deleted: true, is_banned: true, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    await logAdminAction(req.user.uid, 'user_deleted', id, 'user');
+    res.json({ status: 'success', message: 'User banned/deleted' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+const deleteIdea = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { error } = await supabase
+      .from('ideas')
+      .update({ is_deleted: true, status: 'rejected', updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    await logAdminAction(req.user.uid, 'idea_deleted', id, 'idea');
+    res.json({ status: 'success', message: 'Idea deleted' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
 const getAllUsers = async (req, res) => {
   try {
     const { unverified } = req.query;
 
     let query = supabase
       .from('users')
-      .select('id, email, full_name, picture, role, is_verified, is_admin, voter_payment_status, competition_participant, country, created_at')
+      .select('id, email, full_name, picture, role, is_verified, is_admin, voter_payment_status, competition_participant, country, created_at, is_banned, is_deleted')
       .order('created_at', { ascending: false });
 
     if (unverified === 'true') {
@@ -441,6 +482,8 @@ module.exports = {
   verifyUser,
   updateCompetition,
   deleteCompetition,
+  deleteUser,
+  deleteIdea,
   getAnalytics,
   getAuditLog,
 };

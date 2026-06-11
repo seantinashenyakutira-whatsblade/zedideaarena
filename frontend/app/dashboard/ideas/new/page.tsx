@@ -14,6 +14,7 @@ interface FormState {
   title: string; competition_id: string;
   problem: string; solution: string; industry: string; business_model: string;
   pitch_video_url: string; github_url: string; linkedin_url: string; instagram_url: string;
+  collaborators: string;
   guidelinesAccepted: boolean; termsAccepted: boolean;
 }
 
@@ -50,6 +51,7 @@ function NewIdeaForm() {
       title: '', competition_id: searchParams.get('competitionId') || '',
       problem: '', solution: '', industry: '', business_model: '',
       pitch_video_url: '', github_url: '', linkedin_url: '', instagram_url: '',
+      collaborators: '',
       guidelinesAccepted: false, termsAccepted: false,
     }
   }
@@ -167,8 +169,14 @@ function NewIdeaForm() {
 
     setIsSubmitting(true)
     try {
+      const collaboratorsArray = formData.collaborators
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean);
+
       const res: any = await ideaService.createIdea({
         ...formData,
+        collaborators: collaboratorsArray,
         competition_id: formData.competition_id || undefined,
       })
       sessionStorage.removeItem(FORM_KEY)
@@ -342,14 +350,26 @@ function NewIdeaForm() {
                         onChange={(url) => setFormData(prev => ({ ...prev, pitch_video_url: url }))}
                       />
                     </div>
-                    <div className="space-y-6">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary">Links</label>
-                      <div className="space-y-4">
-                        <input name="linkedin_url" value={formData.linkedin_url} onChange={handleInputChange} placeholder="LinkedIn URL" className="input-zed h-12 text-sm" />
-                        <input name="github_url" value={formData.github_url} onChange={handleInputChange} placeholder="GitHub Repo" className="input-zed h-12 text-sm" />
-                        <input name="instagram_url" value={formData.instagram_url} onChange={handleInputChange} placeholder="Instagram URL" className="input-zed h-12 text-sm" />
-                      </div>
-                    </div>
+                       <div className="space-y-6">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary">Links</label>
+                          <div className="space-y-4">
+                            <input name="linkedin_url" value={formData.linkedin_url} onChange={handleInputChange} placeholder="LinkedIn URL" className="input-zed h-12 text-sm" />
+                            <input name="github_url" value={formData.github_url} onChange={handleInputChange} placeholder="GitHub Repo" className="input-zed h-12 text-sm" />
+                            <input name="instagram_url" value={formData.instagram_url} onChange={handleInputChange} placeholder="Instagram URL" className="input-zed h-12 text-sm" />
+                          </div>
+                        </div>
+                        <div className="space-y-6">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary">Collaborators</label>
+                          <textarea
+                            name="collaborators"
+                            value={formData.collaborators}
+                            onChange={handleInputChange}
+                            rows={2}
+                            className="input-zed text-sm"
+                            placeholder="Add team members — one name/email per line"
+                          />
+                          <p className="text-[9px] text-zed-foreground-secondary">List any co-creators on this idea (optional)</p>
+                        </div>
                   </div>
                 </div>
               )}
