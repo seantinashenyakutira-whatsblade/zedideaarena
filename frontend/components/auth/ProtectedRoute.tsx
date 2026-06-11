@@ -1,18 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { authService } from '@/services/auth'
+import { routes } from '@/lib/routes'
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
   const pathname = usePathname()
   const [authorized, setAuthorized] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) {
-      router.push('/auth/login')
+      window.location.href = routes.login
       return
     }
 
@@ -29,7 +29,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         const profile = res.data
 
         if (!profile.onboarding_complete && !pathname.startsWith('/onboarding')) {
-          router.push('/onboarding/personal')
+          window.location.href = routes.onboarding
           return
         }
 
@@ -37,12 +37,12 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       } catch (_) {
         if (cancelled) return
         localStorage.removeItem('token')
-        router.push('/auth/login')
+        window.location.href = routes.login
       }
     })()
 
     return () => { cancelled = true }
-  }, [router, pathname])
+  }, [pathname])
 
   if (!authorized) {
     return (

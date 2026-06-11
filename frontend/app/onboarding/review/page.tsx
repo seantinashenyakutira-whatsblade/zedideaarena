@@ -6,6 +6,7 @@ import { ChevronLeft, Loader2, Check, FileText } from 'lucide-react'
 import Image from 'next/image'
 import { authService } from '@/services/auth'
 import { supabase } from '@/lib/supabase'
+import { routes } from '@/lib/routes'
 import { toast } from 'sonner'
 
 export default function ReviewPage() {
@@ -70,7 +71,7 @@ export default function ReviewPage() {
       setShowSuccess(true)
 
       setTimeout(() => {
-        window.location.href = '/dashboard'
+        window.location.href = routes.hub
       }, 2500)
     } catch (err: any) {
       console.error('Onboarding submission failed:', err)

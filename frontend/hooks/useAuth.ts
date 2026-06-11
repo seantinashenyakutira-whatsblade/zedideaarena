@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { authService } from '@/services/auth'
+import { routes } from '@/lib/routes'
 import { toast } from 'sonner'
 
 interface AuthContextType {
@@ -50,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (credentials: any) => {
     await authService.login(credentials)
-    window.location.replace('/dashboard')
+    window.location.replace(routes.hub)
   }
 
   const logout = async () => {
@@ -58,13 +59,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await authService.logout()
       setProfile(null)
       setUser(null)
-      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
-      window.location.replace(`https://login.${rootDomain}`)
+      window.location.replace(routes.login)
       toast.info('Logged out.')
     } catch (err) {
       localStorage.removeItem('token')
-      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
-      window.location.href = `https://login.${rootDomain}`
+      window.location.href = routes.login
     }
   }
 

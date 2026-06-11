@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { authService } from '@/services/auth'
+import { routes } from '@/lib/routes'
 import { Check, User, Map, FileText, ClipboardCheck, RefreshCw } from 'lucide-react'
 
 const steps = [
@@ -32,7 +33,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
         if (res?.status === 'success' && res?.data) {
           const p = res.data
           if (p.onboarding_complete) {
-            router.push('/dashboard')
+            window.location.href = routes.hub
             return
           }
           setProfile(p)
@@ -44,7 +45,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
           }
         }
       } catch {
-        if (!cancelled) router.push('/auth/login')
+        if (!cancelled) window.location.href = routes.login
         return
       }
       if (!cancelled) setLoaded(true)

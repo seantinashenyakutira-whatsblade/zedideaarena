@@ -4,9 +4,9 @@
 Next.js 16 App Router application — all user-facing UI, pages, components, and client-side logic.
 
 ## Key Files
-- `middleware.ts` — Subdomain-based routing: hub.* → /dashboard/*, vote.* → /voter/*, admin.* → /admin/*, login.* → /auth/*. Auth-protected subdomains redirect to login.zedideaarena.com
+- `middleware.ts` — Subdomain-based routing via `@supabase/auth-helpers-nextjs` `createMiddlewareClient`. Detects subdomain from host header, rewrites paths: hub.* → /dashboard/*, vote.* → /voter/*, admin.* → /admin/*, login.* → /auth/*. Auth-protected subdomains check session and redirect to login.*. Onboarding gate for incomplete profiles. No Vercel project splitting.
 - `lib/api.js` — Axios instance with localStorage token interceptor
-- `lib/routes.ts` — Single source of truth for all subdomain URLs (hub, vote, admin, login)
+- `lib/routes.ts` — Single source of truth for all subdomain URLs (hub, vote, admin, login). Dev-aware: uses localhost with `.localhost` suffix in development, `.zedideaarena.com` in production.
 - `lib/supabase-browser.ts` — Browser-side Supabase client (anon key)
 - `lib/supabase-server.ts` — Server-side Supabase client (service role)
 - `lib/utils.ts` — Tailwind CSS class merge utility

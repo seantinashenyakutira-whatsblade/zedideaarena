@@ -1,30 +1,41 @@
-const getRoot = () => process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
-const getProtocol = () => (typeof window !== 'undefined' && window.location.protocol) || 'https'
+const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN 
+  || 'zedideaarena.com'
+
+const isDev = process.env.NODE_ENV === 'development'
+const protocol = isDev ? 'http' : 'https'
+const port = isDev ? ':3000' : ''
+const localSuffix = isDev ? `.localhost${port}` : `.${ROOT}`
 
 export const routes = {
-  get root() { return `${getProtocol()}://${getRoot()}` },
+  // Marketing (main domain)
+  home: isDev ? `http://localhost${port}` : `https://${ROOT}`,
+  about: isDev ? `http://localhost${port}/about` : `https://${ROOT}/about`,
+  howItWorks: isDev ? `http://localhost${port}/how-it-works` : `https://${ROOT}/how-it-works`,
+  pricing: isDev ? `http://localhost${port}/pricing` : `https://${ROOT}/pricing`,
 
-  get login() { return `${getProtocol()}://login.${getRoot()}` },
-  get signup() { return `${getProtocol()}://login.${getRoot()}/signup` },
-  get onboarding() { return `${getProtocol()}://login.${getRoot()}/onboarding/personal` },
+  // Auth
+  login: `${protocol}://login${localSuffix}`,
+  signup: `${protocol}://login${localSuffix}/signup`,
+  onboarding: `${protocol}://login${localSuffix}/onboarding/personal`,
 
-  get hub() { return `${getProtocol()}://hub.${getRoot()}` },
-  hubCompetition: (id: string) => `${getProtocol()}://hub.${getRoot()}/competitions/${id}`,
+  // Hub — contestant
+  hub: `${protocol}://hub${localSuffix}`,
+  hubCompetitions: `${protocol}://hub${localSuffix}/competitions`,
+  hubIdeas: `${protocol}://hub${localSuffix}/ideas`,
   hubNewIdea: (competitionId?: string) =>
-    competitionId
-      ? `${getProtocol()}://hub.${getRoot()}/ideas/new?competitionId=${competitionId}`
-      : `${getProtocol()}://hub.${getRoot()}/ideas/new`,
-  hubPayment: (competitionId: string, type: string) =>
-    `${getProtocol()}://hub.${getRoot()}/payment?competition=${competitionId}&type=${type}`,
-  hubSettings: `${getProtocol()}://hub.${getRoot()}/settings`,
-  get hubIdeas() { return `${getProtocol()}://hub.${getRoot()}/ideas` },
-  get hubCompetitions() { return `${getProtocol()}://hub.${getRoot()}/competitions` },
+    `${protocol}://hub${localSuffix}/ideas/new${competitionId ? `?competition=${competitionId}` : ''}`,
+  hubProfile: `${protocol}://hub${localSuffix}/profile`,
+  hubPayment: (competitionId: string, type: 'contestant' | 'voter') =>
+    `${protocol}://hub${localSuffix}/payment?competition=${competitionId}&type=${type}`,
 
-  get vote() { return `${getProtocol()}://vote.${getRoot()}` },
-  voteCompetition: (id: string) => `${getProtocol()}://vote.${getRoot()}/competition/${id}`,
+  // Vote — voter
+  vote: `${protocol}://vote${localSuffix}`,
+  voteCompetition: (id: string) =>
+    `${protocol}://vote${localSuffix}/competition/${id}`,
 
-  get admin() { return `${getProtocol()}://admin.${getRoot()}` },
-  get adminUsers() { return `${getProtocol()}://admin.${getRoot()}/users` },
-  get adminIdeas() { return `${getProtocol()}://admin.${getRoot()}/ideas` },
-  get adminAnalytics() { return `${getProtocol()}://admin.${getRoot()}/analytics` },
+  // Admin
+  admin: `${protocol}://admin${localSuffix}`,
+  adminUsers: `${protocol}://admin${localSuffix}/users`,
+  adminIdeas: `${protocol}://admin${localSuffix}/ideas`,
+  adminCompetitions: `${protocol}://admin${localSuffix}/competitions`,
 }

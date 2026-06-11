@@ -6,6 +6,7 @@ import { Home, Trophy, Lightbulb, User, Vote, CheckCircle, Wallet, Settings, Log
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
+import { routes } from '@/lib/routes'
 import { toast } from 'sonner'
 
 const contestantNav = [
@@ -104,11 +105,7 @@ export function Sidebar() {
       setShowPasswordModal(false)
       setPassword('')
       toast.success(`Switched to ${pendingRole} mode`)
-      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
-      const protocol = window.location.protocol
-      window.location.href = pendingRole === 'voter'
-        ? `${protocol}//vote.${rootDomain}`
-        : `${protocol}//hub.${rootDomain}`
+      window.location.href = pendingRole === 'voter' ? routes.vote : routes.hub
     } catch (err: any) {
       const msg = err?.message || 'Something went wrong. Please try again.'
       setPasswordError(msg)

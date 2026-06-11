@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { routes } from '@/lib/routes'
 import { Loader2 } from 'lucide-react'
 
 export default function AuthCallbackPage() {
@@ -13,8 +14,7 @@ export default function AuthCallbackPage() {
 
       if (error || !session) {
         setError(error?.message || 'No session found')
-        const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
-        setTimeout(() => window.location.replace(`https://login.${rootDomain}`), 2000)
+        setTimeout(() => window.location.replace(routes.login), 2000)
         return
       }
 
@@ -37,8 +37,7 @@ export default function AuthCallbackPage() {
         // backend sync failure is non-blocking for OAuth
       }
 
-      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
-      window.location.replace(`https://hub.${rootDomain}`)
+      window.location.replace(routes.hub)
     }
 
     handleCallback()

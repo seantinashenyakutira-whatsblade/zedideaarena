@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { authService } from '@/services/auth'
+import { routes } from '@/lib/routes'
 import { signupSchema } from '@/lib/validators/signup'
 
 export default function SignupPage() {
@@ -45,8 +46,7 @@ export default function SignupPage() {
     setLoading(true)
     try {
       await authService.signup(result.data)
-      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
-      window.location.replace(`https://login.${rootDomain}?signup=success`)
+      window.location.replace(`${routes.login}?signup=success`)
     } catch (err: any) {
       setError(err?.message || 'Failed to create account.')
     } finally {
