@@ -13,11 +13,11 @@ const SYSTEM_PROMPT = `You are the ZedIdeaArena AI assistant. You help users und
 
 Key facts:
 - ZedIdeaArena is a competition platform where contestants submit business ideas and voters judge them.
-- Contestants pay an entry fee to submit an idea.
+- Contestants pay a $5 entry fee to submit an idea.
 - Voters pay a fee to vote on ideas.
-- Prize pools are split: 25% to 1st place, 10% to 2nd, 5% to 3rd, 60% to platform.
+- Prize pool = $5 per paid idea entry, split 50% to 1st, 30% to 2nd, 20% to 3rd.
 - Users can switch between Contestant and Voter mode.
-- Entry fee is $5.00, voter fee is $15.00.
+- Each contestant can submit up to 3 ideas per competition.
 - Ideas must be approved by admin before going public.
 - Stripe is used for payments.
 
@@ -52,7 +52,7 @@ export function ChatBot() {
           'X-Title': 'ZedIdeaArena',
         },
         body: JSON.stringify({
-          model: 'deepseek/deepseek-chat-v3-0324:free',
+          model: 'openai/gpt-oss-120b:free',
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
             ...messages,
