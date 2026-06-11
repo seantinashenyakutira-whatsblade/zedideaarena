@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 const IG_CACHE = new Map<string, { url: string; expires: number }>()
-const CACHE_TTL = 1000 * 60 * 60 // 1 hour
+const CACHE_TTL = 1000 * 60 * 60
 
 async function fetchInstagramProfilePic(username: string): Promise<string | null> {
   const cached = IG_CACHE.get(username)
@@ -10,10 +10,8 @@ async function fetchInstagramProfilePic(username: string): Promise<string | null
   }
 
   const urls = [
-    // Primary: Instagram public API
     `https://www.instagram.com/${username}/?__a=1&__d=1`,
     `https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`,
-    // Secondary proxy services (fallback)
     `https://ig.ximhai.com/${username}`,
     `https://img.instagram.com/${username}.jpg`,
   ]
@@ -31,7 +29,6 @@ async function fetchInstagramProfilePic(username: string): Promise<string | null
 
       const contentType = res.headers.get('Content-Type') || ''
 
-      // If it's directly an image, use the URL
       if (contentType.startsWith('image/')) {
         IG_CACHE.set(username, { url, expires: Date.now() + CACHE_TTL })
         return url
@@ -39,7 +36,6 @@ async function fetchInstagramProfilePic(username: string): Promise<string | null
 
       const text = await res.text()
 
-      // Try JSON parse for Instagram API responses
       let data: any
 
       try {
@@ -52,7 +48,6 @@ async function fetchInstagramProfilePic(username: string): Promise<string | null
       }
 
       if (!data) {
-        // If it's HTML or a proxy page, check if it contains an img tag with the profile pic
         const imgMatch = text.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i)
         if (imgMatch && imgMatch[1].includes('instagram')) {
           IG_CACHE.set(username, { url: imgMatch[1], expires: Date.now() + CACHE_TTL })
@@ -78,19 +73,15 @@ async function fetchInstagramProfilePic(username: string): Promise<string | null
   return null
 }
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const username = searchParams.get('username')
-
-  if (!username) {
-    return NextResponse.json({ error: 'username required' }, { status: 400 })
-  }
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ username: string }> }
+) {
+  const { username } = await params
 
   const picUrl = await fetchInstagramProfilePic(username)
 
   if (picUrl) {
-    // Redirect to the Instagram CDN URL — no proxying needed,
-    // Vercel handles caching and image optimization automatically.
     return NextResponse.redirect(picUrl, {
       headers: {
         'Cache-Control': 'public, max-age=3600, s-maxage=3600',
@@ -98,6 +89,5 @@ export async function GET(request: Request) {
     })
   }
 
-  // Fallback: redirect to placeholder
-  return NextResponse.redirect(new URL('/placeholder-user.jpg', request.url))
+  return NextResponse.redirect(new URL('/placeholder-user.jpg', _request.url))
 }

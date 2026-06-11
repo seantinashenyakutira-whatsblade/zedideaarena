@@ -2,9 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    localPatterns: [
-      { pathname: '/api/instagram-profile', search: '?username=*' },
-    ],
     remotePatterns: [
       { protocol: 'https', hostname: '*.supabase.co' },
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
