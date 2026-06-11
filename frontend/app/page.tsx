@@ -491,7 +491,24 @@ export default function LandingPage() {
                 </motion.div>
                 <h4 className="font-bold text-sm mb-1">{member.name}</h4>
                 <p className="text-xs font-semibold" style={{ color: '#6366F1' }}>{member.role}</p>
-                <p className="text-xs text-white/40 mt-2">{member.bio}</p>
+                <p className="text-xs text-white/40 mt-2 mb-3">{member.bio}</p>
+                <div className="flex items-center justify-center gap-2">
+                  {(member as any).website && (
+                    <a href={(member as any).website} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/30 hover:text-white transition-all text-white/40">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    </a>
+                  )}
+                  {(member as any).instagram && (
+                    <a href={(member as any).instagram} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/30 hover:text-white transition-all text-white/40">
+                      <Camera size={12} />
+                    </a>
+                  )}
+                  {(member as any).linkedin && (member as any).linkedin !== '#' && (
+                    <a href={(member as any).linkedin} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/30 hover:text-white transition-all text-white/40">
+                      <Linkedin size={12} />
+                    </a>
+                  )}
+                </div>
               </motion.div>
             ))}
           </motion.div>
