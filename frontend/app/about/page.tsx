@@ -101,7 +101,7 @@ export default function AboutPage() {
                 style={{ background: 'rgba(255,255,255,0.03)' }}
               >
                 <div className="w-20 h-20 rounded-full mx-auto mb-5 overflow-hidden border-2 border-white/10 group-hover:border-zed-primary/30 transition-all" style={{ background: 'rgba(99,102,241,0.1)' }}>
-                  <Image src={member.image} alt={member.name} width={80} height={80} className="w-full h-full object-cover opacity-70" />
+                  <Image src={member.image} alt={member.name} width={80} height={80} className="w-full h-full object-cover opacity-70" unoptimized />
                 </div>
                 <h4 className="font-bold text-sm mb-1">{member.name}</h4>
                 <p className="text-xs font-semibold" style={{ color: '#6366F1' }}>{member.role}</p>
