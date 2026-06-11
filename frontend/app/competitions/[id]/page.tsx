@@ -37,23 +37,32 @@ const statusConfig: Record<string, { label: string; bg: string }> = {
   closed: { label: 'CLOSED', bg: 'bg-gray-500/60' },
 }
 
+const API_BASE = 'https://zedideaarena.onrender.com/api'
+
 export default function CompetitionDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
-  const [comp, setComp] = useState<Competition | null>(null)
+  const [comp, setComp] = useState<Competition | null | 'error'>(null)
   const [ideas, setIdeas] = useState<Idea[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!id) return
 
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15000)
+
     const fetchData = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://zedideaarena.onrender.com/api'
-
         const [compRes, ideasRes] = await Promise.all([
-          fetch(`${baseUrl}/competitions/${id}`).then(r => r.json()),
-          fetch(`${baseUrl}/ideas/public`).then(r => r.json()),
+          fetch(`${API_BASE}/competitions/${id}`, { signal: controller.signal }).then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`)
+            return r.json()
+          }),
+          fetch(`${API_BASE}/ideas/public`, { signal: controller.signal }).then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`)
+            return r.json()
+          }),
         ])
 
         const competition = compRes?.data?.data || compRes?.data || null
@@ -70,12 +79,14 @@ export default function CompetitionDetailPage() {
           setIdeas(filtered)
         }
       } catch {
-        setComp(null)
+        setComp('error')
       } finally {
+        clearTimeout(timeout)
         setLoading(false)
       }
     }
     fetchData()
+    return () => controller.abort()
   }, [id])
 
   const handleEnterCompetition = () => {
@@ -89,8 +100,22 @@ export default function CompetitionDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zed-background flex items-center justify-center">
+      <div className="min-h-screen bg-zed-background flex flex-col items-center justify-center gap-4">
         <Loader2 size={48} className="animate-spin text-zed-primary" />
+        <p className="text-sm text-zed-foreground-secondary font-bold uppercase tracking-widest">Loading Competition...</p>
+      </div>
+    )
+  }
+
+  if (comp === 'error') {
+    return (
+      <div className="min-h-screen bg-zed-background flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <Trophy size={64} className="mx-auto text-zed-foreground-secondary mb-4 opacity-20" />
+          <h1 className="text-3xl font-black text-zed-foreground mb-2">Failed to Load</h1>
+          <p className="text-zed-foreground-secondary mb-6">Could not load the competition. It may have been removed or the service is temporarily unavailable.</p>
+          <Link href="/competitions" className="text-zed-primary hover:underline font-bold">Back to competitions</Link>
+        </div>
       </div>
     )
   }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageCircle, X, Send, Bot, User, Sparkles } from 'lucide-react'
 
@@ -32,13 +32,13 @@ const SUGGESTIONS = [
 
 function formatMarkdown(text: string) {
   const lines = text.split('\n')
-  const elements: (JSX.Element | string)[] = []
+  const elements: (React.ReactElement | string)[] = []
   let inList = false
-  let listItems: JSX.Element[] = []
+  let listItems: React.ReactElement[] = []
   let key = 0
 
   const renderInline = (line: string) => {
-    const parts: (JSX.Element | string)[] = []
+    const parts: (React.ReactElement | string)[] = []
     let remaining = line
 
     while (remaining.length > 0) {
@@ -47,7 +47,7 @@ function formatMarkdown(text: string) {
       const codeMatch = remaining.match(/`(.+?)`/)
       const linkMatch = remaining.match(/\[(.+?)\]\((.+?)\)/)
 
-      const matches: { index: number; length: number; render: () => JSX.Element }[] = []
+      const matches: { index: number; length: number; render: () => React.ReactElement }[] = []
       if (boldMatch) matches.push({ index: boldMatch.index!, length: boldMatch[0].length, render: () => <strong key={key++}>{boldMatch![1]}</strong> })
       if (italicMatch) matches.push({ index: italicMatch.index!, length: italicMatch[0].length, render: () => <em key={key++}>{italicMatch![1]}</em> })
       if (codeMatch) matches.push({ index: codeMatch.index!, length: codeMatch[0].length, render: () => <code key={key++} className="bg-white/10 px-1.5 py-0.5 rounded text-xs font-mono">{codeMatch![1]}</code> })
@@ -124,7 +124,7 @@ function formatMarkdown(text: string) {
 function TypewriterText({ content, onDone }: { content: string; onDone: () => void }) {
   const [displayed, setDisplayed] = useState('')
   const indexRef = useRef(0)
-  const intervalRef = useRef<ReturnType<typeof setInterval>>()
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     indexRef.current = 0
@@ -135,12 +135,12 @@ function TypewriterText({ content, onDone }: { content: string; onDone: () => vo
         setDisplayed(content.slice(0, indexRef.current + 3))
         indexRef.current += 3
       } else {
-        clearInterval(intervalRef.current)
+        if (intervalRef.current) clearInterval(intervalRef.current)
         onDone()
       }
     }, 15)
 
-    return () => clearInterval(intervalRef.current)
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [content, onDone])
 
   return <>{formatMarkdown(displayed)}</>
