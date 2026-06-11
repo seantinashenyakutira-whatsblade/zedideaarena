@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, X, Send, Bot, User } from 'lucide-react'
+import { MessageCircle, X, Send, Bot, User, Sparkles } from 'lucide-react'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -21,18 +21,146 @@ Key facts:
 - Ideas must be approved by admin before going public.
 - Stripe is used for payments.
 
-Be concise, helpful, and encouraging. If you don't know something, suggest the user check the docs or contact support.`
+Respond in a friendly, concise way. Use markdown formatting: **bold** for emphasis, bullet points for lists, and short paragraphs. Keep responses under 150 words.`
+
+const SUGGESTIONS = [
+  'How do I submit an idea?',
+  'How does the prize pool work?',
+  'What is the entry fee?',
+  'How do I switch to voter mode?',
+]
+
+function formatMarkdown(text: string) {
+  const lines = text.split('\n')
+  const elements: (JSX.Element | string)[] = []
+  let inList = false
+  let listItems: JSX.Element[] = []
+  let key = 0
+
+  const renderInline = (line: string) => {
+    const parts: (JSX.Element | string)[] = []
+    let remaining = line
+
+    while (remaining.length > 0) {
+      const boldMatch = remaining.match(/\*\*(.+?)\*\*/)
+      const italicMatch = remaining.match(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/)
+      const codeMatch = remaining.match(/`(.+?)`/)
+      const linkMatch = remaining.match(/\[(.+?)\]\((.+?)\)/)
+
+      const matches: { index: number; length: number; render: () => JSX.Element }[] = []
+      if (boldMatch) matches.push({ index: boldMatch.index!, length: boldMatch[0].length, render: () => <strong key={key++}>{boldMatch![1]}</strong> })
+      if (italicMatch) matches.push({ index: italicMatch.index!, length: italicMatch[0].length, render: () => <em key={key++}>{italicMatch![1]}</em> })
+      if (codeMatch) matches.push({ index: codeMatch.index!, length: codeMatch[0].length, render: () => <code key={key++} className="bg-white/10 px-1.5 py-0.5 rounded text-xs font-mono">{codeMatch![1]}</code> })
+      if (linkMatch) matches.push({ index: linkMatch.index!, length: linkMatch[0].length, render: () => <a key={key++} href={linkMatch![2]} target="_blank" rel="noopener noreferrer" className="text-zed-primary underline">{linkMatch![1]}</a> })
+
+      if (matches.length === 0) {
+        parts.push(<span key={key++}>{remaining}</span>)
+        break
+      }
+
+      matches.sort((a, b) => a.index - b.index)
+      const first = matches[0]
+
+      if (first.index > 0) {
+        parts.push(<span key={key++}>{remaining.slice(0, first.index)}</span>)
+      }
+      parts.push(first.render())
+      remaining = remaining.slice(first.index + first.length)
+    }
+
+    return parts.length > 0 ? parts : line
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const trimmed = line.trim()
+
+    if (!trimmed) {
+      if (inList) {
+        elements.push(<ul key={key++} className="space-y-1 my-1.5">{listItems}</ul>)
+        listItems = []
+        inList = false
+      }
+      continue
+    }
+
+    const bulletMatch = trimmed.match(/^[-*]\s+(.+)/)
+    const numMatch = trimmed.match(/^\d+\.\s+(.+)/)
+
+    if (bulletMatch || numMatch) {
+      inList = true
+      const content = bulletMatch ? bulletMatch[1] : numMatch![1]
+      listItems.push(
+        <li key={`${key++}-${i}`} className="flex gap-2 text-sm">
+          <span className="text-zed-accent mt-0.5">•</span>
+          <span>{renderInline(content)}</span>
+        </li>
+      )
+      continue
+    }
+
+    if (inList) {
+      elements.push(<ul key={key++} className="space-y-1 my-1.5">{listItems}</ul>)
+      listItems = []
+      inList = false
+    }
+
+    const headingMatch = trimmed.match(/^###?\s+(.+)/)
+    if (headingMatch) {
+      elements.push(<h4 key={key++} className="font-bold text-sm mt-3 mb-1">{renderInline(headingMatch[1])}</h4>)
+      continue
+    }
+
+    elements.push(<p key={key++} className="text-sm leading-relaxed">{renderInline(trimmed)}</p>)
+  }
+
+  if (inList) {
+    elements.push(<ul key={key++} className="space-y-1 my-1.5">{listItems}</ul>)
+  }
+
+  return <>{elements}</>
+}
+
+function TypewriterText({ content, onDone }: { content: string; onDone: () => void }) {
+  const [displayed, setDisplayed] = useState('')
+  const indexRef = useRef(0)
+  const intervalRef = useRef<ReturnType<typeof setInterval>>()
+
+  useEffect(() => {
+    indexRef.current = 0
+    setDisplayed('')
+
+    intervalRef.current = setInterval(() => {
+      if (indexRef.current < content.length) {
+        setDisplayed(content.slice(0, indexRef.current + 3))
+        indexRef.current += 3
+      } else {
+        clearInterval(intervalRef.current)
+        onDone()
+      }
+    }, 15)
+
+    return () => clearInterval(intervalRef.current)
+  }, [content, onDone])
+
+  return <>{formatMarkdown(displayed)}</>
+}
 
 export function ChatBot() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [typingId, setTypingId] = useState<number | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, typingId])
+
+  const handleTypingDone = useCallback(() => {
+    setTypingId(null)
+  }, [])
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return
@@ -65,7 +193,9 @@ export function ChatBot() {
       const data = await res.json()
       const reply = data?.choices?.[0]?.message?.content || 'Sorry, I could not process that. Please try again.'
 
+      const msgId = messages.length + 1
       setMessages(prev => [...prev, { role: 'assistant', content: reply }])
+      setTypingId(msgId)
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Something went wrong. Please try again later.' }])
     } finally {
@@ -75,53 +205,65 @@ export function ChatBot() {
 
   return (
     <>
-      {/* FAB */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)]"
         style={{ background: 'linear-gradient(135deg,#6366F1,#22D3EE)' }}
       >
         <MessageCircle size={24} className="text-white" />
       </button>
 
-      {/* Chat Window */}
       <AnimatePresence>
         {open && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+            className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
             style={{ background: 'rgba(10,10,15,0.98)', backdropFilter: 'blur(20px)' }}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10" style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.08),rgba(34,211,238,0.04))' }}>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#6366F1,#22D3EE)' }}>
-                  <Bot size={16} className="text-white" />
+                <div className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg,#6366F1,#22D3EE)' }}>
+                  <Bot size={18} className="text-white" />
                 </div>
                 <div>
-                  <p className="font-bold text-sm">Arena Assistant</p>
-                  <p className="text-[10px] text-white/40">Powered by DeepSeek</p>
+                  <p className="font-bold text-sm text-white">Arena Assistant</p>
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles size={10} className="text-zed-accent" />
+                    <p className="text-[9px] text-white/40 font-medium tracking-wide">AI-powered</p>
+                  </div>
                 </div>
               </div>
-              <button onClick={() => setOpen(false)} className="text-white/30 hover:text-white/60 transition-colors">
-                <X size={18} />
+              <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5 transition-colors">
+                <X size={16} className="text-white/40" />
               </button>
             </div>
 
-            {/* Messages */}
-            <div className="h-[400px] overflow-y-auto p-4 space-y-4" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(99,102,241,0.3) transparent' }}>
+            <div className="h-[420px] overflow-y-auto p-4 space-y-4" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(99,102,241,0.3) transparent' }}>
               {messages.length === 0 && (
-                <div className="text-center py-12">
-                  <Bot size={40} className="mx-auto mb-4 text-white/20" />
-                  <p className="text-sm font-bold text-white/60 mb-1">Hi! How can I help?</p>
-                  <p className="text-xs text-white/30">Ask me about competitions, fees, voting, or anything else.</p>
+                <div className="text-center py-6">
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.15),rgba(34,211,238,0.1))' }}>
+                    <Bot size={28} className="text-zed-accent" />
+                  </div>
+                  <p className="text-base font-bold text-white/80 mb-1">Hi! How can I help?</p>
+                  <p className="text-xs text-white/30 mb-6">Ask me anything about ZedIdeaArena</p>
+                  <div className="space-y-2">
+                    {SUGGESTIONS.map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => { setInput(s); setOpen(true) }}
+                        className="block w-full text-left px-4 py-2.5 rounded-xl text-xs font-medium text-white/60 hover:text-white hover:bg-white/5 border border-white/5 hover:border-white/10 transition-all"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
               {messages.map((msg, i) => (
                 <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-zed-primary/20' : 'bg-zed-accent/20'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm ${msg.role === 'user' ? 'bg-zed-primary/20' : ''}`} style={msg.role === 'assistant' ? { background: 'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(34,211,238,0.15))' } : {}}>
                     {msg.role === 'user' ? <User size={14} className="text-zed-primary" /> : <Bot size={14} style={{ color: '#22D3EE' }} />}
                   </div>
                   <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
@@ -133,17 +275,23 @@ export function ChatBot() {
                       ? { background: 'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(34,211,238,0.1))' }
                       : { background: 'rgba(255,255,255,0.03)' }
                   }>
-                    {msg.content}
+                    {msg.role === 'assistant' && i === typingId ? (
+                      <TypewriterText content={msg.content} onDone={handleTypingDone} />
+                    ) : msg.role === 'assistant' ? (
+                      formatMarkdown(msg.content)
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                 </div>
               ))}
               {loading && (
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-zed-accent/20">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(34,211,238,0.15))' }}>
                     <Bot size={14} style={{ color: '#22D3EE' }} />
                   </div>
                   <div className="px-4 py-3 rounded-2xl rounded-tl-sm border border-white/5" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1.5">
                       <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#6366F1', animationDelay: '0ms' }} />
                       <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#6366F1', animationDelay: '150ms' }} />
                       <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#6366F1', animationDelay: '300ms' }} />
@@ -154,7 +302,6 @@ export function ChatBot() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
             <div className="p-4 border-t border-white/10">
               <div className="flex gap-2">
                 <input
@@ -163,13 +310,13 @@ export function ChatBot() {
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && sendMessage()}
                   placeholder="Ask a question..."
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm border border-white/10 outline-none transition-all focus:border-zed-primary/50"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm border border-white/10 outline-none transition-all focus:border-zed-primary/50 placeholder:text-white/20"
                   style={{ background: 'rgba(255,255,255,0.03)' }}
                 />
                 <button
                   onClick={sendMessage}
                   disabled={!input.trim() || loading}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 disabled:opacity-30 transition-all"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 disabled:opacity-30 transition-all hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]"
                   style={{ background: 'linear-gradient(135deg,#6366F1,#22D3EE)' }}
                 >
                   <Send size={16} className="text-white" />
