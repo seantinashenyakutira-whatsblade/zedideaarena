@@ -2,17 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Loader2, Check, FileText } from 'lucide-react'
+import { ChevronLeft, Loader2, Check, FileText, MapPin, User } from 'lucide-react'
 import Image from 'next/image'
 import { authService } from '@/services/auth'
-import { supabase } from '@/lib/supabase'
 import { routes } from '@/lib/routes'
 import { toast } from 'sonner'
 
 export default function ReviewPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
-  const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [confirmed, setConfirmed] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -22,10 +20,6 @@ export default function ReviewPage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) throw new Error('No user')
-        setUserId(user.id)
-
         const res: any = await authService.getProfile()
         if (res?.status === 'success' && res?.data) {
           setProfile(res.data)
@@ -41,40 +35,21 @@ export default function ReviewPage() {
 
   const handleSubmit = async () => {
     if (!confirmed) { toast.error('Please confirm that all information is accurate'); return }
-    if (!userId) { toast.error('Session not found. Please login again.'); return }
     setIsSubmitting(true)
     setError(null)
 
     try {
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          onboarding_complete: true,
-          onboarding_step: 4,
-        })
-        .eq('id', userId)
-
-      if (updateError) throw updateError
-
-      const { data: verify, error: verifyError } = await supabase
-        .from('users')
-        .select('onboarding_complete')
-        .eq('id', userId)
-        .single()
-
-      if (verifyError || !verify?.onboarding_complete) {
-        throw new Error('Could not confirm onboarding completion. Please try again.')
-      }
-
-      await supabase.auth.refreshSession()
+      const res: any = await authService.updateProfile({
+        onboarding_complete: true,
+        onboarding_step: 4,
+      })
+      if (res?.status !== 'success') throw new Error(res?.error || 'Failed to complete onboarding')
 
       setShowSuccess(true)
-
       setTimeout(() => {
         window.location.href = routes.hub
       }, 2500)
     } catch (err: any) {
-      console.error('Onboarding submission failed:', err)
       const msg = err?.message || 'Something went wrong. Please try again.'
       toast.error(msg)
       setError(msg)
@@ -98,37 +73,61 @@ export default function ReviewPage() {
         <h2 className="text-xl font-black text-zed-foreground mb-2">Review & Submit</h2>
         <p className="text-sm text-zed-foreground-secondary mb-6">Please confirm all information is accurate before submitting.</p>
 
-        <div className="p-6 bg-zed-primary/5 rounded-3xl border border-zed-primary/20 space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest">Full Name</p>
-              <p className="font-bold text-zed-foreground">{profile.full_name || '-'}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest">Date of Birth</p>
-              <p className="font-bold text-zed-foreground">{profile.dob || '-'}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest">Nationality</p>
-              <p className="font-bold text-zed-foreground">{profile.nationality || '-'}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest">Profession</p>
-              <p className="font-bold text-zed-foreground">{profile.profession || '-'}</p>
-            </div>
-          </div>
+        <div className="p-6 rounded-3xl space-y-5" style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.06),rgba(34,211,238,0.03))', border: '1px solid rgba(99,102,241,0.15)' }}>
           <div>
-            <p className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest">Bio</p>
-            <p className="text-sm text-zed-foreground-secondary">{profile.bio || '-'}</p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest">Country</p>
-              <p className="font-bold text-zed-foreground">{profile.country || '-'}</p>
+            <h3 className="text-xs font-black text-zed-foreground uppercase tracking-widest mb-3 flex items-center gap-2"><User size={14} className="text-zed-accent" /> Personal</h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-[9px] font-black text-zed-foreground-secondary uppercase tracking-widest mb-0.5">Full Name</p>
+                <p className="font-bold text-sm text-zed-foreground">{profile.full_name || '-'}</p>
+              </div>
+              <div>
+                <p className="text-[9px] font-black text-zed-foreground-secondary uppercase tracking-widest mb-0.5">Date of Birth</p>
+                <p className="font-bold text-sm text-zed-foreground">{profile.dob || '-'}</p>
+              </div>
+              <div>
+                <p className="text-[9px] font-black text-zed-foreground-secondary uppercase tracking-widest mb-0.5">Gender</p>
+                <p className="font-bold text-sm text-zed-foreground">{profile.gender || '-'}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest">City</p>
-              <p className="font-bold text-zed-foreground">{profile.city || '-'}</p>
+            <div className="grid md:grid-cols-3 gap-4 mt-3">
+              <div>
+                <p className="text-[9px] font-black text-zed-foreground-secondary uppercase tracking-widest mb-0.5">Nationality</p>
+                <p className="font-bold text-sm text-zed-foreground">{profile.nationality || '-'}</p>
+              </div>
+              <div>
+                <p className="text-[9px] font-black text-zed-foreground-secondary uppercase tracking-widest mb-0.5">Profession</p>
+                <p className="font-bold text-sm text-zed-foreground">{profile.profession || '-'}</p>
+              </div>
+              <div>
+                <p className="text-[9px] font-black text-zed-foreground-secondary uppercase tracking-widest mb-0.5">Province / State</p>
+                <p className="font-bold text-sm text-zed-foreground">{profile.province || '-'}</p>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-white/5 pt-4">
+            <p className="text-[9px] font-black text-zed-foreground-secondary uppercase tracking-widest mb-1">Bio</p>
+            <p className="text-sm text-zed-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: profile.bio || '-' }} />
+          </div>
+          <div className="border-t border-white/5 pt-4">
+            <h3 className="text-xs font-black text-zed-foreground uppercase tracking-widest mb-3 flex items-center gap-2"><MapPin size={14} className="text-zed-accent" /> Location</h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-[9px] font-black text-zed-foreground-secondary uppercase tracking-widest mb-0.5">City</p>
+                <p className="font-bold text-sm text-zed-foreground">{profile.city || '-'}</p>
+              </div>
+              <div>
+                <p className="text-[9px] font-black text-zed-foreground-secondary uppercase tracking-widest mb-0.5">Province / State</p>
+                <p className="font-bold text-sm text-zed-foreground">{profile.province || '-'}</p>
+              </div>
+              <div>
+                <p className="text-[9px] font-black text-zed-foreground-secondary uppercase tracking-widest mb-0.5">Country</p>
+                <p className="font-bold text-sm text-zed-foreground">{profile.country || '-'}</p>
+              </div>
+            </div>
+            <div className="mt-3">
+              <p className="text-[9px] font-black text-zed-foreground-secondary uppercase tracking-widest mb-0.5">Street Address</p>
+              <p className="font-bold text-sm text-zed-foreground">{profile.address || '-'}</p>
             </div>
           </div>
           <div>
