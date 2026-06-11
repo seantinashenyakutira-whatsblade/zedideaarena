@@ -13,7 +13,8 @@ export default function AuthCallbackPage() {
 
       if (error || !session) {
         setError(error?.message || 'No session found')
-        setTimeout(() => window.location.replace('/auth/login'), 2000)
+        const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
+        setTimeout(() => window.location.replace(`https://login.${rootDomain}`), 2000)
         return
       }
 
@@ -36,7 +37,8 @@ export default function AuthCallbackPage() {
         // backend sync failure is non-blocking for OAuth
       }
 
-      window.location.replace('/dashboard')
+      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
+      window.location.replace(`https://hub.${rootDomain}`)
     }
 
     handleCallback()

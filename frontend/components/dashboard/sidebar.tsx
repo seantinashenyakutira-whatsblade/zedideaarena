@@ -104,8 +104,11 @@ export function Sidebar() {
       setShowPasswordModal(false)
       setPassword('')
       toast.success(`Switched to ${pendingRole} mode`)
-
-      window.location.href = '/dashboard'
+      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
+      const protocol = window.location.protocol
+      window.location.href = pendingRole === 'voter'
+        ? `${protocol}//vote.${rootDomain}`
+        : `${protocol}//hub.${rootDomain}`
     } catch (err: any) {
       const msg = err?.message || 'Something went wrong. Please try again.'
       setPasswordError(msg)

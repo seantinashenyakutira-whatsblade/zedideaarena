@@ -14,14 +14,14 @@ All Next.js App Router pages, layouts, and route groups.
 - `robots.ts` — SEO robots configuration
 - `sitemap.ts` — SEO sitemap generation
 
-### Auth
+### Auth (served at login.zedideaarena.com)
 - `auth/login/page.tsx` — Email/password + Google OAuth login
 - `auth/signup/page.tsx` — Registration form
-- `auth/callback/page.tsx` — OAuth callback handler (excluded from middleware)
+- `auth/callback/page.tsx` — OAuth callback handler; redirects to hub.zedideaarena.com
 - `auth/verify-otp/page.tsx` — OTP verification
-- `auth/layout.tsx` — Auth pages layout wrapper
+- `auth/layout.tsx` — Auth pages layout wrapper (split panel)
 
-### Dashboard (authenticated)
+### Dashboard (served at hub.zedideaarena.com; authenticated)
 - `dashboard/layout.tsx` — Sidebar + header + KYC banner
 - `dashboard/page.tsx` — User dashboard overview
 - `dashboard/competitions/page.tsx` — Competition listing
@@ -55,7 +55,7 @@ All Next.js App Router pages, layouts, and route groups.
 - `onboarding/review/page.tsx` — Review step
 - `onboarding/success/page.tsx` — Onboarding complete
 
-### Competition & Voting (public or limited)
+### Competition & Voting (vote.zedideaarena.com)
 - `competitions/page.tsx` — Public competition listing
 - `competitions/[id]/page.tsx` — Public competition detail
 - `competitions/[id]/results/page.tsx` — Competition results
@@ -63,7 +63,7 @@ All Next.js App Router pages, layouts, and route groups.
 - `contestant/[[...slug]]/page.tsx` — Contestant area
 - `voter/[[...slug]]/page.tsx` — Voter area
 
-### Admin Catch-All
+### Admin Catch-All (admin.zedideaarena.com)
 - `admin/[[...slug]]/page.tsx` — Legacy admin fallback route
 
 ### Docs & Legal
@@ -80,6 +80,14 @@ All Next.js App Router pages, layouts, and route groups.
 - Admin pages check `profile.is_admin` on mount
 - Onboarding flow is sequential (personal → documents → location → review)
 - Use `window.location.replace()` for post-auth redirects, not `router.replace()`
+- **Subdomain routing** handled by middleware.ts; rewrites subdomain paths to app routes:
+  - login.* → /auth/*
+  - hub.* → /dashboard/*
+  - vote.* → /voter/*
+  - admin.* → /admin/*
+  - Main domain (zedideaarena.com) → marketing pages only
+- Mode switching redirects to correct subdomain (hub for contestant, vote for voter)
+- All subdomain URLs sourced from `lib/routes.ts` — never hardcode them
 
 ## Child Docs
 (none — leaf node)

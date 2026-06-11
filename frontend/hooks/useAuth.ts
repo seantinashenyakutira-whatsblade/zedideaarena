@@ -58,11 +58,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await authService.logout()
       setProfile(null)
       setUser(null)
-      window.location.replace('/auth/login')
+      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
+      window.location.replace(`https://login.${rootDomain}`)
       toast.info('Logged out.')
     } catch (err) {
       localStorage.removeItem('token')
-      window.location.href = '/auth/login'
+      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
+      window.location.href = `https://login.${rootDomain}`
     }
   }
 

@@ -71,7 +71,11 @@ export function DashboardHeader() {
       setPassword('')
       setShowDropdown(false)
       toast.success(`Switched to ${pendingRole} mode`)
-      window.location.href = '/dashboard'
+      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
+      const protocol = window.location.protocol
+      window.location.href = pendingRole === 'voter'
+        ? `${protocol}//vote.${rootDomain}`
+        : `${protocol}//hub.${rootDomain}`
     } catch (err: any) {
       setPasswordError(err?.message || 'Something went wrong.')
     } finally {

@@ -45,7 +45,8 @@ export default function SignupPage() {
     setLoading(true)
     try {
       await authService.signup(result.data)
-      window.location.replace('/auth/login?signup=success')
+      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'zedideaarena.com'
+      window.location.replace(`https://login.${rootDomain}?signup=success`)
     } catch (err: any) {
       setError(err?.message || 'Failed to create account.')
     } finally {
