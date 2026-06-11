@@ -471,46 +471,45 @@ export default function LandingPage() {
             </motion.h2>
           </div>
 
-          <motion.div {...fadeUp} className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-20">
-            {team.map((member, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="p-6 rounded-3xl border border-white/10 text-center backdrop-blur-sm hover:border-white/20 transition-all duration-300 group"
-                style={{ background: 'rgba(255,255,255,0.03)' }}
-              >
+          <motion.div {...fadeUp} className="relative overflow-hidden mb-20" style={{ maskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)' }}>
+            <div className="flex gap-6 animate-carousel" style={{ width: 'max-content' }}>
+              {[...team, ...team].map((member, i) => (
                 <motion.div
-                  className="w-20 h-20 rounded-full mx-auto mb-5 overflow-hidden border-2 border-white/10 group-hover:border-zed-primary/30 transition-all duration-300"
-                  style={{ background: 'rgba(99,102,241,0.1)' }}
-                  whileHover={{ scale: 1.05 }}
+                  key={i}
+                  className="w-64 flex-shrink-0 p-6 rounded-3xl border border-white/10 text-center backdrop-blur-sm hover:border-white/20 transition-all duration-300 group"
+                  style={{ background: 'rgba(255,255,255,0.03)' }}
+                  whileHover={{ scale: 1.02 }}
                 >
-                  <Image src={member.image} alt={member.name} width={80} height={80} className="w-full h-full object-cover opacity-70" unoptimized />
+                  <motion.div
+                    className="w-20 h-20 rounded-full mx-auto mb-5 overflow-hidden border-2 border-white/10 group-hover:border-zed-primary/30 transition-all duration-300"
+                    style={{ background: 'rgba(99,102,241,0.1)' }}
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <Image src={member.image} alt={member.name} width={80} height={80} className="w-full h-full object-cover opacity-70" unoptimized />
+                  </motion.div>
+                  <h4 className="font-bold text-sm mb-1">{member.name}</h4>
+                  <p className="text-xs font-semibold" style={{ color: '#6366F1' }}>{member.role}</p>
+                  <p className="text-xs text-white/40 mt-2 mb-3">{member.bio}</p>
+                  <div className="flex items-center justify-center gap-2">
+                    {(member as any).website && (
+                      <a href={(member as any).website} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/30 hover:text-white transition-all text-white/40">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                      </a>
+                    )}
+                    {(member as any).instagram && (
+                      <a href={(member as any).instagram} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/30 hover:text-white transition-all text-white/40">
+                        <Camera size={12} />
+                      </a>
+                    )}
+                    {(member as any).linkedin && (member as any).linkedin !== '#' && (
+                      <a href={(member as any).linkedin} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/30 hover:text-white transition-all text-white/40">
+                        <Linkedin size={12} />
+                      </a>
+                    )}
+                  </div>
                 </motion.div>
-                <h4 className="font-bold text-sm mb-1">{member.name}</h4>
-                <p className="text-xs font-semibold" style={{ color: '#6366F1' }}>{member.role}</p>
-                <p className="text-xs text-white/40 mt-2 mb-3">{member.bio}</p>
-                <div className="flex items-center justify-center gap-2">
-                  {(member as any).website && (
-                    <a href={(member as any).website} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/30 hover:text-white transition-all text-white/40">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                    </a>
-                  )}
-                  {(member as any).instagram && (
-                    <a href={(member as any).instagram} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/30 hover:text-white transition-all text-white/40">
-                      <Camera size={12} />
-                    </a>
-                  )}
-                  {(member as any).linkedin && (member as any).linkedin !== '#' && (
-                    <a href={(member as any).linkedin} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/30 hover:text-white transition-all text-white/40">
-                      <Linkedin size={12} />
-                    </a>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+              ))}
+            </div>
           </motion.div>
 
           <div className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto text-center">
