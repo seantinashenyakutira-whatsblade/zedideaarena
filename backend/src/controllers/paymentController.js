@@ -68,7 +68,7 @@ const enterCompetition = async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/competitions/${competitionId}/submit?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/success?type=contestant&competitionId=${competitionId}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/competitions/${competitionId}`,
       metadata: {
         user_id: uid,
@@ -334,46 +334,128 @@ const verifyPayment = async (req, res) => {
       return res.status(400).json({ error: 'Missing session_id' });
     }
 
-    const query = supabase
+    // Step 1: Check local payments table
+    let query = supabase
       .from('payments')
       .select('*')
       .eq('stripe_session_id', session_id)
       .eq('status', 'completed');
 
-    if (uid) query.eq('user_id', uid);
+    if (uid) query = query.eq('user_id', uid);
 
     const { data, error } = await query.maybeSingle();
 
     if (error) {
-      console.error('Payment verification error:', error);
-      return res.status(500).json({ error: 'Verification failed' });
+      console.error('Payment verification query error:', error);
     }
 
-    if (!data) {
+    if (data) {
+      const result = {
+        verified: true,
+        payment: {
+          id: data.id,
+          type: data.type,
+          competition_id: data.competition_id,
+          amount_cents: data.amount_cents,
+          status: data.status,
+          created_at: data.created_at,
+        },
+      };
+
+      if (competition_id && data.competition_id !== competition_id) {
+        result.verified = false;
+      }
+      if (type && data.type !== type) {
+        result.verified = false;
+      }
+
+      return res.json(result);
+    }
+
+    // Step 2: Not in DB yet — check Stripe directly (webhook may be delayed)
+    if (!stripe) {
       return res.json({ verified: false, payment: null });
     }
 
-    const result = {
-      verified: true,
-      payment: {
-        id: data.id,
-        type: data.type,
-        competition_id: data.competition_id,
-        amount_cents: data.amount_cents,
-        status: data.status,
-        created_at: data.created_at,
-      },
-    };
+    try {
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+      if (session.payment_status === 'paid') {
+        // Webhook hasn't processed yet — create payment record inline
+        const metaCompetitionId = competition_id || session.metadata?.competition_id;
+        const metaType = type || session.metadata?.type || 'contestant';
 
-    if (competition_id && data.competition_id !== competition_id) {
-      result.verified = false;
+        const { data: newPayment, error: insertError } = await supabase
+          .from('payments')
+          .upsert({
+            user_id: uid,
+            competition_id: metaCompetitionId,
+            type: metaType,
+            stripe_session_id: session_id,
+            amount_cents: session.amount_total,
+            status: 'completed',
+            created_at: new Date().toISOString(),
+          }, { onConflict: 'stripe_session_id' })
+          .select()
+          .single();
+
+        if (insertError) {
+          if (insertError.code !== '23505') {
+            console.error('Error inserting fallback payment:', insertError);
+          }
+          // If it's a duplicate, someone else already inserted — return verified
+          return res.json({ verified: true, payment: { id: session_id, type: metaType, competition_id: metaCompetitionId, amount_cents: session.amount_total } });
+        }
+
+        // Apply side effects (same as webhook handler)
+        try {
+          if (metaType === 'contestant') {
+            await supabase
+              .from('ideas')
+              .update({ is_public: true, status: 'submitted', payment_status: 'paid', updated_at: new Date().toISOString() })
+              .eq('user_id', uid)
+              .eq('competition_id', metaCompetitionId);
+
+            await supabase.rpc('increment_prize_pool', {
+              comp_id: metaCompetitionId,
+              amount: session.amount_total,
+            });
+          } else if (metaType === 'voter') {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('voter_competitions_paid')
+              .eq('id', uid)
+              .single();
+
+            const currentPaid = userData?.voter_competitions_paid || [];
+            if (!currentPaid.includes(metaCompetitionId)) {
+              currentPaid.push(metaCompetitionId);
+            }
+
+            await supabase
+              .from('users')
+              .update({
+                voter_payment_status: 'paid',
+                voter_competitions_paid: currentPaid,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', uid);
+
+            await supabase.rpc('increment_prize_pool', {
+              comp_id: metaCompetitionId,
+              amount: session.amount_total,
+            });
+          }
+        } catch (sideEffectErr) {
+          console.error('Fallback side effects error:', sideEffectErr);
+        }
+
+        return res.json({ verified: true, payment: newPayment || { id: session_id, type: metaType, competition_id: metaCompetitionId, amount_cents: session.amount_total } });
+      }
+    } catch (stripeErr) {
+      console.error('Stripe fallback check error:', stripeErr);
     }
 
-    if (type && data.type !== type) {
-      result.verified = false;
-    }
-
-    res.json(result);
+    res.json({ verified: false, payment: null });
   } catch (err) {
     console.error('Payment verification error:', err);
     res.status(500).json({ error: err.message });

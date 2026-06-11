@@ -179,7 +179,7 @@ export function Sidebar() {
             className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-zed-foreground-secondary hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 group"
           >
             <LogOut size={20} className="group-hover:translate-x-1 transition-transform" />
-            <span className="font-bold text-sm">Exit Arena</span>
+            <span className="font-bold text-sm">{profile?.is_admin ? 'Sign Out' : 'Exit Arena'}</span>
           </button>
         </div>
       </aside>

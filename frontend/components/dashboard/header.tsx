@@ -84,22 +84,24 @@ export function DashboardHeader() {
     <>
       <header className="sticky top-0 right-0 h-16 border-b border-white/5 flex items-center justify-between px-6 glass-premium z-40">
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex bg-white/5 rounded-full p-1 border border-white/10">
-            {roles.map((role) => {
-              const Icon = role.icon
-              const isActive = (profile?.current_mode || currentRole) === role.id
-              return (
-                <button
-                  key={role.id}
-                  onClick={() => handleRoleChange(role.id)}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black transition-all ${isActive ? 'bg-zed-primary text-white shadow-[0_2px_10px_rgba(79,70,229,0.4)]' : 'text-zed-foreground-secondary hover:text-zed-foreground'}`}
-                >
-                  <Icon size={12} />
-                  {role.label}
-                </button>
-              )
-            })}
-          </div>
+          {!profile?.is_admin && (
+            <div className="hidden md:flex bg-white/5 rounded-full p-1 border border-white/10">
+              {roles.map((role) => {
+                const Icon = role.icon
+                const isActive = (profile?.current_mode || currentRole) === role.id
+                return (
+                  <button
+                    key={role.id}
+                    onClick={() => handleRoleChange(role.id)}
+                    className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black transition-all ${isActive ? 'bg-zed-primary text-white shadow-[0_2px_10px_rgba(79,70,229,0.4)]' : 'text-zed-foreground-secondary hover:text-zed-foreground'}`}
+                  >
+                    <Icon size={12} />
+                    {role.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
@@ -133,20 +135,22 @@ export function DashboardHeader() {
                     </div>
                   </div>
 
-                  <div className="md:hidden space-y-1 pb-2">
-                    <p className="text-[9px] font-bold text-zed-foreground-secondary uppercase px-4 py-1">Switch Role</p>
-                    {roles.map(role => (
-                      <button
-                        key={role.id}
-                        onClick={() => { handleRoleChange(role.id) }}
-                        className={`w-full flex items-center justify-between px-4 py-2 text-xs font-bold rounded-xl ${(profile?.current_mode || currentRole) === role.id ? 'bg-zed-primary/20 text-zed-primary' : 'hover:bg-white/5'}`}
-                      >
-                        {role.label}
-                        {(profile?.current_mode || currentRole) === role.id && <ShieldCheck size={12} />}
-                      </button>
-                    ))}
-                    <div className="border-b border-white/10 my-2" />
-                  </div>
+                  {!profile?.is_admin && (
+                    <div className="md:hidden space-y-1 pb-2">
+                      <p className="text-[9px] font-bold text-zed-foreground-secondary uppercase px-4 py-1">Switch Role</p>
+                      {roles.map(role => (
+                        <button
+                          key={role.id}
+                          onClick={() => { handleRoleChange(role.id) }}
+                          className={`w-full flex items-center justify-between px-4 py-2 text-xs font-bold rounded-xl ${(profile?.current_mode || currentRole) === role.id ? 'bg-zed-primary/20 text-zed-primary' : 'hover:bg-white/5'}`}
+                        >
+                          {role.label}
+                          {(profile?.current_mode || currentRole) === role.id && <ShieldCheck size={12} />}
+                        </button>
+                      ))}
+                      <div className="border-b border-white/10 my-2" />
+                    </div>
+                  )}
 
                   <a href="/dashboard/settings" className="flex items-center gap-3 px-4 py-2.5 text-xs font-bold hover:bg-white/5 rounded-xl transition-all">
                     <Settings size={14} />
@@ -154,7 +158,7 @@ export function DashboardHeader() {
                   </a>
                   <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold hover:bg-red-500/10 rounded-xl transition-all text-red-400">
                     <LogOut size={14} />
-                    Exit Arena
+                    {profile?.is_admin ? 'Sign Out' : 'Exit Arena'}
                   </button>
                 </div>
               </div>

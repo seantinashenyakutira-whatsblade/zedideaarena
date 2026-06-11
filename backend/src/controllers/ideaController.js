@@ -125,15 +125,21 @@ const getUserIdeas = async (req, res) => {
 const getPublicIdeas = async (req, res) => {
   try {
     const statusFilter = req.query.status || 'submitted';
+    const competitionId = req.query.competition_id || null;
 
     let query = supabase
       .from('ideas')
       .select('*, users(full_name)')
       .eq('status', statusFilter)
+      .eq('is_public', true)
       .order('votes_count', { ascending: false });
 
     if (statusFilter === 'submitted') {
       query = query.eq('payment_status', 'paid');
+    }
+
+    if (competitionId) {
+      query = query.eq('competition_id', competitionId);
     }
 
     const { data, error } = await query;

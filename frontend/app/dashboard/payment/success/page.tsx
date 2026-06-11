@@ -24,25 +24,29 @@ function PaymentSuccessContent() {
       return
     }
 
-    const verify = async () => {
-      try {
-        const params = new URLSearchParams({ session_id: sessionId })
-        if (competitionId) params.append('competition_id', competitionId)
-        if (type) params.append('type', type)
+    const verifyWithRetry = async (maxAttempts = 10) => {
+      for (let i = 0; i < maxAttempts; i++) {
+        try {
+          const params = new URLSearchParams({ session_id: sessionId })
+          if (competitionId) params.append('competition_id', competitionId)
+          if (type) params.append('type', type)
 
-        const res: any = await api.get(`/payments/verify?${params}`)
-        if (res.verified) {
-          setPayment(res.payment)
-          setStatus('verified')
-          refreshProfile()
-        } else {
-          setStatus('error')
+          const res: any = await api.get(`/payments/verify?${params}`)
+          if (res.verified) {
+            setPayment(res.payment)
+            setStatus('verified')
+            refreshProfile()
+            return
+          }
+        } catch { /* retry */ }
+
+        if (i < maxAttempts - 1) {
+          await new Promise(r => setTimeout(r, 2000))
         }
-      } catch {
-        setStatus('error')
       }
+      setStatus('error')
     }
-    verify()
+    verifyWithRetry()
   }, [sessionId, competitionId, type])
 
   useEffect(() => {

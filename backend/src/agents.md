@@ -45,5 +45,26 @@ Core backend source code — controllers handle business logic, routes define en
 - Supabase client created once at module load with service_role key for full DB access
 - Stripe webhook handler verifies signature with STRIPE_WEBHOOK_SECRET before processing
 
+## Payment Flow
+1. **Contestant**: Create idea (POST /api/ideas) → redirect to Stripe checkout → user pays → webhook marks idea as submitted/paid/public → OR fallback: success page retries 10 times then checks Stripe directly
+2. **Voter**: Register voter (POST /api/voter/register) → Stripe checkout → webhook marks voter_competitions_paid → OR fallback in verifyPayment
+3. `GET /api/payment/verify?session_id=...` — First checks payments table, then falls back to Stripe API if webhook delayed. Inline creates payment record + applies side effects on fallback.
+4. Webhook route (`POST /api/webhooks/stripe`) uses `express.raw()` and is mounted before `express.json()` in index.js to preserve raw body for signature verification
+
+## Idea Visibility
+- `status='submitted' AND payment_status='paid' AND is_public=true` for voter panel display
+- `GET /api/ideas/public` accepts `?status=` and `?competition_id=` query params
+- Webhook sets all three flags on contestant payment completion
+
+## SQL Function Required (run in Supabase SQL Editor)
+```sql
+CREATE OR REPLACE FUNCTION increment_prize_pool(comp_id uuid, amount int)
+RETURNS void AS $$
+  UPDATE competitions 
+  SET prize_pool_cents = prize_pool_cents + amount
+  WHERE id = comp_id;
+$$ LANGUAGE sql SECURITY DEFINER;
+```
+
 ## Child Docs
 - /backend/src/controllers/agents.md — Business logic controllers
