@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { Users, ExternalLink, Loader2 } from 'lucide-react'
+import { Users } from 'lucide-react'
 import api from '@/lib/api'
 
 interface ContestantProfileCardProps {
@@ -41,10 +40,7 @@ export function ContestantProfileCard({ userId, className = '' }: ContestantProf
   if (!user) return null
 
   return (
-    <Link
-      href={`/dashboard/contestant/${userId}`}
-      className={`flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all group ${className}`}
-    >
+    <div className={`flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 transition-all ${className}`}>
       <div className="w-14 h-14 rounded-2xl bg-zed-gradient-primary overflow-hidden shadow-lg flex-shrink-0">
         {user.picture ? (
           <img src={user.picture} alt="" className="w-full h-full object-cover" />
@@ -55,14 +51,13 @@ export function ContestantProfileCard({ userId, className = '' }: ContestantProf
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <h4 className="font-black text-zed-foreground text-sm truncate group-hover:text-zed-primary transition-colors">
+        <h4 className="font-black text-zed-foreground text-sm truncate">
           {user.full_name || 'Arena Innovator'}
         </h4>
         <p className="text-[10px] text-zed-primary font-black uppercase tracking-widest">
           {user.role || 'Contestant'}
         </p>
       </div>
-      <ExternalLink size={14} className="text-white/20 group-hover:text-zed-primary transition-colors flex-shrink-0" />
-    </Link>
+    </div>
   )
 }

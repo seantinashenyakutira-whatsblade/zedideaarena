@@ -57,7 +57,7 @@ export default function CompetitionDetailPage() {
           <main>
              <div className="relative h-80 w-full">
                 <img 
-                  src={competition.thumbnail_url || 'https://via.placeholder.com/1200x600?text=ZedIdeaArena'} 
+                  src={competition.thumbnail_url || '/hero_3d_arena_bg_1777051043555.png'} 
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-zed-background via-zed-background/60 to-transparent" />

@@ -54,7 +54,7 @@ export default function VotingSelectorPage() {
                     >
                       <div className="relative h-40 rounded-xl overflow-hidden mb-6">
                         <img
-                          src={comp.thumbnail_url || 'https://via.placeholder.com/600x300?text=ZedIdeaArena'}
+                          src={comp.thumbnail_url || '/hero_3d_arena_bg_1777051043555.png'}
                           alt={comp.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                         />

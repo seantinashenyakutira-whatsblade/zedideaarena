@@ -56,7 +56,7 @@ export default function CompetitionsPage() {
                       {/* Banner */}
                       <div className="h-56 relative overflow-hidden">
                          <img 
-                          src={comp.thumbnail_url || 'https://via.placeholder.com/800x400?text=ZedIdeaArena'} 
+                          src={comp.thumbnail_url || '/hero_3d_arena_bg_1777051043555.png'} 
                           alt={comp.title}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                          />
