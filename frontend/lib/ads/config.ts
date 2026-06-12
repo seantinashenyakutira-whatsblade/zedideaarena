@@ -1,9 +1,9 @@
-const ADSENSE_PUBLISHER_ID = process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID || ''
-const ADSENSE_AD_SLOT_BANNER = process.env.NEXT_PUBLIC_ADSENSE_SLOT_BANNER || ''
-const ADSENSE_AD_SLOT_SIDEBAR = process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR || ''
-const ADSENSE_AD_SLOT_INFEED = process.env.NEXT_PUBLIC_ADSENSE_SLOT_INFEED || ''
+export const ADSENSE_PUBLISHER_ID = process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID || 'ca-pub-1087044286126919'
+export const ADSENSE_AD_SLOT_BANNER = process.env.NEXT_PUBLIC_ADSENSE_SLOT_BANNER || ''
+export const ADSENSE_AD_SLOT_SIDEBAR = process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR || ''
+export const ADSENSE_AD_SLOT_INFEED = process.env.NEXT_PUBLIC_ADSENSE_SLOT_INFEED || ''
 
-export const adsEnabled = !!ADSENSE_PUBLISHER_ID
+export const adsEnabled = true
 
 export const adConfig = {
   publisherId: ADSENSE_PUBLISHER_ID,
@@ -12,6 +12,5 @@ export const adConfig = {
     sidebar: ADSENSE_AD_SLOT_SIDEBAR,
     infeed: ADSENSE_AD_SLOT_INFEED,
   },
-  // Placement frequency: show an ad card every N items in grids
   infeedFrequency: 6,
 }
