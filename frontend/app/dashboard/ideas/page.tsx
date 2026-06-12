@@ -1,9 +1,10 @@
 'use client'
 
-import { FileText, Plus, ArrowRight, Clock, CheckCircle2, ShieldCheck, DollarSign } from 'lucide-react'
+import { FileText, Plus, ArrowRight, Clock, CheckCircle2, ShieldCheck, DollarSign, Play, Image as ImageIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { ideaService } from '@/services/idea'
+import { getYouTubeThumbnail } from '@/components/YouTubeEmbed'
 
 export default function MyIdeasPage() {
   const [loading, setLoading] = useState(true)
@@ -52,14 +53,28 @@ export default function MyIdeasPage() {
                       <div className="absolute -top-24 -right-24 w-64 h-64 bg-zed-primary/5 rounded-full blur-[80px]" />
 
                       {/* Idea Preview */}
-                      <div className="w-full md:w-64 aspect-video rounded-2xl overflow-hidden border border-white/5 bg-white/5 flex-shrink-0">
-                        {idea.image_url ? (
-                          <img src={idea.image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <FileText className="text-white/10" size={48} />
-                          </div>
-                        )}
+                      <div className="w-full md:w-64 aspect-video rounded-2xl overflow-hidden border border-white/5 bg-white/5 flex-shrink-0 relative">
+                        {(() => {
+                          const thumb = idea.image_url || getYouTubeThumbnail(idea.pitch_video_url || idea.video_url)
+                          if (thumb) {
+                            return (
+                              <>
+                                <img src={thumb} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                {(idea.pitch_video_url || idea.video_url) && (
+                                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Play size={32} className="text-white drop-shadow-lg" />
+                                  </div>
+                                )}
+                              </>
+                            )
+                          }
+                          return (
+                            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                              <ImageIcon className="text-white/20" size={36} />
+                              <span className="text-[10px] text-white/10 font-bold uppercase tracking-widest">No Image</span>
+                            </div>
+                          )
+                        })()}
                       </div>
 
                       {/* Idea Details */}
@@ -108,12 +123,12 @@ export default function MyIdeasPage() {
                                    Pay Entry Fee
                                  </Link>
                                )}
-                             <Link 
-                               href={`/dashboard/ideas/${idea.id}`}
-                               className="btn-secondary w-12 h-12 rounded-2xl flex items-center justify-center group-hover:bg-zed-primary group-hover:text-white transition-all"
-                             >
-                               <ArrowRight size={20} />
-                             </Link>
+                              <Link 
+                                href={`/dashboard/ideas/${idea.id}`}
+                                className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white/10 hover:bg-zed-primary text-white hover:text-white border border-white/10 hover:border-zed-primary transition-all"
+                              >
+                                <ArrowRight size={20} />
+                              </Link>
                            </div>
                         </div>
                       </div>
