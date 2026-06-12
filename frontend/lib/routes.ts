@@ -3,6 +3,7 @@ export const routes = {
   about: '/about',
   howItWorks: '/how-it-works',
   pricing: '/pricing',
+  arena: '/arena',
   login: '/auth/login',
   signup: '/auth/signup',
   onboarding: '/onboarding/personal',

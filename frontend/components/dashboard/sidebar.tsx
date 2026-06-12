@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Trophy, Lightbulb, User, Vote, CheckCircle, Wallet, Settings, LogOut, Menu, X, AlertTriangle, Lock, Shield, Users, FileText, BarChart3 } from 'lucide-react'
+import { Home, Trophy, Lightbulb, User, Vote, CheckCircle, Wallet, Settings, LogOut, Menu, X, AlertTriangle, Lock, Shield, Users, FileText, BarChart3, MessageCircle } from 'lucide-react'
 import { AdSidebar } from '@/components/ads/AdSidebar'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 
 const contestantNav = [
   { href: '/dashboard', icon: Home, label: 'Overview' },
+  { href: '/arena', icon: MessageCircle, label: 'The Arena' },
   { href: '/dashboard/competitions', icon: Trophy, label: 'My Competitions' },
   { href: '/dashboard/ideas', icon: Lightbulb, label: 'My Ideas' },
   { href: '/dashboard/settings', icon: User, label: 'My Profile' },
@@ -19,6 +20,7 @@ const contestantNav = [
 
 const voterNav = [
   { href: '/dashboard/voter', icon: Home, label: 'Overview' },
+  { href: '/arena', icon: MessageCircle, label: 'The Arena' },
   { href: '/dashboard/voting', icon: Vote, label: 'Vote' },
   { href: '/dashboard/voter', icon: CheckCircle, label: 'My Votes' },
   { href: '/dashboard/earnings', icon: Wallet, label: 'Earnings' },
@@ -27,6 +29,7 @@ const voterNav = [
 
 const adminNav = [
   { href: '/dashboard/admin', icon: Shield, label: 'Overview' },
+  { href: '/arena', icon: MessageCircle, label: 'The Arena' },
   { href: '/dashboard/admin/users', icon: Users, label: 'Users' },
   { href: '/dashboard/admin/ideas', icon: FileText, label: 'Ideas' },
   { href: '/dashboard/admin/analytics', icon: BarChart3, label: 'Analytics' },

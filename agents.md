@@ -32,3 +32,14 @@ Revenue model: 40% of total pool goes to winners, 60% to business.
 - `voter_earnings` tracks base + bonus + ad revenue per voter per competition
 - `ad_impressions` tracks ad watch time for future ad-revenue sharing
 - Frontend: `RatingModal` component with progress bar, 1-10 grid, comment, confirm steps
+
+## Arena Social Hub
+- Public social feed at `/arena` — accessible to all users including guests
+- `arena_posts` table: content (max 500), post_type, optional linked_idea/competition
+- `arena_comments` table: content (max 300) per post
+- `arena_likes` table: unique per post+user, toggle like/unlike
+- Post types: discussion, question, announcement, idea_highlight
+- Backend: `GET /api/arena/posts`, `POST /api/arena/posts`, `POST /api/arena/posts/:id/like`, `GET/POST /api/arena/posts/:id/comments`
+- RLS: public SELECT, auth-only INSERT
+- AdUnit component with IntersectionObserver: tracks 3s+ visibility, calls `POST /api/ads/impression`, credits voter earnings
+- Arena link added to all sidebar roles (contestant, voter, admin)
