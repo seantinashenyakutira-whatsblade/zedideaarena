@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Star, MessageSquare, CheckCircle2, ArrowLeft, ArrowRight, Share2, X, ThumbsUp, Lightbulb, Target, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { voteService } from '@/services/core'
+import { getYouTubeThumbnail } from '@/components/YouTubeEmbed'
 
 interface VoteModalProps {
   idea: any
@@ -119,8 +120,8 @@ export function VoteModal({ idea, isOpen, onClose, onVoteComplete }: VoteModalPr
         return (
           <div className="space-y-6">
             <div className="aspect-video rounded-2xl overflow-hidden bg-black">
-              {idea.image_url ? (
-                <img src={idea.image_url} alt={idea.title} className="w-full h-full object-cover" />
+              {idea.image_url || getYouTubeThumbnail(idea.pitch_video_url || idea.video_url) ? (
+                <img src={idea.image_url || getYouTubeThumbnail(idea.pitch_video_url || idea.video_url)!} alt={idea.title} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-white/10">
                   <Lightbulb size={64} />

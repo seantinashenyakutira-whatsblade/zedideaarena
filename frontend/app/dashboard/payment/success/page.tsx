@@ -35,7 +35,7 @@ function PaymentSuccessContent() {
           if (res.verified) {
             setPayment(res.payment)
             setStatus('verified')
-            refreshProfile()
+            await refreshProfile()
             return
           }
         } catch { /* retry */ }

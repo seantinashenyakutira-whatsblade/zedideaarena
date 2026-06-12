@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
+import { getYouTubeThumbnail } from '@/components/YouTubeEmbed'
 import { Trophy, Vote, Search, ThumbsUp, Loader2, ArrowLeft, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { voteService } from '@/services/core'
@@ -43,7 +44,10 @@ export default function CompetitionVotingPage() {
 
     const fetchData = async () => {
       try {
-        const compRes = await api.get(`/competitions/${competitionId}`)
+        const [compRes, paymentCheckRes] = await Promise.all([
+          api.get(`/competitions/${competitionId}`),
+          api.get(`/payments/check?competition_id=${competitionId}&type=voter`).catch(() => null),
+        ])
         const comp = compRes.data
         setCompetition(comp)
 
@@ -51,8 +55,10 @@ export default function CompetitionVotingPage() {
         if (comp.calculatedStatus === 'closed') errors.push('This competition is closed and no longer accepting votes.')
         if (!profile?.is_verified) errors.push('You must be verified by an admin to vote.')
 
-        const paidComps = profile?.voter_competitions_paid || []
-        if (!paidComps.includes(competitionId)) errors.push('You have not paid the voter fee for this competition.')
+        const hasPaidVoterFee = (paymentCheckRes as any)?.alreadyPaid
+        if (!hasPaidVoterFee) {
+          errors.push('You have not paid the voter fee for this competition.')
+        }
 
         setGuardErrors(errors)
 
@@ -216,7 +222,7 @@ function IdeasGrid({
           >
             <div className="relative aspect-video rounded-xl overflow-hidden mb-6">
               <Image
-                src={idea.image_url || 'https://via.placeholder.com/600x400?text=ZedIdeaArena'}
+                src={idea.image_url || getYouTubeThumbnail(idea.pitch_video_url || idea.video_url) || ''}
                 alt={idea.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-700"
