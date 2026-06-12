@@ -46,3 +46,8 @@ Next.js 16 App Router application — all user-facing UI, pages, components, and
 ## Child Docs
 - /frontend/app/agents.md — Pages and routes
 - /frontend/components/agents.md — UI component library
+
+## Voting System
+- `components/voter/RatingModal.tsx` — 4-criteria 1-10 rating modal with comment and confirm steps
+- `app/vote/[competitionId]/page.tsx` — voting arena page, uses `RatingModal` on Vote button click
+- Rating scores sent as `innovation_score, feasibility_score, impact_score, presentation_score` + `comment` + `time_spent_seconds`

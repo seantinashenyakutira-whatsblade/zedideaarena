@@ -23,3 +23,12 @@ Revenue model: 40% of total pool goes to winners, 60% to business.
 - /frontend/agents.md — Next.js app
 - /backend/agents.md — Express API
 - /scripts/agents.md — Database migrations
+
+## Voting System (v2)
+- Ratings use 4 criteria on 1-10 scale: Innovation, Feasibility, Impact, Presentation
+- `votes` table generates `total_score` automatically as average of 4 scores
+- Unique constraint: `UNIQUE(user_id, idea_id)` — voter can rate multiple ideas in one comp
+- Each vote awards +10 bonus cents to `voter_earnings` via `add_voter_vote_bonus()` RPC
+- `voter_earnings` tracks base + bonus + ad revenue per voter per competition
+- `ad_impressions` tracks ad watch time for future ad-revenue sharing
+- Frontend: `RatingModal` component with progress bar, 1-10 grid, comment, confirm steps
