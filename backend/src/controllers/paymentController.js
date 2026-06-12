@@ -210,9 +210,22 @@ const handleStripeWebhook = async (req, res) => {
 
     try {
       if (type === 'contestant') {
+        // Check if idea is already approved — if so, make it public
+        const { data: ideaToCheck } = await supabase
+          .from('ideas')
+          .select('status')
+          .eq('user_id', user_id)
+          .eq('competition_id', competition_id)
+          .single();
+
+        const paymentUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
+        if (ideaToCheck && ideaToCheck.status === 'approved') {
+          paymentUpdate.is_public = true;
+        }
+
         await supabase
           .from('ideas')
-          .update({ payment_status: 'paid', updated_at: new Date().toISOString() })
+          .update(paymentUpdate)
           .eq('user_id', user_id)
           .eq('competition_id', competition_id);
 
@@ -409,9 +422,21 @@ const verifyPayment = async (req, res) => {
         // Apply side effects (same as webhook handler)
         try {
           if (metaType === 'contestant') {
+            const { data: ideaToCheck } = await supabase
+              .from('ideas')
+              .select('status')
+              .eq('user_id', uid)
+              .eq('competition_id', metaCompetitionId)
+              .single();
+
+            const fallbackUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
+            if (ideaToCheck && ideaToCheck.status === 'approved') {
+              fallbackUpdate.is_public = true;
+            }
+
             await supabase
               .from('ideas')
-              .update({ payment_status: 'paid', updated_at: new Date().toISOString() })
+              .update(fallbackUpdate)
               .eq('user_id', uid)
               .eq('competition_id', metaCompetitionId);
 

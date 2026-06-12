@@ -256,7 +256,7 @@ function IdeasGrid({
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => onVoteClick(idea)}
+                    onClick={() => !hasVoted && !isOwn && guardErrors.length === 0 && onVoteClick(idea)}
                     disabled={hasVoted || isOwn || guardErrors.length > 0}
                     className={`flex items-center gap-2 h-11 px-6 rounded-xl font-black text-xs transition-all duration-200 ${
                       hasVoted
@@ -265,15 +265,19 @@ function IdeasGrid({
                         ? 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10'
                         : guardErrors.length > 0
                         ? 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10'
-                        : 'bg-zed-primary text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95'
+                        : idea.status === 'approved'
+                        ? 'bg-zed-primary text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95'
+                        : 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 cursor-not-allowed'
                     }`}
                   >
                     {hasVoted ? (
                       <><CheckCircle2 size={14} /> Voted</>
                     ) : isOwn ? (
                       'Your Idea'
-                    ) : (
+                    ) : idea.status === 'approved' ? (
                       <><ThumbsUp size={14} /> Vote</>
+                    ) : (
+                      'Pending Approval'
                     )}
                   </button>
                 </div>
