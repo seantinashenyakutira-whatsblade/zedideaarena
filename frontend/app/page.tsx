@@ -106,26 +106,26 @@ function VideoPlayer() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, x: 40 }}
+      animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.8, delay: 2.4 }}
-      className="max-w-lg mx-auto"
+      className="w-full max-w-lg ml-auto"
     >
       {!playing ? (
-        <button onClick={handlePlay} className="relative group w-full rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm p-4 hover:border-white/20 transition-all duration-300 text-left">
+        <button onClick={handlePlay} className="relative group w-full rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm p-3 hover:border-white/20 transition-all duration-300 text-left">
           <div className="aspect-video rounded-xl flex items-center justify-center relative" style={{ background: 'rgba(99,102,241,0.08)' }}>
             <motion.div
-              className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
+              className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
               style={{ background: 'rgba(99,102,241,0.2)' }}
               whileHover={{ scale: 1.15 }}
             >
-              <Play size={28} className="text-white ml-1" />
+              <Play size={24} className="text-white ml-0.5" />
             </motion.div>
           </div>
-          <p className="text-xs text-white/50 mt-3 font-medium group-hover:text-white/70 transition-colors">Watch: How ZedIdeaArena works (2 min)</p>
+          <p className="text-[10px] text-white/50 mt-2 font-medium group-hover:text-white/70 transition-colors">Watch: How ZedIdeaArena works (2 min)</p>
         </button>
       ) : (
-        <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black shadow-2xl shadow-zed-primary/10">
+        <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black shadow-2xl shadow-zed-primary/10">
           <video
             ref={videoRef}
             src="/videos/landing-hero.mp4"
@@ -137,6 +137,32 @@ function VideoPlayer() {
       )}
     </motion.div>
   )
+}
+
+function TypeWriter({ texts }: { texts: string[] }) {
+  const [display, setDisplay] = useState('')
+  const [i, setI] = useState(0)
+  const [j, setJ] = useState(0)
+  const [dir, setDir] = useState(1)
+
+  useEffect(() => {
+    const word = texts[i]
+    const timer = setTimeout(() => {
+      const next = j + dir
+      if (next > word.length || next < 0) {
+        if (dir === 1) { setDir(-1); return }
+        setI((i + 1) % texts.length)
+        setJ(0)
+        setDir(1)
+        return
+      }
+      setJ(next)
+      setDisplay(word.slice(0, next))
+    }, dir === 1 ? 80 : 40)
+    return () => clearTimeout(timer)
+  }, [j, dir, i, texts])
+
+  return <span>{display}<span className="animate-pulse text-zed-primary">|</span></span>
 }
 
 export default function LandingPage() {
@@ -284,113 +310,126 @@ export default function LandingPage() {
       </motion.nav>
 
       {/* SECTION 1 — HERO */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden px-6 hero-bg">
-        <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0 pointer-events-none">
-          {/* Animated floating orbs */}
-          <motion.div
-            className="absolute w-96 h-96 rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.2), transparent)', top: '10%', left: '20%' }}
-            animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+      <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden px-6 hero-bg">
+        {/* Background image — left aligned, full height */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div
+            className="absolute left-0 top-0 h-full w-1/2 opacity-[0.07]"
+            style={{
+              backgroundImage: 'url(/background-img.png)',
+              backgroundSize: 'contain',
+              backgroundPosition: 'left center',
+              backgroundRepeat: 'no-repeat',
+            }}
           />
-          <motion.div
-            className="absolute w-64 h-64 rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(34,211,238,0.1), transparent)', bottom: '20%', right: '15%' }}
-            animate={{ x: [0, -20, 0], y: [0, 30, 0] }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-          />
-          <motion.div
-            className="absolute w-80 h-80 rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.1), transparent)', top: '60%', left: '60%' }}
-            animate={{ x: [0, 25, 0], y: [0, 20, 0] }}
-            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        </motion.div>
+          <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0">
+            <motion.div className="absolute w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.15), transparent)', top: '10%', left: '20%' }} animate={{ x: [0, 30, 0], y: [0, -20, 0] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} />
+            <motion.div className="absolute w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(34,211,238,0.08), transparent)', bottom: '20%', right: '15%' }} animate={{ x: [0, -20, 0], y: [0, 30, 0] }} transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }} />
+          </motion.div>
+        </div>
 
-        <motion.div style={{ y: heroTextY, opacity: heroTextOpacity }} className="relative z-10 max-w-5xl mx-auto text-center pt-24 pb-16">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 1.2, ease: 'easeOut' }}
-            className="mb-10"
-          >
-            <div className="relative inline-block">
-              <Image src="/logo-full-dark.png" alt="ZedIdeaArena" width={120} height={120} className="object-contain drop-shadow-[0_0_40px_rgba(99,102,241,0.5)] relative z-10" />
+        <div className="relative z-10 w-full max-w-7xl mx-auto pt-28 pb-16">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* LEFT — Hero Text */}
+            <motion.div style={{ y: heroTextY, opacity: heroTextOpacity }}>
+              {/* Logo */}
+              <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 1.2, ease: 'easeOut' }} className="mb-8">
+                <div className="relative inline-block">
+                  <Image src="/logo-full-dark.png" alt="ZedIdeaArena" width={100} height={100} className="object-contain drop-shadow-[0_0_40px_rgba(99,102,241,0.5)] relative z-10" />
+                  <motion.div className="absolute inset-0 z-0" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)', filter: 'blur(20px)' }} animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }} />
+                </div>
+              </motion.div>
+
+              {/* Headline with image mask + typewriter */}
+              <motion.h1
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] mb-6 tracking-tight text-left"
+              >
+                <span
+                  className="bg-clip-text text-transparent"
+                  style={{
+                    backgroundImage: 'url(/background-img.png)',
+                    backgroundSize: '200px',
+                    backgroundPosition: 'left center',
+                    backgroundRepeat: 'no-repeat',
+                    color: 'transparent',
+                    WebkitTextStroke: '0.5px rgba(255,255,255,0.03)',
+                    filter: 'brightness(2) saturate(0.5)',
+                  }}
+                >
+                  Where Ideas{' '}
+                </span>
+                <span className="gradient-text inline-block">Compete.</span>
+                <br />
+                <span className="inline-block text-white/90">
+                  And{' '}
+                  <span className="gradient-text inline-flex items-baseline gap-1">
+                    <TypeWriter texts={['Win.', 'Build.', 'Scale.', 'Fund.', 'Launch.']} />
+                  </span>
+                </span>
+              </motion.h1>
+
+              {/* Glowy purple gradient border card for subtitle */}
               <motion.div
-                className="absolute inset-0 z-0"
-                style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)', filter: 'blur(20px)' }}
-                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              />
-            </div>
-          </motion.div>
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 1.6 }}
+                className="relative mb-10 inline-block"
+              >
+                <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-purple-500 via-fuchsia-400 to-purple-600 opacity-40 blur-[2px] animate-pulse" />
+                <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-purple-500 via-fuchsia-400 to-purple-600 opacity-60" />
+                <div className="relative bg-[#0A0A0F]/80 backdrop-blur-sm rounded-2xl px-6 py-4">
+                  <p className="text-base sm:text-lg text-white/70 leading-relaxed font-medium">
+                    Submit your idea. Let the world vote.<br />
+                    The best idea takes the prize.
+                  </p>
+                </div>
+              </motion.div>
 
-          <motion.h1 className="text-5xl sm:text-7xl lg:text-8xl font-black leading-[0.95] mb-8 tracking-tight">
-            <span className="inline-block overflow-hidden">
-              <motion.span initial={{ y: '100%' }} animate={{ y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="inline-block">
-                Where Ideas
-              </motion.span>
-            </span>{' '}
-            <span className="inline-block overflow-hidden">
-              <motion.span initial={{ y: '100%' }} animate={{ y: 0 }} transition={{ duration: 0.6, delay: 0.7 }} className="inline-block gradient-text">
-                Compete.
-              </motion.span>
-            </span>{' '}
-            <br className="sm:hidden" />
-            <span className="inline-block overflow-hidden">
-              <motion.span initial={{ y: '100%' }} animate={{ y: 0 }} transition={{ duration: 0.6, delay: 1.1 }} className="inline-block">
-                And Win.
-              </motion.span>
-            </span>
-          </motion.h1>
+              {/* Buttons — unique layout */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 2 }}
+                className="flex flex-wrap gap-4"
+              >
+                <Link href="/auth/signup?role=contestant" className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-xs font-bold transition-all duration-300 hover:scale-105 btn-glow" style={{ background: 'linear-gradient(135deg,#6366F1,#22D3EE)' }}>
+                  Enter as Contestant <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <Link href="/auth/signup?role=voter" className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-xs font-bold border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/30 transition-all">
+                  Become a Voter <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </motion.div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.6 }}
-            className="text-lg sm:text-xl text-white/60 max-w-2xl mx-auto mb-12 leading-relaxed font-medium"
-          >
-            Submit your idea. Let the world vote.
-            <br />
-            The best idea takes the prize.
-          </motion.p>
+              {/* Mobile Video */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 2.4 }}
+                className="lg:hidden mt-10"
+              >
+                <VideoPlayer />
+              </motion.div>
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 2 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center mb-20"
-          >
-            <Link href="/auth/signup?role=contestant" className="group inline-flex items-center gap-2 px-8 py-4 rounded-full text-sm font-bold transition-all duration-300 hover:scale-105 btn-glow" style={{ background: 'linear-gradient(135deg,#6366F1,#22D3EE)' }}>
-              Enter as Contestant <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link href="/auth/signup?role=voter" className="group inline-flex items-center gap-2 px-8 py-4 rounded-full text-sm font-bold border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/30 transition-all">
-              Become a Voter <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </motion.div>
-
-          {/* Founder Video */}
-          <VideoPlayer />
-        </motion.div>
+            {/* RIGHT — Video */}
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 1.2 }}
+              className="hidden lg:block"
+            >
+              <VideoPlayer />
+            </motion.div>
+          </div>
+        </div>
 
         {/* Scroll Indicator */}
-        <motion.div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 3, duration: 1 }}
-        >
-          <motion.div
-            className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-1.5"
-            animate={{ opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <motion.div
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: '#6366F1' }}
-              animate={{ y: [0, 12, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-            />
+        <motion.div className="absolute bottom-8 left-1/2 -translate-x-1/2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 3.5, duration: 1 }}>
+          <motion.div className="w-5 h-8 rounded-full border-2 border-white/15 flex items-start justify-center p-1" animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 2, repeat: Infinity }}>
+            <motion.div className="w-1 h-1.5 rounded-full" style={{ background: '#6366F1' }} animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }} />
           </motion.div>
         </motion.div>
       </section>
