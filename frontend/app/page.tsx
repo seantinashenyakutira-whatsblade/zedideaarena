@@ -95,6 +95,50 @@ function AnimatedStat({ value, prefix = '', suffix = '+', label, icon: Icon }: {
   )
 }
 
+function VideoPlayer() {
+  const [playing, setPlaying] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  const handlePlay = () => {
+    setPlaying(true)
+    setTimeout(() => videoRef.current?.play(), 100)
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, delay: 2.4 }}
+      className="max-w-lg mx-auto"
+    >
+      {!playing ? (
+        <button onClick={handlePlay} className="relative group w-full rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm p-4 hover:border-white/20 transition-all duration-300 text-left">
+          <div className="aspect-video rounded-xl flex items-center justify-center relative" style={{ background: 'rgba(99,102,241,0.08)' }}>
+            <motion.div
+              className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
+              style={{ background: 'rgba(99,102,241,0.2)' }}
+              whileHover={{ scale: 1.15 }}
+            >
+              <Play size={28} className="text-white ml-1" />
+            </motion.div>
+          </div>
+          <p className="text-xs text-white/50 mt-3 font-medium group-hover:text-white/70 transition-colors">Watch: How ZedIdeaArena works (2 min)</p>
+        </button>
+      ) : (
+        <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black shadow-2xl shadow-zed-primary/10">
+          <video
+            ref={videoRef}
+            src="/videos/landing-hero.mp4"
+            controls
+            className="w-full aspect-video object-contain"
+            onEnded={() => setPlaying(false)}
+          />
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
 export default function LandingPage() {
   const [competitions, setCompetitions] = useState<any[]>([])
   const [compLoading, setCompLoading] = useState(true)
@@ -325,30 +369,8 @@ export default function LandingPage() {
             </Link>
           </motion.div>
 
-          {/* Founder Video Placeholder */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 2.4 }}
-            className="max-w-lg mx-auto"
-          >
-            <div className="relative group cursor-pointer rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm p-4 hover:border-white/20 transition-all duration-300">
-              <motion.div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.05), rgba(34,211,238,0.05))' }}
-              />
-              <div className="aspect-video rounded-xl flex items-center justify-center relative" style={{ background: 'rgba(99,102,241,0.08)' }}>
-                <motion.div
-                  className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-                  style={{ background: 'rgba(99,102,241,0.2)' }}
-                  whileHover={{ scale: 1.15 }}
-                >
-                  <Play size={28} className="text-white ml-1" />
-                </motion.div>
-              </div>
-              <p className="text-xs text-white/50 mt-3 font-medium group-hover:text-white/70 transition-colors">Watch: How ZedIdeaArena works (2 min)</p>
-            </div>
-          </motion.div>
+          {/* Founder Video */}
+          <VideoPlayer />
         </motion.div>
 
         {/* Scroll Indicator */}
