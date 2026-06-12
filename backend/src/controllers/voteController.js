@@ -87,7 +87,7 @@ const getUserVotes = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('votes')
-      .select('idea_id, competition_id')
+      .select('idea_id, competition_id, innovation_rating, impact_rating, feasibility_rating, comment, created_at')
       .eq('user_id', userId);
 
     if (error) throw error;
@@ -99,7 +99,7 @@ const getUserVotes = async (req, res) => {
 };
 
 const castVoteV2 = async (req, res) => {
-  const { idea_id, competition_id } = req.body;
+  const { idea_id, competition_id, innovation_rating, impact_rating, feasibility_rating, comment } = req.body;
   const userId = req.user.uid;
 
   if (!idea_id || !competition_id) {
@@ -175,12 +175,18 @@ const castVoteV2 = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'You have already voted for this idea.' });
     }
 
-    const { error: voteError } = await supabase.from('votes').insert({
+    const voteData = {
       user_id: userId,
       idea_id: idea_id,
       competition_id: competition_id,
       score: 1,
-    });
+    };
+    if (innovation_rating !== undefined) voteData.innovation_rating = innovation_rating;
+    if (impact_rating !== undefined) voteData.impact_rating = impact_rating;
+    if (feasibility_rating !== undefined) voteData.feasibility_rating = feasibility_rating;
+    if (comment !== undefined) voteData.comment = comment;
+
+    const { error: voteError } = await supabase.from('votes').insert(voteData);
 
     if (voteError) {
       if (voteError.code === '23505') {
@@ -240,4 +246,50 @@ const getLeaderboard = async (req, res) => {
   }
 };
 
-module.exports = { castVote, getUserVotes, castVoteV2, getLeaderboard };
+const getIdeaRatings = async (req, res) => {
+  const { ideaId } = req.params;
+
+  try {
+    const { data, error } = await supabase
+      .from('votes')
+      .select('innovation_rating, impact_rating, feasibility_rating, comment')
+      .eq('idea_id', ideaId);
+
+    if (error) throw error;
+
+    const count = data?.length || 0;
+    let avgInnovation = 0, avgImpact = 0, avgFeasibility = 0;
+    const comments = [];
+
+    if (data) {
+      data.forEach((v) => {
+        if (v.innovation_rating) avgInnovation += v.innovation_rating;
+        if (v.impact_rating) avgImpact += v.impact_rating;
+        if (v.feasibility_rating) avgFeasibility += v.feasibility_rating;
+        if (v.comment) comments.push(v.comment);
+      });
+      if (count) {
+        avgInnovation /= count;
+        avgImpact /= count;
+        avgFeasibility /= count;
+      }
+    }
+
+    res.json({
+      status: 'success',
+      data: {
+        total_votes: count,
+        avg_innovation_rating: Math.round(avgInnovation * 10) / 10,
+        avg_impact_rating: Math.round(avgImpact * 10) / 10,
+        avg_feasibility_rating: Math.round(avgFeasibility * 10) / 10,
+        avg_total: Math.round((avgInnovation + avgImpact + avgFeasibility) / 3 * 10) / 10,
+        comments,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching idea ratings:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to fetch ratings' });
+  }
+};
+
+module.exports = { castVote, getUserVotes, castVoteV2, getLeaderboard, getIdeaRatings };

@@ -420,6 +420,52 @@ const getAnalytics = async (req, res) => {
   }
 };
 
+const getUserDetail = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ status: 'error', message: 'User not found' });
+    }
+
+    const { data: ideas } = await supabase
+      .from('ideas')
+      .select('*')
+      .eq('user_id', id)
+      .order('updated_at', { ascending: false });
+
+    const { data: votes } = await supabase
+      .from('votes')
+      .select('*, ideas(title)')
+      .eq('user_id', id);
+
+    const { data: payments } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('user_id', id)
+      .order('created_at', { ascending: false });
+
+    res.json({
+      status: 'success',
+      data: {
+        profile: user,
+        ideas: ideas || [],
+        votes: votes || [],
+        payments: payments || [],
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching user detail:', error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
 const getAuditLog = async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -483,4 +529,5 @@ module.exports = {
   deleteIdea,
   getAnalytics,
   getAuditLog,
+  getUserDetail,
 };

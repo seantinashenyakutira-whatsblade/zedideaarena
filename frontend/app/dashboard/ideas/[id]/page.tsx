@@ -15,12 +15,14 @@ import {
   FileText,
   Play,
   Calendar,
-  Users
+  Users,
+  Settings
 } from 'lucide-react'
 import { YouTubeEmbed, getYouTubeId } from '@/components/YouTubeEmbed'
 import { useAuth } from '@/hooks/useAuth'
 import api from '@/lib/api'
 import { toast } from 'sonner'
+import Link from 'next/link'
 
 export default function IdeaDetailPage() {
   const { id } = useParams()
@@ -250,6 +252,23 @@ export default function IdeaDetailPage() {
                       )}
                     </div>
                   </div>
+
+                  {/* Manage Idea */}
+                  <Link
+                    href={`/dashboard/ideas/${id}/manage`}
+                    className="card-zed p-6 border-white/5 bg-white/5 hover:bg-white/10 transition-all group flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-zed-primary/20 flex items-center justify-center text-zed-primary">
+                        <Settings size={24} />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black text-zed-foreground uppercase tracking-widest">Manage Idea</h4>
+                        <p className="text-[10px] text-zed-foreground-secondary font-bold">Insights, settings, and more</p>
+                      </div>
+                    </div>
+                    <ExternalLink size={18} className="text-white/20 group-hover:text-zed-primary transition-colors" />
+                  </Link>
 
                   {/* Supporting Files */}
                   {idea.deck_url && (

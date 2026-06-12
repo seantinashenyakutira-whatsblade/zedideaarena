@@ -12,9 +12,19 @@ export const mediaService = {
 
 export const voteService = {
   castVote: (ideaId: string, competitionId: string) => api.post('/votes/cast', { ideaId, competitionId }),
-  castVoteV2: (idea_id: string, competition_id: string) => api.post('/voter/vote', { idea_id, competition_id }),
+  castVoteV2: (idea_id: string, competition_id: string, ratings?: any) => api.post('/voter/vote', { idea_id, competition_id, ...ratings }),
   getUserVotes: () => api.get('/votes/user'),
   getLeaderboard: (competitionId: string) => api.get(`/votes/${competitionId}/leaderboard`),
+  getIdeaRatings: (ideaId: string) => api.get(`/votes/ratings/${ideaId}`),
+};
+
+export const ideaService = {
+  getIdeas: () => api.get('/ideas/user'),
+  getIdeaById: (id: string) => api.get(`/ideas/${id}`),
+  getPublicIdeaById: (id: string) => api.get(`/ideas/public/${id}`),
+  deleteIdea: (id: string) => api.delete(`/ideas/${id}`),
+  getIdeaInsights: (id: string) => api.get(`/ideas/${id}/insights`),
+  updateIdeaSettings: (id: string, data: any) => api.patch(`/ideas/${id}/settings`, data),
 };
 
 export const adminService = {

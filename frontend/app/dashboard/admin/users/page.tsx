@@ -122,7 +122,7 @@ export default function AdminUsers() {
                   <td className="p-4 text-xs text-zed-foreground-secondary">{new Date(user.created_at).toLocaleDateString()}</td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <Link href={`/dashboard/users/${user.id}`} className="btn-icon w-8 h-8"><Eye size={14} /></Link>
+                      <Link href={`/dashboard/admin/users/${user.id}`} className="btn-icon w-8 h-8"><Eye size={14} /></Link>
                       <button
                         onClick={() => handleVerifyUser(user.id, !user.is_verified)}
                         className={`flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-lg transition-all ${user.is_verified ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' : 'bg-zed-success/10 text-zed-success hover:bg-zed-success/20'}`}

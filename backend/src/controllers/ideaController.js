@@ -148,7 +148,7 @@ const getPublicIdeas = async (req, res) => {
 
     const mapped = (data || []).map((idea) => {
       const { users, ...rest } = idea;
-      return { ...rest, users: { full_name: users?.full_name } };
+      return { ...rest, users: { full_name: users?.full_name, picture: users?.picture } };
     });
 
     res.json({ status: 'success', data: mapped });
@@ -172,6 +172,27 @@ const getIdeaById = async (req, res) => {
     }
 
     res.json({ status: 'success', data: { id: data.id, ...data } });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+const getPublicIdeaById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { data, error } = await supabase
+      .from('ideas')
+      .select('*, users!inner(full_name, picture)')
+      .eq('id', id)
+      .eq('is_public', true)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ status: 'error', message: 'Idea not found or not public' });
+    }
+
+    const { users, ...rest } = data;
+    res.json({ status: 'success', data: { ...rest, creator: users } });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
@@ -237,4 +258,134 @@ const createIdea = async (req, res) => {
   }
 };
 
-module.exports = { saveIdeaDraft, submitIdea, getUserIdeas, getPublicIdeas, getIdeaById, createIdea };
+const deleteOwnIdea = async (req, res) => {
+  const { uid } = req.user;
+  const { id } = req.params;
+
+  try {
+    const { data: idea, error: fetchError } = await supabase
+      .from('ideas')
+      .select('user_id, status')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !idea) {
+      return res.status(404).json({ status: 'error', message: 'Idea not found' });
+    }
+
+    if (idea.user_id !== uid) {
+      return res.status(403).json({ status: 'error', message: 'Unauthorized: You do not own this idea' });
+    }
+
+    const { error } = await supabase
+      .from('ideas')
+      .update({ status: 'deleted', is_public: false, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    res.json({ status: 'success', message: 'Idea deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting idea:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to delete idea' });
+  }
+};
+
+const getIdeaInsights = async (req, res) => {
+  const { uid } = req.user;
+  const { id } = req.params;
+
+  try {
+    const { data: idea, error: fetchError } = await supabase
+      .from('ideas')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !idea) {
+      return res.status(404).json({ status: 'error', message: 'Idea not found' });
+    }
+
+    if (idea.user_id !== uid) {
+      return res.status(403).json({ status: 'error', message: 'Unauthorized: You do not own this idea' });
+    }
+
+    const { data: votes, error: votesError } = await supabase
+      .from('votes')
+      .select('innovation_rating, impact_rating, feasibility_rating, comment, created_at, ideas(title), user_id, users!inner(full_name)')
+      .eq('idea_id', id);
+
+    if (votesError) throw votesError;
+
+    const count = votes?.length || 0;
+    let avgInnovation = 0, avgImpact = 0, avgFeasibility = 0;
+
+    if (votes) {
+      votes.forEach((v) => {
+        if (v.innovation_rating) avgInnovation += v.innovation_rating;
+        if (v.impact_rating) avgImpact += v.impact_rating;
+        if (v.feasibility_rating) avgFeasibility += v.feasibility_rating;
+      });
+      if (count) {
+        avgInnovation /= count;
+        avgImpact /= count;
+        avgFeasibility /= count;
+      }
+    }
+
+    res.json({
+      status: 'success',
+      data: {
+        idea,
+        votes_count: count,
+        avg_innovation_rating: Math.round(avgInnovation * 10) / 10,
+        avg_impact_rating: Math.round(avgImpact * 10) / 10,
+        avg_feasibility_rating: Math.round(avgFeasibility * 10) / 10,
+        avg_total: Math.round((avgInnovation + avgImpact + avgFeasibility) / 3 * 10) / 10,
+        votes: votes || [],
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching idea insights:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to fetch insights' });
+  }
+};
+
+const updateIdeaSettings = async (req, res) => {
+  const { uid } = req.user;
+  const { id } = req.params;
+  const { collaborators } = req.body;
+
+  try {
+    const { data: idea, error: fetchError } = await supabase
+      .from('ideas')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !idea) {
+      return res.status(404).json({ status: 'error', message: 'Idea not found' });
+    }
+
+    if (idea.user_id !== uid) {
+      return res.status(403).json({ status: 'error', message: 'Unauthorized: You do not own this idea' });
+    }
+
+    const updates = { updated_at: new Date().toISOString() };
+    if (collaborators !== undefined) updates.collaborators = collaborators;
+
+    const { error } = await supabase
+      .from('ideas')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) throw error;
+
+    res.json({ status: 'success', message: 'Idea settings updated' });
+  } catch (error) {
+    console.error('Error updating idea settings:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to update settings' });
+  }
+};
+
+module.exports = { saveIdeaDraft, submitIdea, getUserIdeas, getPublicIdeas, getIdeaById, createIdea, deleteOwnIdea, getIdeaInsights, updateIdeaSettings };

@@ -6,9 +6,11 @@ import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
-import { Trophy, Vote, Search, ThumbsUp, Loader2, ArrowLeft, AlertTriangle, Sparkles, CheckCircle2 } from 'lucide-react'
+import { Trophy, Vote, Search, ThumbsUp, Loader2, ArrowLeft, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { voteService } from '@/services/core'
+import { VoteModal } from '@/components/VoteModal'
+import { ContestantProfileCard } from '@/components/ContestantProfileCard'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
@@ -24,9 +26,9 @@ export default function CompetitionVotingPage() {
   const [filteredIdeas, setFilteredIdeas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [votedIdeas, setVotedIdeas] = useState<string[]>([])
-  const [castingVote, setCastingVote] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [guardErrors, setGuardErrors] = useState<string[]>([])
+  const [selectedIdea, setSelectedIdea] = useState<any>(null)
 
   useEffect(() => {
     const results = ideas.filter(idea =>
@@ -72,20 +74,16 @@ export default function CompetitionVotingPage() {
     fetchData()
   }, [competitionId, profile])
 
-  const handleVote = async (idea: any) => {
-    setCastingVote(idea.id)
-    try {
-      await voteService.castVoteV2(idea.id, competitionId)
-      toast.success('Your vote has been cast!')
-      setVotedIdeas(prev => [...prev, idea.id])
-      setIdeas(prev => prev.map(i =>
-        i.id === idea.id ? { ...i, votes_count: (i.votes_count || 0) + 1 } : i
-      ))
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to cast vote')
-    } finally {
-      setCastingVote(null)
-    }
+  const handleVoteClick = (idea: any) => {
+    setSelectedIdea(idea)
+  }
+
+  const handleVoteComplete = (ideaId: string) => {
+    setVotedIdeas(prev => [...prev, ideaId])
+    setIdeas(prev => prev.map(i =>
+      i.id === ideaId ? { ...i, votes_count: (i.votes_count || 0) + 1 } : i
+    ))
+    setSelectedIdea(null)
   }
 
   return (
@@ -153,10 +151,9 @@ export default function CompetitionVotingPage() {
                   <IdeasGrid
                     ideas={filteredIdeas}
                     votedIdeas={votedIdeas}
-                    castingVote={castingVote}
                     guardErrors={guardErrors}
                     profile={profile}
-                    handleVote={handleVote}
+                    onVoteClick={handleVoteClick}
                   />
                 </Suspense>
               )}
@@ -164,6 +161,13 @@ export default function CompetitionVotingPage() {
           </main>
         </div>
       </div>
+
+      <VoteModal
+        idea={selectedIdea}
+        isOpen={!!selectedIdea}
+        onClose={() => setSelectedIdea(null)}
+        onVoteComplete={handleVoteComplete}
+      />
     </ProtectedRoute>
   )
 }
@@ -171,17 +175,15 @@ export default function CompetitionVotingPage() {
 function IdeasGrid({
   ideas,
   votedIdeas,
-  castingVote,
   guardErrors,
   profile,
-  handleVote,
+  onVoteClick,
 }: {
   ideas: any[]
   votedIdeas: string[]
-  castingVote: string | null
   guardErrors: string[]
   profile: any
-  handleVote: (idea: any) => void
+  onVoteClick: (idea: any) => void
 }) {
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -232,9 +234,7 @@ function IdeasGrid({
               <h3 className="text-xl font-black text-zed-foreground mb-1 line-clamp-1 group-hover:text-zed-primary transition-colors">
                 {idea.title}
               </h3>
-              <p className="text-xs text-zed-foreground-secondary font-bold mb-3 uppercase tracking-wider">
-                by {idea.users?.full_name || 'Unknown'}
-              </p>
+              <ContestantProfileCard userId={idea.user_id} className="mb-3 -mx-0" />
               <p className="text-sm text-zed-foreground-secondary mb-6 line-clamp-3 font-medium leading-relaxed">
                 {idea.problem || idea.problem_statement}
               </p>
@@ -247,8 +247,8 @@ function IdeasGrid({
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleVote(idea)}
-                    disabled={hasVoted || isOwn || !!castingVote || guardErrors.length > 0}
+                    onClick={() => onVoteClick(idea)}
+                    disabled={hasVoted || isOwn || guardErrors.length > 0}
                     className={`flex items-center gap-2 h-11 px-6 rounded-xl font-black text-xs transition-all duration-200 ${
                       hasVoted
                         ? 'bg-zed-success/20 text-zed-success border border-zed-success/30 cursor-default'
@@ -259,9 +259,7 @@ function IdeasGrid({
                         : 'bg-zed-primary text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95'
                     }`}
                   >
-                    {castingVote === idea.id ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : hasVoted ? (
+                    {hasVoted ? (
                       <><CheckCircle2 size={14} /> Voted</>
                     ) : isOwn ? (
                       'Your Idea'
