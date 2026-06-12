@@ -311,16 +311,24 @@ export default function LandingPage() {
 
       {/* SECTION 1 — HERO */}
       <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden px-6 hero-bg">
-        {/* Background image — left aligned, full height */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Background image — left aligned, overlapping 25% off-page left, with diagonal reveal */}
+        <div className="absolute inset-0 pointer-events-none overflow-visible">
+          {/* Diagonal overlay — right side transparent, left side dark overlay */}
           <div
-            className="absolute left-0 top-0 h-full w-3/5 opacity-[0.15]"
+            className="absolute inset-0 z-[1]"
             style={{
+              background: 'linear-gradient(135deg, rgba(10,10,15,0.85) 0%, rgba(10,10,15,0.7) 40%, rgba(10,10,15,0.3) 65%, transparent 80%)',
+            }}
+          />
+          {/* The image — starts at -25% left, cropped by parent overflow-hidden */}
+          <div
+            className="absolute top-0 h-full w-[75vw] max-w-[900px] opacity-[0.12]"
+            style={{
+              left: '-18%',
               backgroundImage: 'url(/background-img.png)',
               backgroundSize: 'cover',
-              backgroundPosition: 'left center',
+              backgroundPosition: 'center center',
               backgroundRepeat: 'no-repeat',
-              imageRendering: 'auto',
             }}
           />
           <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0">
