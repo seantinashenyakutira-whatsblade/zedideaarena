@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Trophy, Lightbulb, User, Vote, CheckCircle, Wallet, Settings, LogOut, Menu, X, AlertTriangle, Lock, Shield, Users, FileText, BarChart3 } from 'lucide-react'
+import { AdSidebar } from '@/components/ads/AdSidebar'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
@@ -172,6 +173,8 @@ export function Sidebar() {
             )
           })}
         </nav>
+
+        <AdSidebar className="px-4 pb-2" />
 
         <div className="p-4 border-t border-white/5">
           <button

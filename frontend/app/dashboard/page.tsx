@@ -1,6 +1,7 @@
 'use client'
 
 import { TrendingUp, FileText, Clock, CheckCircle, ArrowRight, Lightbulb, ChevronRight } from 'lucide-react'
+import { AdBanner } from '@/components/ads/AdBanner'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { ideaService } from '@/services/idea'
@@ -83,6 +84,8 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      <AdBanner className="mb-8" />
 
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">

@@ -5,6 +5,8 @@ import Image from 'next/image'
 import { Trophy, Clock, DollarSign, Users, ArrowRight } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { CompetitionCountdown } from '@/components/CompetitionCountdown'
+import { AdBanner } from '@/components/ads/AdBanner'
+import { AdCard, shouldShowAd } from '@/components/ads/AdCard'
 
 interface Competition {
   id: string
@@ -56,6 +58,8 @@ export default function CompetitionsPage() {
           </p>
         </div>
 
+        <AdBanner className="mb-10" />
+
         {loading ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3].map(i => (
@@ -70,9 +74,9 @@ export default function CompetitionsPage() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {competitions.map((comp) => {
+            {competitions.flatMap((comp, i) => {
               const cfg = statusConfig[comp.calculatedStatus] || statusConfig.upcoming
-              return (
+              const items: React.ReactNode[] = [
                 <div key={comp.id} className="card-zed group hover:border-zed-primary/30 transition-all flex flex-col">
                   <Link href={`/competitions/${comp.id}`} className="block">
                     <div className="relative aspect-video rounded-xl overflow-hidden mb-6">
@@ -139,8 +143,12 @@ export default function CompetitionsPage() {
                       )}
                     </Link>
                   </div>
-                </div>
-              )
+                </div>,
+              ]
+              if (shouldShowAd(i + 1)) {
+                items.push(<AdCard key={`ad-${i}`} />)
+              }
+              return items
             })}
           </div>
         )}

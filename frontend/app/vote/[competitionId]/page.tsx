@@ -12,6 +12,7 @@ import { motion } from 'framer-motion'
 import { voteService } from '@/services/core'
 import { VoteModal } from '@/components/VoteModal'
 import { ContestantProfileCard } from '@/components/ContestantProfileCard'
+import { AdCard, shouldShowAd } from '@/components/ads/AdCard'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
@@ -202,11 +203,12 @@ function IdeasGrid({
 }) {
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {ideas.map((idea, i) => {
+      {ideas.flatMap((idea, i) => {
+        const items: React.ReactNode[] = []
         const hasVoted = votedIdeas.includes(idea.id)
         const isOwn = idea.user_id === profile?.id
 
-        return (
+        items.push(
           <motion.div
             key={idea.id}
             initial={{ opacity: 0, y: 20 }}
@@ -306,6 +308,12 @@ function IdeasGrid({
             </div>
           </motion.div>
         )
+
+        if (shouldShowAd(i + 1)) {
+          items.push(<AdCard key={`ad-${i}`} />)
+        }
+
+        return items
       })}
     </div>
   )

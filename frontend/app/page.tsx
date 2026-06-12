@@ -8,6 +8,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import api from '@/lib/api'
 import { team } from '@/lib/team'
 import { social } from '@/lib/social'
+import { AdBanner } from '@/components/ads/AdBanner'
 
 const fadeUp = {
   initial: { opacity: 0, y: 40 },
@@ -424,6 +425,11 @@ export default function LandingPage() {
       </section>
 
       <SectionDivider />
+
+      {/* In-content ad */}
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <AdBanner />
+      </div>
 
       {/* SECTION 2 — HOW IT WORKS */}
       <section className="py-24 px-6 relative overflow-hidden">
