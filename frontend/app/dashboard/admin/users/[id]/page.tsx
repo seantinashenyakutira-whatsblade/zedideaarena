@@ -22,9 +22,9 @@ export default function AdminUserDetailPage() {
       try {
         const res = await api.get(`/admin/users/${id}`)
         setUserData(res.data)
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to fetch user:', err)
-        toast.error('Failed to load user data')
+        toast.error(err?.message || 'Failed to load user data')
       }
       setLoading(false)
     }

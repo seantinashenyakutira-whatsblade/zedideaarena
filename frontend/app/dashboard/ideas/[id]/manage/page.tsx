@@ -22,15 +22,15 @@ export default function ManageIdeaPage() {
     if (!id) return
     const fetchData = async () => {
       try {
-        const [ideaRes, insightsRes] = await Promise.all([
-          ideaService.getIdeaById(id as string),
-          ideaService.getIdeaInsights(id as string),
-        ])
+        const ideaRes = await ideaService.getIdeaById(id as string)
         setIdea(ideaRes.data)
-        if (insightsRes.data) {
-          setInsights(insightsRes.data)
-          setCollaborators(insightsRes.data.idea?.collaborators || '')
-        }
+        try {
+          const insightsRes = await ideaService.getIdeaInsights(id as string)
+          if (insightsRes.data) {
+            setInsights(insightsRes.data)
+            setCollaborators(insightsRes.data.idea?.collaborators || '')
+          }
+        } catch { /* insights may not be available yet */ }
       } catch (err) {
         console.error('Failed to fetch idea data:', err)
         toast.error('Failed to load idea data')
