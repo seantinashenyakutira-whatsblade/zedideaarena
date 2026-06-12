@@ -454,4 +454,4 @@ const addCollaborator = async (req, res) => {
   }
 };
 
-module.exports = { saveIdeaDraft, submitIdea, getUserIdeas, getPublicIdeas, getIdeaById, createIdea, deleteOwnIdea, getIdeaInsights, updateIdeaSettings, addCollaborator };
+module.exports = { saveIdeaDraft, submitIdea, getUserIdeas, getPublicIdeas, getPublicIdeaById, getIdeaById, createIdea, deleteOwnIdea, getIdeaInsights, updateIdeaSettings, addCollaborator };
