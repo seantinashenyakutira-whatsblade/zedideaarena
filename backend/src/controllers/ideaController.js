@@ -403,10 +403,10 @@ const updateIdeaSettings = async (req, res) => {
 const addCollaborator = async (req, res) => {
   const { uid } = req.user;
   const { id } = req.params;
-  const { name, email, role } = req.body;
+  const { name, role, github, linkedin, instagram, facebook } = req.body;
 
-  if (!name || !email) {
-    return res.status(400).json({ status: 'error', message: 'Name and email are required' });
+  if (!name) {
+    return res.status(400).json({ status: 'error', message: 'Name is required' });
   }
 
   try {
@@ -424,18 +424,20 @@ const addCollaborator = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Unauthorized: You do not own this idea' });
     }
 
-    // Parse existing collaborators
     let collabs = [];
     try {
       collabs = typeof idea.collaborators === 'string' ? JSON.parse(idea.collaborators || '[]') : (idea.collaborators || []);
     } catch { collabs = []; }
 
-    // Check for duplicate email
-    if (collabs.some((c) => c.email === email)) {
-      return res.status(409).json({ status: 'error', message: 'This person has already been added as a collaborator' });
-    }
-
-    const newCollab = { name, email, role: role || '', invited_at: new Date().toISOString() };
+    const newCollab = {
+      name,
+      role: role || '',
+      github: github || '',
+      linkedin: linkedin || '',
+      instagram: instagram || '',
+      facebook: facebook || '',
+      added_at: new Date().toISOString(),
+    };
     collabs.push(newCollab);
 
     const { error: updateError } = await supabase
@@ -445,18 +447,7 @@ const addCollaborator = async (req, res) => {
 
     if (updateError) throw updateError;
 
-    // Send invite email
-    const { data: owner } = await supabase
-      .from('users')
-      .select('full_name')
-      .eq('id', uid)
-      .single();
-
-    const inviterName = owner?.full_name || 'Someone';
-    const { sendCollaboratorInvite } = require('../services/emailService');
-    sendCollaboratorInvite(email, idea.title, inviterName, role);
-
-    res.json({ status: 'success', data: collabs, message: 'Collaborator added and notified' });
+    res.json({ status: 'success', data: collabs, message: 'Collaborator added' });
   } catch (error) {
     console.error('Error adding collaborator:', error);
     res.status(500).json({ status: 'error', message: 'Failed to add collaborator' });

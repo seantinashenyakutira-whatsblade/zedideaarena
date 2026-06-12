@@ -11,6 +11,7 @@ import {
   Github, 
   Linkedin, 
   Instagram, 
+  Facebook,
   Globe,
   FileText,
   Play,
@@ -271,6 +272,33 @@ export default function IdeaDetailPage() {
                       )}
                     </div>
                   </div>
+
+                  {/* Collaborators */}
+                  {idea.collaborators && (() => {
+                    let collabs = []
+                    try { collabs = typeof idea.collaborators === 'string' ? JSON.parse(idea.collaborators) : idea.collaborators } catch { collabs = [] }
+                    return collabs.length > 0 ? (
+                      <div className="card-zed p-8 border-white/5 bg-white/5">
+                        <h4 className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-[0.2em] mb-6">Collaborators</h4>
+                        <div className="space-y-4">
+                          {collabs.map((c: any, i: number) => (
+                            <div key={i} className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-bold text-zed-foreground">{c.name}</p>
+                                {c.role && <p className="text-[10px] text-zed-foreground-secondary">{c.role}</p>}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {c.github && <a href={c.github} target="_blank" className="text-zed-foreground-secondary hover:text-white transition-colors"><Github size={16} /></a>}
+                                {c.linkedin && <a href={c.linkedin} target="_blank" className="text-zed-foreground-secondary hover:text-white transition-colors"><Linkedin size={16} /></a>}
+                                {c.instagram && <a href={c.instagram} target="_blank" className="text-zed-foreground-secondary hover:text-white transition-colors"><Instagram size={16} /></a>}
+                                {c.facebook && <a href={c.facebook} target="_blank" className="text-zed-foreground-secondary hover:text-white transition-colors"><Facebook size={16} /></a>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null
+                  })()}
 
                   {/* Manage Idea */}
                   <Link

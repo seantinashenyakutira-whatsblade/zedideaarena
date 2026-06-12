@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Trash2, Settings, BarChart3, Loader2, AlertTriangle, Star, Eye, Target, Users, Share2, ThumbsUp } from 'lucide-react'
+import { ArrowLeft, Trash2, Settings, BarChart3, Loader2, AlertTriangle, Star, Eye, Target, Users, Share2, ThumbsUp, Github, Linkedin, Instagram, Facebook } from 'lucide-react'
 import { ideaService } from '@/services/core'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -19,8 +19,11 @@ export default function ManageIdeaPage() {
   const [activeTab, setActiveTab] = useState<'insights' | 'settings'>('insights')
   const [showCollabModal, setShowCollabModal] = useState(false)
   const [collabName, setCollabName] = useState('')
-  const [collabEmail, setCollabEmail] = useState('')
   const [collabRole, setCollabRole] = useState('')
+  const [collabGithub, setCollabGithub] = useState('')
+  const [collabLinkedin, setCollabLinkedin] = useState('')
+  const [collabInstagram, setCollabInstagram] = useState('')
+  const [collabFacebook, setCollabFacebook] = useState('')
   const [addingCollab, setAddingCollab] = useState(false)
 
   useEffect(() => {
@@ -66,8 +69,8 @@ export default function ManageIdeaPage() {
   }
 
   const handleAddCollaborator = async () => {
-    if (!collabName.trim() || !collabEmail.trim()) {
-      toast.error('Name and email are required')
+    if (!collabName.trim()) {
+      toast.error('Name is required')
       return
     }
     setAddingCollab(true)
@@ -75,16 +78,26 @@ export default function ManageIdeaPage() {
       const res = await fetch(`/api/ideas/${id}/collaborators`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: collabName.trim(), email: collabEmail.trim(), role: collabRole.trim() }),
+        body: JSON.stringify({
+          name: collabName.trim(),
+          role: collabRole.trim(),
+          github: collabGithub.trim(),
+          linkedin: collabLinkedin.trim(),
+          instagram: collabInstagram.trim(),
+          facebook: collabFacebook.trim(),
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || 'Failed to add collaborator')
       setCollaborators(data.data)
       setCollabName('')
-      setCollabEmail('')
       setCollabRole('')
+      setCollabGithub('')
+      setCollabLinkedin('')
+      setCollabInstagram('')
+      setCollabFacebook('')
       setShowCollabModal(false)
-      toast.success('Collaborator added and notified!')
+      toast.success('Collaborator added')
     } catch (err: any) {
       toast.error(err.message)
     }
@@ -233,9 +246,17 @@ export default function ManageIdeaPage() {
               <div className="mb-6 space-y-2">
                 {collaborators.map((c, i) => (
                   <div key={i} className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3">
-                    <div>
-                      <p className="text-sm font-bold text-zed-foreground">{c.name}</p>
-                      <p className="text-xs text-zed-foreground-secondary">{c.email}{c.role ? ` · ${c.role}` : ''}</p>
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <p className="text-sm font-bold text-zed-foreground">{c.name}</p>
+                        {c.role && <p className="text-xs text-zed-foreground-secondary">{c.role}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {c.github && <a href={c.github} target="_blank" className="text-zed-foreground-secondary hover:text-white transition-colors"><Github size={16} /></a>}
+                      {c.linkedin && <a href={c.linkedin} target="_blank" className="text-zed-foreground-secondary hover:text-white transition-colors"><Linkedin size={16} /></a>}
+                      {c.instagram && <a href={c.instagram} target="_blank" className="text-zed-foreground-secondary hover:text-white transition-colors"><Instagram size={16} /></a>}
+                      {c.facebook && <a href={c.facebook} target="_blank" className="text-zed-foreground-secondary hover:text-white transition-colors"><Facebook size={16} /></a>}
                     </div>
                   </div>
                 ))}
@@ -252,22 +273,39 @@ export default function ManageIdeaPage() {
                 <h3 className="text-lg font-black text-zed-foreground mb-6">Add Collaborator</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1.5">Name</label>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1.5">Name *</label>
                     <input type="text" value={collabName} onChange={(e) => setCollabName(e.target.value)} placeholder="John Doe" className="input-zed" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1.5">Email</label>
-                    <input type="email" value={collabEmail} onChange={(e) => setCollabEmail(e.target.value)} placeholder="john@example.com" className="input-zed" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1.5">Role (optional)</label>
                     <input type="text" value={collabRole} onChange={(e) => setCollabRole(e.target.value)} placeholder="e.g. Designer, Developer" className="input-zed" />
                   </div>
+                  <div className="pt-4 border-t border-white/5">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-4">Social Links (optional)</p>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Github size={18} className="text-zed-foreground-secondary shrink-0" />
+                        <input type="url" value={collabGithub} onChange={(e) => setCollabGithub(e.target.value)} placeholder="https://github.com/username" className="input-zed flex-1" />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Linkedin size={18} className="text-zed-foreground-secondary shrink-0" />
+                        <input type="url" value={collabLinkedin} onChange={(e) => setCollabLinkedin(e.target.value)} placeholder="https://linkedin.com/in/username" className="input-zed flex-1" />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Instagram size={18} className="text-zed-foreground-secondary shrink-0" />
+                        <input type="url" value={collabInstagram} onChange={(e) => setCollabInstagram(e.target.value)} placeholder="https://instagram.com/username" className="input-zed flex-1" />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Facebook size={18} className="text-zed-foreground-secondary shrink-0" />
+                        <input type="url" value={collabFacebook} onChange={(e) => setCollabFacebook(e.target.value)} placeholder="https://facebook.com/username" className="input-zed flex-1" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex gap-3 mt-8">
                   <button onClick={() => setShowCollabModal(false)} className="flex-1 px-6 py-3 rounded-xl text-xs font-black bg-white/5 text-zed-foreground-secondary hover:bg-white/10 transition-all">Cancel</button>
                   <button onClick={handleAddCollaborator} disabled={addingCollab} className="flex-1 px-6 py-3 rounded-xl text-xs font-black btn-primary">
-                    {addingCollab ? 'Adding...' : 'Invite'}
+                    {addingCollab ? 'Adding...' : 'Add'}
                   </button>
                 </div>
               </div>
