@@ -158,7 +158,7 @@ function TypeWriter({ texts }: { texts: string[] }) {
       }
       setJ(next)
       setDisplay(word.slice(0, next))
-    }, dir === 1 ? 80 : 40)
+    }, dir === 1 ? 140 : 60)
     return () => clearTimeout(timer)
   }, [j, dir, i, texts])
 
@@ -314,12 +314,13 @@ export default function LandingPage() {
         {/* Background image — left aligned, full height */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div
-            className="absolute left-0 top-0 h-full w-1/2 opacity-[0.07]"
+            className="absolute left-0 top-0 h-full w-3/5 opacity-[0.15]"
             style={{
               backgroundImage: 'url(/background-img.png)',
-              backgroundSize: 'contain',
+              backgroundSize: 'cover',
               backgroundPosition: 'left center',
               backgroundRepeat: 'no-repeat',
+              imageRendering: 'auto',
             }}
           />
           <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0">
@@ -332,23 +333,16 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* LEFT — Hero Text */}
             <motion.div style={{ y: heroTextY, opacity: heroTextOpacity }}>
-              {/* Headline with image mask + typewriter */}
+              {/* Headline with typewriter */}
               <motion.h1
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
-                className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] mb-6 tracking-tight text-left bg-clip-text text-transparent"
-                style={{
-                  backgroundImage: 'url(/background-img.png), linear-gradient(135deg,#6366F1,#22D3EE)',
-                  backgroundSize: '400px, cover',
-                  backgroundPosition: 'left center, center',
-                  backgroundRepeat: 'no-repeat, no-repeat',
-                  backgroundBlendMode: 'overlay, normal',
-                }}
+                className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] mb-6 tracking-tight text-left"
               >
-                Where Ideas <span className="text-white/30">Compete.</span><br />
+                Where Ideas <span className="gradient-text">Compete.</span><br />
                 And{' '}
-                <span className="text-white/30">
+                <span className="gradient-text">
                   <TypeWriter texts={['Win.', 'Build.', 'Scale.', 'Fund.', 'Launch.']} />
                 </span>
               </motion.h1>
