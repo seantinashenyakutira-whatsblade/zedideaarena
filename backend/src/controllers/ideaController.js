@@ -129,12 +129,12 @@ const getPublicIdeas = async (req, res) => {
 
     let query = supabase
       .from('ideas')
-      .select('*, users(full_name)')
-      .eq('status', statusFilter)
+      .select('*, users(full_name, picture)')
+      .in('status', statusFilter === 'approved' ? ['approved'] : ['submitted', 'approved'])
       .eq('is_public', true)
       .order('votes_count', { ascending: false });
 
-    if (statusFilter === 'submitted') {
+    if (statusFilter === 'submitted' || statusFilter === 'approved') {
       query = query.eq('payment_status', 'paid');
     }
 
@@ -310,39 +310,51 @@ const getIdeaInsights = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Unauthorized: You do not own this idea' });
     }
 
-    const { data: votes, error: votesError } = await supabase
-      .from('votes')
-      .select('innovation_rating, impact_rating, feasibility_rating, comment, created_at, ideas(title), user_id, users!inner(full_name)')
-      .eq('idea_id', id);
-
-    if (votesError) throw votesError;
-
-    const count = votes?.length || 0;
+    let votes = [];
+    let votesCount = 0;
     let avgInnovation = 0, avgImpact = 0, avgFeasibility = 0;
 
-    if (votes) {
-      votes.forEach((v) => {
-        if (v.innovation_rating) avgInnovation += v.innovation_rating;
-        if (v.impact_rating) avgImpact += v.impact_rating;
-        if (v.feasibility_rating) avgFeasibility += v.feasibility_rating;
-      });
-      if (count) {
-        avgInnovation /= count;
-        avgImpact /= count;
-        avgFeasibility /= count;
+    try {
+      const { data: v, error: votesError } = await supabase
+        .from('votes')
+        .select('innovation_rating, impact_rating, feasibility_rating, comment, created_at')
+        .eq('idea_id', id);
+
+      if (!votesError && v) {
+        votes = v;
+        votesCount = v.length;
+        v.forEach((vote) => {
+          if (vote.innovation_rating) avgInnovation += Number(vote.innovation_rating);
+          if (vote.impact_rating) avgImpact += Number(vote.impact_rating);
+          if (vote.feasibility_rating) avgFeasibility += Number(vote.feasibility_rating);
+        });
+        if (votesCount) {
+          avgInnovation /= votesCount;
+          avgImpact /= votesCount;
+          avgFeasibility /= votesCount;
+        }
       }
+    } catch { /* columns may not exist yet */ }
+
+    // Fallback: just count votes without ratings
+    if (!votes.length) {
+      const { count } = await supabase
+        .from('votes')
+        .select('*', { count: 'exact', head: true })
+        .eq('idea_id', id);
+      votesCount = count || 0;
     }
 
     res.json({
       status: 'success',
       data: {
         idea,
-        votes_count: count,
+        votes_count: votesCount,
         avg_innovation_rating: Math.round(avgInnovation * 10) / 10,
         avg_impact_rating: Math.round(avgImpact * 10) / 10,
         avg_feasibility_rating: Math.round(avgFeasibility * 10) / 10,
         avg_total: Math.round((avgInnovation + avgImpact + avgFeasibility) / 3 * 10) / 10,
-        votes: votes || [],
+        votes: votes,
       },
     });
   } catch (error) {

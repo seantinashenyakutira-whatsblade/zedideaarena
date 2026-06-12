@@ -186,13 +186,25 @@ const castVoteV2 = async (req, res) => {
     if (feasibility_rating !== undefined) voteData.feasibility_rating = feasibility_rating;
     if (comment !== undefined) voteData.comment = comment;
 
-    const { error: voteError } = await supabase.from('votes').insert(voteData);
+    let { error: voteError } = await supabase.from('votes').insert(voteData);
 
     if (voteError) {
       if (voteError.code === '23505') {
         return res.status(400).json({ status: 'error', message: 'You have already voted for this idea.' });
       }
-      throw voteError;
+      // Retry without rating fields if columns don't exist
+      if (voteError.code === '42703') {
+        const fallbackVote = { user_id: userId, idea_id, competition_id, score: 1 };
+        const { error: fallbackError } = await supabase.from('votes').insert(fallbackVote);
+        if (fallbackError) {
+          if (fallbackError.code === '23505') {
+            return res.status(400).json({ status: 'error', message: 'You have already voted for this idea.' });
+          }
+          throw fallbackError;
+        }
+      } else {
+        throw voteError;
+      }
     }
 
     const { error: countError } = await supabase
@@ -255,7 +267,13 @@ const getIdeaRatings = async (req, res) => {
       .select('innovation_rating, impact_rating, feasibility_rating, comment')
       .eq('idea_id', ideaId);
 
-    if (error) throw error;
+    if (error) {
+      // Columns may not exist yet — return empty stats
+      return res.json({
+        status: 'success',
+        data: { total_votes: 0, avg_innovation_rating: 0, avg_impact_rating: 0, avg_feasibility_rating: 0, avg_total: 0, comments: [] },
+      });
+    }
 
     const count = data?.length || 0;
     let avgInnovation = 0, avgImpact = 0, avgFeasibility = 0;
@@ -263,9 +281,9 @@ const getIdeaRatings = async (req, res) => {
 
     if (data) {
       data.forEach((v) => {
-        if (v.innovation_rating) avgInnovation += v.innovation_rating;
-        if (v.impact_rating) avgImpact += v.impact_rating;
-        if (v.feasibility_rating) avgFeasibility += v.feasibility_rating;
+        if (v.innovation_rating) avgInnovation += Number(v.innovation_rating);
+        if (v.impact_rating) avgImpact += Number(v.impact_rating);
+        if (v.feasibility_rating) avgFeasibility += Number(v.feasibility_rating);
         if (v.comment) comments.push(v.comment);
       });
       if (count) {

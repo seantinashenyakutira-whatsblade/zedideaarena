@@ -56,13 +56,22 @@ export default function CompetitionVotingPage() {
 
         setGuardErrors(errors)
 
-        const [ideasRes, votesRes] = await Promise.all([
+        const [ideasRes, approvedRes, votesRes] = await Promise.all([
           api.get(`/ideas/public?status=submitted&competition_id=${competitionId}`),
+          api.get(`/ideas/public?status=approved&competition_id=${competitionId}`),
           api.get('/votes/user'),
         ])
 
-        const compIdeas = ideasRes.data || []
-        setIdeas(compIdeas)
+        // Merge both submitted and approved ideas
+        const merged = [...(ideasRes.data || []), ...(approvedRes.data || [])]
+        const seen = new Set()
+        const deduped = merged.filter((i: any) => {
+          if (seen.has(i.id)) return false
+          seen.add(i.id)
+          return true
+        })
+
+        setIdeas(deduped)
         const votedIds = (votesRes.data || []).map((v: any) => v.idea_id)
         setVotedIdeas(votedIds)
       } catch (err) {
