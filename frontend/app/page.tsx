@@ -311,24 +311,33 @@ export default function LandingPage() {
 
       {/* SECTION 1 — HERO */}
       <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden px-6 hero-bg">
-        {/* Background image — left aligned, overlapping 25% off-page left, with diagonal reveal */}
-        <div className="absolute inset-0 pointer-events-none overflow-visible">
-          {/* Diagonal overlay — right side transparent, left side dark overlay */}
+        {/* Background — gradient shape left-aligned, overlapping off-page, diagonal fade */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Large gradient shape — starts off-page left, fades diagonally */}
+          <div
+            className="absolute top-0 h-full w-[85vw] max-w-[1100px] opacity-[0.2]"
+            style={{
+              left: '-22%',
+              background: 'linear-gradient(160deg, #6366F1 0%, #22D3EE 40%, transparent 70%)',
+              clipPath: 'polygon(0 0, 100% 0, 75% 100%, 0 100%)',
+              WebkitClipPath: 'polygon(0 0, 100% 0, 75% 100%, 0 100%)',
+            }}
+          />
+          {/* Secondary subtle gradient — deeper color layer */}
+          <div
+            className="absolute top-0 h-full w-[70vw] max-w-[800px] opacity-[0.08]"
+            style={{
+              left: '-15%',
+              background: 'linear-gradient(180deg, #000000 0%, #6366F1 50%, transparent 80%)',
+              clipPath: 'polygon(0 0, 90% 0, 65% 100%, 0 100%)',
+              WebkitClipPath: 'polygon(0 0, 90% 0, 65% 100%, 0 100%)',
+            }}
+          />
+          {/* Diagonal transparent overlay — darkens left, reveals right */}
           <div
             className="absolute inset-0 z-[1]"
             style={{
-              background: 'linear-gradient(135deg, rgba(10,10,15,0.85) 0%, rgba(10,10,15,0.7) 40%, rgba(10,10,15,0.3) 65%, transparent 80%)',
-            }}
-          />
-          {/* The image — starts at -25% left, cropped by parent overflow-hidden */}
-          <div
-            className="absolute top-0 h-full w-[75vw] max-w-[900px] opacity-[0.12]"
-            style={{
-              left: '-18%',
-              backgroundImage: 'url(/background-img.png)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center center',
-              backgroundRepeat: 'no-repeat',
+              background: 'linear-gradient(135deg, rgba(10,10,15,0.9) 0%, rgba(10,10,15,0.6) 35%, rgba(10,10,15,0.2) 60%, transparent 80%)',
             }}
           />
           <motion.div style={{ opacity: bgOpacity }} className="absolute inset-0">
