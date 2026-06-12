@@ -60,6 +60,14 @@ export default function RootLayout({
       <head>
         <meta name="theme-color" content="#050505" />
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <script dangerouslySetInnerHTML={{
+          __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}`
+        }} />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="ZedIdeaArena" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
       </head>
       <body className={`${jakarta.className} font-sans antialiased bg-zed-background text-zed-foreground`}>
         <JsonLd data={organizationSchema()} id="organization-schema" />
