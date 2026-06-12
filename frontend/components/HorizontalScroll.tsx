@@ -65,6 +65,40 @@ export function HorizontalScroll({
     }
   }
 
+  // Keyboard navigation support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') scrollBy('left')
+      if (e.key === 'ArrowRight') scrollBy('right')
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  // Touch support for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!scrollRef.current) return
+    setIsDragging(true)
+    setStartX(e.touches[0].clientX - scrollRef.current.offsetLeft)
+    setScrollLeft(scrollRef.current.scrollLeft)
+    scrollRef.current.style.scrollBehavior = 'auto'
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !scrollRef.current) return
+    e.preventDefault()
+    const x = e.touches[0].clientX - scrollRef.current.offsetLeft
+    const walk = (x - startX) * 2
+    scrollRef.current.scrollLeft = scrollLeft - walk
+  }
+
+  const handleTouchEnd = () => {
+    setIsDragging(false)
+    if (scrollRef.current) {
+      scrollRef.current.style.scrollBehavior = 'smooth'
+    }
+  }
+
   useEffect(() => {
     checkScroll()
     const handleResize = () => checkScroll()
@@ -93,17 +127,29 @@ export function HorizontalScroll({
         <div className="flex justify-end gap-3 mb-6">
           <button
             onClick={() => scrollBy('left')}
-            className={`w-11 h-11 rounded-full flex items-center justify-center border border-white/10 bg-white/5 backdrop-blur-sm transition-all ${canScrollLeft ? 'opacity-100 hover:bg-white/10 hover:border-white/20' : 'opacity-30 cursor-default'}`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center 
+              border-2 border-white/20 bg-white/5 backdrop-blur-md
+              transition-all duration-300 ease-out
+              hover:bg-white/10 hover:border-white/40 hover:scale-110
+              active:scale-95 shadow-lg hover:shadow-xl
+              ${canScrollLeft ? 'opacity-100 cursor-pointer' : 'opacity-40 cursor-not-allowed'}
+            `}
             disabled={!canScrollLeft}
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft size={20} className="text-white" />
           </button>
           <button
             onClick={() => scrollBy('right')}
-            className={`w-11 h-11 rounded-full flex items-center justify-center border border-white/10 bg-white/5 backdrop-blur-sm transition-all ${canScrollRight ? 'opacity-100 hover:bg-white/10 hover:border-white/20' : 'opacity-30 cursor-default'}`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center 
+              border-2 border-white/20 bg-white/5 backdrop-blur-md
+              transition-all duration-300 ease-out
+              hover:bg-white/10 hover:border-white/40 hover:scale-110
+              active:scale-95 shadow-lg hover:shadow-xl
+              ${canScrollRight ? 'opacity-100 cursor-pointer' : 'opacity-40 cursor-not-allowed'}
+            `}
             disabled={!canScrollRight}
           >
-            <ChevronRight size={18} />
+            <ChevronRight size={20} className="text-white" />
           </button>
         </div>
       )}
@@ -115,12 +161,27 @@ export function HorizontalScroll({
         onMouseMove={handleDragMove}
         onMouseUp={handleDragEnd}
         onMouseLeave={handleDragEnd}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         onMouseEnter={() => pauseOnHover && setIsPaused(true)}
         className={
           `flex gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory scrollbar-hide ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} ${className}`
         }
       >
         {children}
+      </div>
+
+      {/* Visual scroll indicator */}
+      <div className="flex justify-end gap-1 mt-4 px-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div
+            key={i}
+            className={`h-1 w-8 rounded-full transition-all duration-300
+              ${i === 0 ? 'bg-white/60' : 'bg-white/20'}
+            `}
+          />
+        ))}
       </div>
     </div>
   )
