@@ -348,7 +348,7 @@ export default function LandingPage() {
         </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto pt-28 pb-16">
-          <HorizontalScroll showControls={true} className="grid lg:grid-cols-2 gap-12 items-center">
+          <HorizontalScroll showControls={true} wheelScroll={true} wheelScrollSpeed={2} className="grid lg:grid-cols-2 gap-12 items-center">
             {/* LEFT — Hero Text */}
             <motion.div style={{ y: heroTextY, opacity: heroTextOpacity }}>
               {/* Headline with typewriter */}

@@ -11,6 +11,8 @@ interface HorizontalScrollProps {
   showControls?: boolean
   autoScroll?: boolean
   pauseOnHover?: boolean
+  wheelScroll?: boolean
+  wheelScrollSpeed?: number
 }
 
 export function HorizontalScroll({
@@ -20,6 +22,8 @@ export function HorizontalScroll({
   showControls = true,
   autoScroll = false,
   pauseOnHover = false,
+  wheelScroll = true,
+  wheelScrollSpeed = 1.5,
 }: HorizontalScrollProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
@@ -75,6 +79,41 @@ export function HorizontalScroll({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  // Wheel scroll - translate vertical to horizontal
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!wheelScroll || !scrollRef.current) return
+    
+    // Only intercept vertical scrolling
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault()
+      
+      const scrollContainer = scrollRef.current
+      const scrollAmount = e.deltaY * wheelScrollSpeed
+      
+      // Smooth scroll with requestAnimationFrame for natural feel
+      let startTime: number
+      const startScroll = scrollContainer.scrollLeft
+      const targetScroll = startScroll + scrollAmount
+      
+      const animateScroll = (currentTime: number) => {
+        if (!startTime) startTime = currentTime
+        const elapsed = currentTime - startTime
+        const duration = 200 // ms
+        
+        const progress = Math.min(elapsed / duration, 1)
+        // Easing function for natural feel
+        const easeOut = 1 - Math.pow(1 - progress, 3)
+        
+        scrollContainer.scrollLeft = startScroll + (targetScroll - startScroll) * easeOut
+        
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll)
+        }
+      }
+      
+      requestAnimationFrame(animateScroll)
+    }
+  }
   // Touch support for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!scrollRef.current) return
@@ -164,6 +203,7 @@ export function HorizontalScroll({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onWheel={handleWheel}
         onMouseEnter={() => pauseOnHover && setIsPaused(true)}
         className={
           `flex gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory scrollbar-hide ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} ${className}`
