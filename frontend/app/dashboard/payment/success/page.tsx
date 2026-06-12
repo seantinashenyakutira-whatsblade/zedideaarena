@@ -55,7 +55,7 @@ function PaymentSuccessContent() {
     if (countdown <= 0) {
       const target = type === 'voter'
         ? `/vote/${competitionId}`
-        : `/dashboard/ideas/new?competitionId=${competitionId}`
+        : `/dashboard`
       window.location.replace(target)
       return
     }
@@ -102,10 +102,10 @@ function PaymentSuccessContent() {
     )
   }
 
-  const targetLabel = type === 'voter' ? 'Voting Arena' : 'Your Idea'
+  const targetLabel = type === 'voter' ? 'Voting Arena' : 'Dashboard'
   const targetHref = type === 'voter'
     ? `/vote/${competitionId}`
-    : `/dashboard/ideas/new?competitionId=${competitionId}`
+    : `/dashboard`
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
