@@ -4,6 +4,8 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, Users, Star, Trophy, Zap, Glasses, DollarSign, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { faqSchema } from '@/lib/seo/json-ld'
 
 const fadeUp = {
   initial: { opacity: 0, y: 40 },
@@ -62,6 +64,7 @@ export default function HowItWorksPage() {
 
   return (
     <div className="bg-[#0A0A0F] text-white min-h-screen">
+      <JsonLd data={faqSchema(faqs)} id="faq-schema" />
       <div className="max-w-6xl mx-auto px-6 py-24">
         <Link href="/" className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-12 font-bold text-sm uppercase tracking-widest">
           <ArrowLeft size={16} /> Back to Home

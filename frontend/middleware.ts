@@ -2,61 +2,49 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+const publicRoutes = [
+  '/', '/about', '/how-it-works', '/pricing', '/competitions',
+  '/auth', '/pitch',
+]
+
+function isPublicRoute(pathname: string): boolean {
+  return publicRoutes.some(r =>
+    pathname === r || pathname.startsWith(r + '/')
+  )
+}
+
+function isProtectedRoute(pathname: string): 'dashboard' | 'vote' | 'admin' | null {
+  if (pathname.startsWith('/dashboard')) return 'dashboard'
+  if (pathname.startsWith('/vote')) return 'vote'
+  if (pathname.startsWith('/admin')) return 'admin'
+  return null
+}
+
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone()
-  const hostname = request.headers.get('host') || ''
   const pathname = url.pathname
 
-  // Static files — always allow
+  // Always allow static files, API routes
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
-    pathname.includes('.') 
+    pathname.includes('.')
   ) {
     return NextResponse.next()
   }
 
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN 
-    || 'zedideaarena.com'
-
-  // Detect subdomain
-  const isLocalhost = hostname.includes('localhost')
-  
-  let subdomain = ''
-  if (isLocalhost) {
-    // For local dev: hub.localhost:3000 → subdomain = 'hub'
-    subdomain = hostname.split('.localhost')[0]
-    if (subdomain === 'localhost' || subdomain === '') {
-      subdomain = ''
-    }
-  } else {
-    // Production: hub.zedideaarena.com → subdomain = 'hub'
-    const parts = hostname.replace(`.${rootDomain}`, '')
-    subdomain = parts === rootDomain || parts === `www` ? '' : parts
-  }
-
-  // ── MAIN DOMAIN (no subdomain) ────────────────────────
-  // Marketing pages — always public
-  if (!subdomain || subdomain === 'www') {
+  // Public routes — no auth needed
+  if (isPublicRoute(pathname)) {
     return NextResponse.next()
   }
 
-  // ── LOGIN SUBDOMAIN ───────────────────────────────────
-  if (subdomain === 'login') {
-    // Rewrite login.zedideaarena.com → /auth pages
-    if (pathname === '/' || pathname === '') {
-      url.pathname = '/auth/login'
-      return NextResponse.rewrite(url)
-    }
-    // login.zedideaarena.com/signup → /auth/signup
-    if (!pathname.startsWith('/auth')) {
-      url.pathname = `/auth${pathname}`
-      return NextResponse.rewrite(url)
-    }
+  const protectedArea = isProtectedRoute(pathname)
+  if (!protectedArea) {
+    // Unknown route — let it through (will 404 naturally)
     return NextResponse.next()
   }
 
-  // ── AUTH CHECK for protected subdomains ──────────────
+  // ── AUTH CHECK for protected routes ──────────────────
   const res = NextResponse.next()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -83,13 +71,10 @@ export async function middleware(request: NextRequest) {
     console.error('Middleware session error:', err)
   }
 
-  // Build login redirect URL
-  const loginUrl = isLocalhost
-    ? `http://login.localhost:3000/auth/login?redirect=${subdomain}`
-    : `https://login.${rootDomain}/auth/login?redirect=${subdomain}`
-
   // Not logged in → send to login
   if (!session) {
+    const loginUrl = new URL('/auth/login', request.url)
+    loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
@@ -103,59 +88,30 @@ export async function middleware(request: NextRequest) {
     profile = data
   } catch (err) {
     console.error('Middleware profile error:', err)
-    // On error, allow through rather than locking user out
     return NextResponse.next()
   }
 
-  // Onboarding check
+  // Onboarding check for dashboard
   const needsOnboarding = profile &&
     !profile.onboarding_complete &&
     !profile.onboarding_skipped
 
-  if (needsOnboarding) {
-    const onboardUrl = isLocalhost
-      ? `http://login.localhost:3000/onboarding/personal`
-      : `https://login.${rootDomain}/onboarding/personal`
+  if (needsOnboarding && protectedArea !== 'admin') {
+    const onboardUrl = new URL('/onboarding/personal', request.url)
     return NextResponse.redirect(onboardUrl)
   }
 
-  // ── HUB SUBDOMAIN → contestant dashboard ─────────────
-  if (subdomain === 'hub') {
-    url.pathname = pathname === '/' 
-      ? '/dashboard' 
-      : `/dashboard${pathname}`
-    return NextResponse.rewrite(url)
+  // Admin route — admin role required
+  if (protectedArea === 'admin' && !profile?.is_admin) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // ── VOTE SUBDOMAIN → voter portal ────────────────────
-  if (subdomain === 'vote') {
-    if (!profile?.is_verified) {
-      const hubUrl = isLocalhost
-        ? `http://hub.localhost:3000?msg=verification_required`
-        : `https://hub.${rootDomain}?msg=verification_required`
-      return NextResponse.redirect(hubUrl)
-    }
-    url.pathname = pathname === '/' 
-      ? '/voter' 
-      : `/voter${pathname}`
-    return NextResponse.rewrite(url)
+  // Vote route — verification required
+  if (protectedArea === 'vote' && !profile?.is_verified) {
+    return NextResponse.redirect(new URL('/dashboard?msg=verification_required', request.url))
   }
 
-  // ── ADMIN SUBDOMAIN ───────────────────────────────────
-  if (subdomain === 'admin') {
-    if (!profile?.is_admin) {
-      const hubUrl = isLocalhost
-        ? `http://hub.localhost:3000`
-        : `https://hub.${rootDomain}`
-      return NextResponse.redirect(hubUrl)
-    }
-    url.pathname = pathname === '/' 
-      ? '/admin' 
-      : `/admin${pathname}`
-    return NextResponse.rewrite(url)
-  }
-
-  return NextResponse.next()
+  return res
 }
 
 export const config = {

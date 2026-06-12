@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronRight, FileText, Code, BookOpen } from 'lucide-react'
+import { ChevronRight, FileText, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 
 const docSections = [
@@ -144,46 +144,6 @@ export default function DocsPage() {
             ))}
           </div>
 
-          {/* API Documentation CTA */}
-          <div className="mt-16 max-w-3xl">
-            <div className="card-zed-hover bg-zed-accent/10 border-zed-accent/30">
-              <div className="flex items-start gap-4">
-                <Code className="text-zed-accent flex-shrink-0" size={32} />
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-zed-foreground mb-2">
-                    Developer API Documentation
-                  </h3>
-                  <p className="text-zed-foreground-secondary mb-4">
-                    Integrate ZedIdeaArena with your applications using our comprehensive REST API.
-                  </p>
-                  <a href="/docs/api" className="inline-flex items-center gap-2 text-zed-accent hover:text-zed-accent/80 transition-colors font-medium">
-                    View API Docs <ChevronRight size={16} />
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* FAQ CTA */}
-          <div className="mt-8 max-w-3xl">
-            <div className="card-zed-hover bg-zed-primary/10 border-zed-primary/30">
-              <div className="flex items-start gap-4">
-                <BookOpen className="text-zed-primary flex-shrink-0" size={32} />
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-zed-foreground mb-2">
-                    Frequently Asked Questions
-                  </h3>
-                  <p className="text-zed-foreground-secondary mb-4">
-                    Quick answers to common questions about using ZedIdeaArena.
-                  </p>
-                  <a href="/faq" className="inline-flex items-center gap-2 text-zed-primary hover:text-zed-primary/80 transition-colors font-medium">
-                    Read FAQ <ChevronRight size={16} />
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Still Need Help */}
           <div className="mt-16 card-zed text-center">
             <h3 className="text-2xl font-bold text-zed-foreground mb-3">Still need help?</h3>
@@ -191,9 +151,9 @@ export default function DocsPage() {
               Can't find what you're looking for? Our support team is here to help you anytime.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/support" className="btn-primary">
+              <a href="mailto:help@zedideaarena.com" className="btn-primary">
                 Contact Support
-              </Link>
+              </a>
               <a href="mailto:help@zedideaarena.com" className="btn-secondary">
                 Email Us
               </a>

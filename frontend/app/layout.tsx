@@ -7,6 +7,12 @@ import { CookieConsent } from '@/components/CookieConsent'
 import { ChatBot } from '@/components/ChatBot'
 import { AdScript } from '@/components/ads/AdScript'
 import { Toaster } from 'sonner'
+import { JsonLd } from '@/components/seo/JsonLd'
+import {
+  organizationSchema,
+  websiteSchema,
+  webApplicationSchema,
+} from '@/lib/seo/json-ld'
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
@@ -16,13 +22,12 @@ export const metadata: Metadata = {
     template: '%s | ZedIdeaArena',
   },
   description: 'A fintech-style idea competition and crowdfunding platform. Pitch your ideas, compete with others, and win funding.',
+  metadataBase: new URL('https://zedideaarena.com'),
   generator: 'v0.app',
   icons: {
     icon: [
-      {
-        url: '/logo-icon.png',
-        type: 'image/png',
-      },
+      { url: '/logo-icon.png', type: 'image/png' },
+      { url: '/favicon.ico' },
     ],
   },
   openGraph: {
@@ -31,14 +36,17 @@ export const metadata: Metadata = {
     siteName: 'ZedIdeaArena',
     title: 'ZedIdeaArena — Win by Sharing Your Ideas',
     description: 'A fintech-style idea competition and crowdfunding platform. Pitch your ideas, compete with others, and win funding.',
-    images: [{ url: '/og-default.png', width: 1200, height: 630 }],
+    images: [{ url: '/og', width: 1200, height: 630 }],
     url: 'https://zedideaarena.com',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'ZedIdeaArena — Win by Sharing Your Ideas',
     description: 'Pitch your ideas, compete with others, and win funding.',
-    images: ['/og-default.png'],
+    images: ['/og'],
+  },
+  other: {
+    'google-site-verification': process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
   },
 }
 
@@ -54,6 +62,9 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
       </head>
       <body className={`${jakarta.className} font-sans antialiased bg-zed-background text-zed-foreground`}>
+        <JsonLd data={organizationSchema()} id="organization-schema" />
+        <JsonLd data={websiteSchema()} id="website-schema" />
+        <JsonLd data={webApplicationSchema()} id="webapplication-schema" />
         <AuthProvider>
           {children}
           <CookieConsent />

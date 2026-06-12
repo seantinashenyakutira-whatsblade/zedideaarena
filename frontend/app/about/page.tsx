@@ -5,6 +5,8 @@ import { ArrowLeft, Target, Heart, Globe, Lightbulb, Users, Award, Shield, Camer
 import Link from 'next/link'
 import Image from 'next/image'
 import { team } from '@/lib/team'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { teamSchemas } from '@/lib/seo/json-ld'
 
 const fadeUp = {
   initial: { opacity: 0, y: 40 },
@@ -23,6 +25,9 @@ const values = [
 export default function AboutPage() {
   return (
     <div className="bg-[#0A0A0F] text-white min-h-screen">
+      {teamSchemas().map((schema, i) => (
+        <JsonLd key={schema.name} data={schema} id={`person-schema-${i}`} />
+      ))}
       <div className="max-w-6xl mx-auto px-6 py-24">
         <Link href="/" className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-12 font-bold text-sm uppercase tracking-widest">
           <ArrowLeft size={16} /> Back to Home

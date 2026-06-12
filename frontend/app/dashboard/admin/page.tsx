@@ -47,12 +47,12 @@ export default function AdminOverview() {
   }
 
   const statCards = [
-    { label: 'Total Users', value: stats?.users ?? '—', icon: Users, color: 'text-zed-primary', href: '/admin/users' },
-    { label: 'Total Ideas', value: stats?.ideas ?? '—', icon: FileText, color: 'text-zed-accent', href: '/admin/ideas' },
-    { label: 'Competitions', value: stats?.competitions ?? '—', icon: Trophy, color: 'text-yellow-500', href: '/admin/competitions' },
-    { label: 'Total Votes', value: stats?.votes ?? '—', icon: Vote, color: 'text-green-400', href: '/admin/analytics' },
-    { label: 'Prize Pool', value: `$${((stats?.totalPrizePoolCents ?? 0) / 100).toLocaleString()}`, icon: DollarSign, color: 'text-purple-400', href: '/admin/analytics' },
-    { label: 'Paid Ideas', value: stats?.paidIdeas ?? '—', icon: ShieldCheck, color: 'text-zed-success', href: '/admin/ideas' },
+    { label: 'Total Users', value: stats?.users ?? '—', icon: Users, color: 'text-zed-primary', href: '/dashboard/admin/users' },
+    { label: 'Total Ideas', value: stats?.ideas ?? '—', icon: FileText, color: 'text-zed-accent', href: '/dashboard/admin/ideas' },
+    { label: 'Competitions', value: stats?.competitions ?? '—', icon: Trophy, color: 'text-yellow-500', href: '/dashboard/admin/competitions' },
+    { label: 'Total Votes', value: stats?.votes ?? '—', icon: Vote, color: 'text-green-400', href: '/dashboard/admin/analytics' },
+    { label: 'Prize Pool', value: `$${((stats?.totalPrizePoolCents ?? 0) / 100).toLocaleString()}`, icon: DollarSign, color: 'text-purple-400', href: '/dashboard/admin/analytics' },
+    { label: 'Paid Ideas', value: stats?.paidIdeas ?? '—', icon: ShieldCheck, color: 'text-zed-success', href: '/dashboard/admin/ideas' },
   ]
 
   const actionTypeLabels: Record<string, { label: string; color: string }> = {
@@ -73,7 +73,7 @@ export default function AdminOverview() {
                   <p className="text-zed-foreground-secondary text-xs font-bold uppercase tracking-widest mt-1">System-wide statistics and control</p>
                 </div>
                 <div className="flex gap-3">
-                  <Link href="/admin/analytics" className="btn-primary flex items-center gap-2">
+                  <Link href="/dashboard/admin/analytics" className="btn-primary flex items-center gap-2">
                     Analytics <ArrowRight size={16} />
                   </Link>
                 </div>
