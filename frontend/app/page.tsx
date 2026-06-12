@@ -101,7 +101,7 @@ function VideoPlayer() {
 
   const handlePlay = () => {
     setPlaying(true)
-    setTimeout(() => videoRef.current?.play(), 100)
+    videoRef.current?.play()
   }
 
   return (
@@ -111,30 +111,29 @@ function VideoPlayer() {
       transition={{ duration: 0.8, delay: 2.4 }}
       className="w-full max-w-lg ml-auto"
     >
-      {!playing ? (
-        <button onClick={handlePlay} className="relative group w-full rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm p-3 hover:border-white/20 transition-all duration-300 text-left">
-          <div className="aspect-video rounded-xl flex items-center justify-center relative" style={{ background: 'rgba(99,102,241,0.08)' }}>
+      <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black shadow-2xl shadow-zed-primary/10">
+        <video
+          ref={videoRef}
+          src="/videos/landing-hero.mp4"
+          preload="metadata"
+          className="w-full aspect-video object-contain"
+          onEnded={() => setPlaying(false)}
+          playsInline
+          controls={playing}
+        />
+        {!playing && (
+          <button onClick={handlePlay} className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 hover:bg-black/10 group transition-all duration-300">
             <motion.div
               className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-              style={{ background: 'rgba(99,102,241,0.2)' }}
+              style={{ background: 'rgba(99,102,241,0.25)' }}
               whileHover={{ scale: 1.15 }}
             >
               <Play size={24} className="text-white ml-0.5" />
             </motion.div>
-          </div>
-          <p className="text-[10px] text-white/50 mt-2 font-medium group-hover:text-white/70 transition-colors">Watch: How ZedIdeaArena works (2 min)</p>
-        </button>
-      ) : (
-        <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black shadow-2xl shadow-zed-primary/10">
-          <video
-            ref={videoRef}
-            src="/videos/landing-hero.mp4"
-            controls
-            className="w-full aspect-video object-contain"
-            onEnded={() => setPlaying(false)}
-          />
-        </div>
-      )}
+          </button>
+        )}
+      </div>
+      <p className="text-[10px] text-white/50 mt-2 font-medium text-center">Watch: How ZedIdeaArena works (2 min)</p>
     </motion.div>
   )
 }
