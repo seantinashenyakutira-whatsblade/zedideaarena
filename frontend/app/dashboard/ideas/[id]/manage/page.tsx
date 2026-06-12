@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Trash2, Settings, BarChart3, Loader2, AlertTriangle, Star, Eye, Target, Users, Share2, ThumbsUp, Github, Linkedin, Instagram, Facebook } from 'lucide-react'
 import { ideaService } from '@/services/core'
+import api from '@/lib/api'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -75,20 +76,14 @@ export default function ManageIdeaPage() {
     }
     setAddingCollab(true)
     try {
-      const res = await fetch(`/api/ideas/${id}/collaborators`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: collabName.trim(),
-          role: collabRole.trim(),
-          github: collabGithub.trim(),
-          linkedin: collabLinkedin.trim(),
-          instagram: collabInstagram.trim(),
-          facebook: collabFacebook.trim(),
-        }),
+      const data = await api.post(`/ideas/${id}/collaborators`, {
+        name: collabName.trim(),
+        role: collabRole.trim(),
+        github: collabGithub.trim(),
+        linkedin: collabLinkedin.trim(),
+        instagram: collabInstagram.trim(),
+        facebook: collabFacebook.trim(),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Failed to add collaborator')
       setCollaborators(data.data)
       setCollabName('')
       setCollabRole('')
