@@ -116,8 +116,9 @@ export function HorizontalScroll({
         onMouseUp={handleDragEnd}
         onMouseLeave={handleDragEnd}
         onMouseEnter={() => pauseOnHover && setIsPaused(true)}
-        onMouseLeave={() => pauseOnHover && setIsPaused(false)}
-        className={`flex gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory scrollbar-hide ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} ${className}`}
+        className={
+          `flex gap-6 overflow-x-auto pb-6 scroll-smooth snap-x snap-mandatory scrollbar-hide ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} ${className}`
+        }
       >
         {children}
       </div>
