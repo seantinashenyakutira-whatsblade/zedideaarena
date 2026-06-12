@@ -337,29 +337,19 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
-                className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] mb-6 tracking-tight text-left"
+                className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] mb-6 tracking-tight text-left bg-clip-text text-transparent"
+                style={{
+                  backgroundImage: 'url(/background-img.png), linear-gradient(135deg,#6366F1,#22D3EE)',
+                  backgroundSize: '400px, cover',
+                  backgroundPosition: 'left center, center',
+                  backgroundRepeat: 'no-repeat, no-repeat',
+                  backgroundBlendMode: 'overlay, normal',
+                }}
               >
-                <span
-                  className="bg-clip-text text-transparent"
-                  style={{
-                    backgroundImage: 'url(/background-img.png)',
-                    backgroundSize: '200px',
-                    backgroundPosition: 'left center',
-                    backgroundRepeat: 'no-repeat',
-                    color: 'transparent',
-                    WebkitTextStroke: '0.5px rgba(255,255,255,0.03)',
-                    filter: 'brightness(2) saturate(0.5)',
-                  }}
-                >
-                  Where Ideas{' '}
-                </span>
-                <span className="gradient-text inline-block">Compete.</span>
-                <br />
-                <span className="inline-block text-white/90">
-                  And{' '}
-                  <span className="gradient-text inline-flex items-baseline gap-1">
-                    <TypeWriter texts={['Win.', 'Build.', 'Scale.', 'Fund.', 'Launch.']} />
-                  </span>
+                Where Ideas <span className="text-white/30">Compete.</span><br />
+                And{' '}
+                <span className="text-white/30">
+                  <TypeWriter texts={['Win.', 'Build.', 'Scale.', 'Fund.', 'Launch.']} />
                 </span>
               </motion.h1>
 
