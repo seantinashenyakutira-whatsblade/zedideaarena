@@ -204,8 +204,7 @@ const handleStripeWebhook = async (req, res) => {
       if (insertError.code === '23505') {
         return res.status(200).send('Payment already processed');
       }
-      console.error('Error inserting payment:', insertError);
-      return res.status(200).send('Insert error');
+      console.error('Error inserting payment (side effects will still run):', insertError);
     }
 
     try {
@@ -411,15 +410,11 @@ const verifyPayment = async (req, res) => {
           .select()
           .single();
 
-        if (insertError) {
-          if (insertError.code !== '23505') {
-            console.error('Error inserting fallback payment:', insertError);
-          }
-          // If it's a duplicate, someone else already inserted — return verified
-          return res.json({ verified: true, payment: { id: session_id, type: metaType, competition_id: metaCompetitionId, amount_cents: session.amount_total } });
+        if (insertError && insertError.code !== '23505') {
+          console.error('Error inserting fallback payment (side effects will still run):', insertError);
         }
 
-        // Apply side effects (same as webhook handler)
+        // Apply side effects regardless of upsert result (webhook may have raced or upsert failed on unrelated column)
         try {
           if (metaType === 'contestant') {
             const { data: ideaToCheck } = await supabase

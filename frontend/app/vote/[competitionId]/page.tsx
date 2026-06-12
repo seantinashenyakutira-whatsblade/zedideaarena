@@ -7,7 +7,7 @@ import { DashboardHeader } from '@/components/dashboard/header'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
 import { getYouTubeThumbnail } from '@/components/YouTubeEmbed'
-import { Trophy, Vote, Search, ThumbsUp, Loader2, ArrowLeft, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { Trophy, Vote, Search, ThumbsUp, Loader2, ArrowLeft, AlertTriangle, CheckCircle2, ImageOff } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { voteService } from '@/services/core'
 import { VoteModal } from '@/components/VoteModal'
@@ -220,16 +220,31 @@ function IdeasGrid({
                 : 'hover:border-zed-primary/30'
             }`}
           >
-            <div className="relative aspect-video rounded-xl overflow-hidden mb-6">
-              <Image
-                src={idea.image_url || getYouTubeThumbnail(idea.pitch_video_url || idea.video_url) || ''}
-                alt={idea.title}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+            <div className="relative aspect-video rounded-xl overflow-hidden mb-6 bg-white/5">
+              {(() => {
+                const imgSrc = idea.image_url || getYouTubeThumbnail(idea.pitch_video_url || idea.video_url)
+                if (imgSrc) {
+                  return (
+                    <>
+                      <Image
+                        src={imgSrc}
+                        alt={idea.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-700"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    </>
+                  )
+                }
+                return (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                    <ImageOff className="text-white/20" size={36} />
+                    <span className="text-[10px] text-white/10 font-bold uppercase tracking-widest">No Image</span>
+                  </div>
+                )
+              })()}
               <div className="absolute bottom-4 left-4 flex items-center gap-2">
                 <span className="bg-black/60 backdrop-blur-md text-[10px] text-white px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-white/10">
                   {idea.industry || idea.category}
