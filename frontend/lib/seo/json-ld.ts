@@ -131,7 +131,7 @@ export function teamSchemas() {
       name: 'Tyler B Picolani',
       role: 'Assistant Developer',
       bio: 'Building and maintaining platform features for a seamless experience.',
-      image: '/team/tyler.svg',
+      image: '/team/tyler.jpg',
     },
     {
       name: 'Calvin Mupazviriwo',
