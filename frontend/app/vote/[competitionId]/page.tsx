@@ -10,7 +10,7 @@ import { getYouTubeThumbnail } from '@/components/YouTubeEmbed'
 import { Trophy, Vote, Search, ThumbsUp, Loader2, ArrowLeft, AlertTriangle, CheckCircle2, ImageOff } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { voteService } from '@/services/core'
-import { VoteModal } from '@/components/VoteModal'
+import { RatingModal } from '@/components/voter/RatingModal'
 import { ContestantProfileCard } from '@/components/ContestantProfileCard'
 import { AdCard, shouldShowAd } from '@/components/ads/AdCard'
 import { toast } from 'sonner'
@@ -178,11 +178,19 @@ export default function CompetitionVotingPage() {
         </div>
       </div>
 
-      <VoteModal
+      <RatingModal
         idea={selectedIdea}
-        isOpen={!!selectedIdea}
         onClose={() => setSelectedIdea(null)}
-        onVoteComplete={handleVoteComplete}
+        onSubmit={async (ratings) => {
+          try {
+            await voteService.castVoteV2(selectedIdea.id, competitionId, ratings)
+            handleVoteComplete(selectedIdea.id)
+            toast.success('Your vote has been cast!')
+          } catch (err: any) {
+            toast.error(err?.response?.data?.message || err.message || 'Failed to cast vote')
+            throw err
+          }
+        }}
       />
     </ProtectedRoute>
   )

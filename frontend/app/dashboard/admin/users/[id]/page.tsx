@@ -217,9 +217,10 @@ export default function AdminUserDetailPage() {
                           <p className="font-bold text-zed-foreground text-sm">{vote.ideas?.title || 'Idea'}</p>
                           <p className="text-[10px] text-zed-foreground-secondary font-bold uppercase tracking-widest mt-0.5">
                             {new Date(vote.created_at).toLocaleDateString()}
-                            {vote.innovation_rating && ` • Innovation: ${vote.innovation_rating}/5`}
-                            {vote.impact_rating && ` • Impact: ${vote.impact_rating}/5`}
-                            {vote.feasibility_rating && ` • Feasibility: ${vote.feasibility_rating}/5`}
+                            {vote.innovation_score && ` • Innovation: ${vote.innovation_score}/10`}
+                            {vote.feasibility_score && ` • Feasibility: ${vote.feasibility_score}/10`}
+                            {vote.impact_score && ` • Impact: ${vote.impact_score}/10`}
+                            {vote.presentation_score && ` • Presentation: ${vote.presentation_score}/10`}
                           </p>
                         </div>
                       </div>

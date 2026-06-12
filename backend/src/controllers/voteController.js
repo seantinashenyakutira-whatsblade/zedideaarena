@@ -87,7 +87,7 @@ const getUserVotes = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('votes')
-      .select('idea_id, competition_id, innovation_rating, impact_rating, feasibility_rating, comment, created_at')
+      .select('idea_id, competition_id, innovation_score, feasibility_score, impact_score, presentation_score, total_score, comment, time_spent_seconds, created_at')
       .eq('user_id', userId);
 
     if (error) throw error;
@@ -99,11 +99,21 @@ const getUserVotes = async (req, res) => {
 };
 
 const castVoteV2 = async (req, res) => {
-  const { idea_id, competition_id, innovation_rating, impact_rating, feasibility_rating, comment } = req.body;
+  const {
+    idea_id, competition_id,
+    innovation_score, feasibility_score,
+    impact_score, presentation_score,
+    comment, time_spent_seconds,
+  } = req.body;
   const userId = req.user.uid;
 
   if (!idea_id || !competition_id) {
     return res.status(400).json({ status: 'error', message: 'idea_id and competition_id are required' });
+  }
+
+  const scores = [innovation_score, feasibility_score, impact_score, presentation_score];
+  if (scores.some(s => !s || s < 1 || s > 10)) {
+    return res.status(400).json({ status: 'error', message: 'All four scores required (1-10)' });
   }
 
   try {
@@ -144,7 +154,7 @@ const castVoteV2 = async (req, res) => {
 
     const { data: ideaData, error: ideaError } = await supabase
       .from('ideas')
-      .select('id, user_id, status, is_public, votes_count')
+      .select('id, user_id, status, is_public')
       .eq('id', idea_id)
       .single();
 
@@ -175,46 +185,35 @@ const castVoteV2 = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'You have already voted for this idea.' });
     }
 
-    const voteData = {
-      user_id: userId,
-      idea_id: idea_id,
-      competition_id: competition_id,
-      score: 1,
-    };
-    if (innovation_rating !== undefined) voteData.innovation_rating = innovation_rating;
-    if (impact_rating !== undefined) voteData.impact_rating = impact_rating;
-    if (feasibility_rating !== undefined) voteData.feasibility_rating = feasibility_rating;
-    if (comment !== undefined) voteData.comment = comment;
-
-    let { error: voteError } = await supabase.from('votes').insert(voteData);
+    const { data: vote, error: voteError } = await supabase
+      .from('votes')
+      .insert({
+        user_id: userId,
+        idea_id,
+        competition_id,
+        innovation_score,
+        feasibility_score,
+        impact_score,
+        presentation_score,
+        comment: comment || null,
+        time_spent_seconds: time_spent_seconds || 0,
+      })
+      .select()
+      .single();
 
     if (voteError) {
       if (voteError.code === '23505') {
         return res.status(400).json({ status: 'error', message: 'You have already voted for this idea.' });
       }
-      // Retry without rating fields if columns don't exist
-      if (voteError.code === '42703') {
-        const fallbackVote = { user_id: userId, idea_id, competition_id, score: 1 };
-        const { error: fallbackError } = await supabase.from('votes').insert(fallbackVote);
-        if (fallbackError) {
-          if (fallbackError.code === '23505') {
-            return res.status(400).json({ status: 'error', message: 'You have already voted for this idea.' });
-          }
-          throw fallbackError;
-        }
-      } else {
-        throw voteError;
-      }
+      throw voteError;
     }
 
-    const { error: countError } = await supabase
-      .from('ideas')
-      .update({ votes_count: (ideaData.votes_count || 0) + 1 })
-      .eq('id', idea_id);
+    await supabase.rpc('add_voter_vote_bonus', {
+      p_voter_id: userId,
+      p_competition_id: competition_id,
+    }).catch(err => console.error('Vote bonus RPC error:', err));
 
-    if (countError) throw countError;
-
-    res.json({ status: 'success', message: 'Vote cast successfully!' });
+    res.json({ status: 'success', message: 'Vote cast successfully!', vote });
   } catch (error) {
     console.error('Error casting vote:', error);
     res.status(500).json({ status: 'error', message: 'Internal server error while voting.' });
@@ -264,32 +263,33 @@ const getIdeaRatings = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('votes')
-      .select('innovation_rating, impact_rating, feasibility_rating, comment')
+      .select('innovation_score, feasibility_score, impact_score, presentation_score, comment')
       .eq('idea_id', ideaId);
 
     if (error) {
-      // Columns may not exist yet — return empty stats
       return res.json({
         status: 'success',
-        data: { total_votes: 0, avg_innovation_rating: 0, avg_impact_rating: 0, avg_feasibility_rating: 0, avg_total: 0, comments: [] },
+        data: { total_votes: 0, avg_innovation_score: 0, avg_feasibility_score: 0, avg_impact_score: 0, avg_presentation_score: 0, avg_total: 0, comments: [] },
       });
     }
 
     const count = data?.length || 0;
-    let avgInnovation = 0, avgImpact = 0, avgFeasibility = 0;
+    let avgInnovation = 0, avgFeasibility = 0, avgImpact = 0, avgPresentation = 0;
     const comments = [];
 
     if (data) {
       data.forEach((v) => {
-        if (v.innovation_rating) avgInnovation += Number(v.innovation_rating);
-        if (v.impact_rating) avgImpact += Number(v.impact_rating);
-        if (v.feasibility_rating) avgFeasibility += Number(v.feasibility_rating);
+        if (v.innovation_score) avgInnovation += Number(v.innovation_score);
+        if (v.feasibility_score) avgFeasibility += Number(v.feasibility_score);
+        if (v.impact_score) avgImpact += Number(v.impact_score);
+        if (v.presentation_score) avgPresentation += Number(v.presentation_score);
         if (v.comment) comments.push(v.comment);
       });
       if (count) {
         avgInnovation /= count;
-        avgImpact /= count;
         avgFeasibility /= count;
+        avgImpact /= count;
+        avgPresentation /= count;
       }
     }
 
@@ -297,10 +297,11 @@ const getIdeaRatings = async (req, res) => {
       status: 'success',
       data: {
         total_votes: count,
-        avg_innovation_rating: Math.round(avgInnovation * 10) / 10,
-        avg_impact_rating: Math.round(avgImpact * 10) / 10,
-        avg_feasibility_rating: Math.round(avgFeasibility * 10) / 10,
-        avg_total: Math.round((avgInnovation + avgImpact + avgFeasibility) / 3 * 10) / 10,
+        avg_innovation_score: Math.round(avgInnovation * 10) / 10,
+        avg_feasibility_score: Math.round(avgFeasibility * 10) / 10,
+        avg_impact_score: Math.round(avgImpact * 10) / 10,
+        avg_presentation_score: Math.round(avgPresentation * 10) / 10,
+        avg_total: Math.round((avgInnovation + avgFeasibility + avgImpact + avgPresentation) / 4 * 10) / 10,
         comments,
       },
     });
