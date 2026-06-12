@@ -332,14 +332,6 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* LEFT — Hero Text */}
             <motion.div style={{ y: heroTextY, opacity: heroTextOpacity }}>
-              {/* Logo */}
-              <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 1.2, ease: 'easeOut' }} className="mb-8">
-                <div className="relative inline-block">
-                  <Image src="/logo-full-dark.png" alt="ZedIdeaArena" width={100} height={100} className="object-contain drop-shadow-[0_0_40px_rgba(99,102,241,0.5)] relative z-10" />
-                  <motion.div className="absolute inset-0 z-0" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)', filter: 'blur(20px)' }} animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }} />
-                </div>
-              </motion.div>
-
               {/* Headline with image mask + typewriter */}
               <motion.h1
                 initial={{ opacity: 0, y: 40 }}
