@@ -5,6 +5,7 @@ import './globals.css'
 import { AuthProvider } from '@/hooks/useAuth'
 import { CookieConsent } from '@/components/CookieConsent'
 import { ChatBot } from '@/components/ChatBot'
+import { Toaster } from 'sonner'
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
@@ -57,6 +58,7 @@ export default function RootLayout({
           <CookieConsent />
           <ChatBot />
         </AuthProvider>
+        <Toaster position="bottom-center" toastOptions={{ style: { background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }, className: 'text-xs font-bold' }} />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
