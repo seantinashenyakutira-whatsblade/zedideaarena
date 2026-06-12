@@ -189,6 +189,15 @@ const handleStripeWebhook = async (req, res) => {
       return res.status(200).send('Invalid type');
     }
 
+    const amount = (amount_cents / 100).toFixed(2);
+
+    const { data: userIdea } = type === 'contestant' ? await supabase
+      .from('ideas')
+      .select('id')
+      .eq('user_id', user_id)
+      .eq('competition_id', competition_id)
+      .maybeSingle() : { data: null };
+
     const { error: insertError } = await supabase
       .from('payments')
       .insert({
@@ -196,8 +205,11 @@ const handleStripeWebhook = async (req, res) => {
         competition_id,
         type,
         stripe_session_id: session.id,
+        stripe_payment_intent_id: session.payment_intent,
         amount_cents,
+        amount,
         status: 'completed',
+        ...(type === 'contestant' && userIdea ? { idea_id: userIdea.id } : {}),
       });
 
     if (insertError) {
@@ -317,9 +329,10 @@ const checkPayment = async (req, res) => {
       return res.status(400).json({ error: 'Missing params' });
     }
 
-    const { data, error } = await supabase
+    // Check payments table first (source of truth for new payments)
+    const { data: paymentRecord, error } = await supabase
       .from('payments')
-      .select('id, status')
+      .select('id')
       .eq('user_id', uid)
       .eq('competition_id', competition_id)
       .eq('type', type)
@@ -330,7 +343,40 @@ const checkPayment = async (req, res) => {
       throw error;
     }
 
-    res.json({ alreadyPaid: !!data });
+    if (paymentRecord) {
+      return res.json({ alreadyPaid: true });
+    }
+
+    // Fallback: check users.voter_competitions_paid for voter payments
+    // (legacy — side effects may have updated this even when payments insert failed)
+    if (type === 'voter') {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('voter_competitions_paid')
+        .eq('id', uid)
+        .single();
+
+      const paidCompetitions = userData?.voter_competitions_paid || [];
+      if (paidCompetitions.includes(competition_id)) {
+        return res.json({ alreadyPaid: true });
+      }
+    }
+
+    // Fallback: check ideas.payment_status for contestant payments
+    if (type === 'contestant') {
+      const { data: ideaData } = await supabase
+        .from('ideas')
+        .select('payment_status')
+        .eq('user_id', uid)
+        .eq('competition_id', competition_id)
+        .maybeSingle();
+
+      if (ideaData?.payment_status === 'paid') {
+        return res.json({ alreadyPaid: true });
+      }
+    }
+
+    res.json({ alreadyPaid: false });
   } catch (err) {
     console.error('Payment check error:', err);
     res.status(500).json({ error: err.message });
@@ -389,12 +435,21 @@ const verifyPayment = async (req, res) => {
       return res.json({ verified: false, payment: null });
     }
 
-    try {
+      try {
       const session = await stripe.checkout.sessions.retrieve(session_id);
       if (session.payment_status === 'paid') {
         // Webhook hasn't processed yet — create payment record inline
         const metaCompetitionId = competition_id || session.metadata?.competition_id;
         const metaType = type || session.metadata?.type || 'contestant';
+        const amount_cents = session.amount_total;
+        const amount = (amount_cents / 100).toFixed(2);
+
+        const { data: userIdea } = metaType === 'contestant' ? await supabase
+          .from('ideas')
+          .select('id')
+          .eq('user_id', uid)
+          .eq('competition_id', metaCompetitionId)
+          .maybeSingle() : { data: null };
 
         const { data: newPayment, error: insertError } = await supabase
           .from('payments')
@@ -403,9 +458,12 @@ const verifyPayment = async (req, res) => {
             competition_id: metaCompetitionId,
             type: metaType,
             stripe_session_id: session_id,
-            amount_cents: session.amount_total,
+            stripe_payment_intent_id: session.payment_intent,
+            amount_cents,
+            amount,
             status: 'completed',
             created_at: new Date().toISOString(),
+            ...(metaType === 'contestant' && userIdea ? { idea_id: userIdea.id } : {}),
           }, { onConflict: 'stripe_session_id' })
           .select()
           .single();
@@ -437,7 +495,7 @@ const verifyPayment = async (req, res) => {
 
             await supabase.rpc('increment_prize_pool', {
               comp_id: metaCompetitionId,
-              amount: session.amount_total,
+              amount: amount_cents,
             });
           } else if (metaType === 'voter') {
             const { data: userData } = await supabase
@@ -462,7 +520,7 @@ const verifyPayment = async (req, res) => {
 
             await supabase.rpc('increment_prize_pool', {
               comp_id: metaCompetitionId,
-              amount: session.amount_total,
+              amount: amount_cents,
             });
           }
         } catch (sideEffectErr) {
