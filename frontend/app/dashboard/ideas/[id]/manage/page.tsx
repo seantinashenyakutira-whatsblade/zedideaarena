@@ -14,9 +14,14 @@ export default function ManageIdeaPage() {
   const [insights, setInsights] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
-  const [collaborators, setCollaborators] = useState('')
+  const [collaborators, setCollaborators] = useState<any[]>([])
   const [savingSettings, setSavingSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<'insights' | 'settings'>('insights')
+  const [showCollabModal, setShowCollabModal] = useState(false)
+  const [collabName, setCollabName] = useState('')
+  const [collabEmail, setCollabEmail] = useState('')
+  const [collabRole, setCollabRole] = useState('')
+  const [addingCollab, setAddingCollab] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -25,10 +30,17 @@ export default function ManageIdeaPage() {
         const ideaRes = await ideaService.getIdeaById(id as string)
         setIdea(ideaRes.data)
         try {
+          const collabs = ideaRes.data?.collaborators
+          if (collabs) {
+            try {
+              setCollaborators(typeof collabs === 'string' ? JSON.parse(collabs) : collabs)
+            } catch { setCollaborators([]) }
+          }
+        } catch { /* ignore */ }
+        try {
           const insightsRes = await ideaService.getIdeaInsights(id as string)
           if (insightsRes.data) {
             setInsights(insightsRes.data)
-            setCollaborators(insightsRes.data.idea?.collaborators || '')
           }
         } catch { /* insights may not be available yet */ }
       } catch (err) {
@@ -53,15 +65,30 @@ export default function ManageIdeaPage() {
     setDeleting(false)
   }
 
-  const handleSaveSettings = async () => {
-    setSavingSettings(true)
-    try {
-      await ideaService.updateIdeaSettings(id as string, { collaborators })
-      toast.success('Settings saved')
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to save settings')
+  const handleAddCollaborator = async () => {
+    if (!collabName.trim() || !collabEmail.trim()) {
+      toast.error('Name and email are required')
+      return
     }
-    setSavingSettings(false)
+    setAddingCollab(true)
+    try {
+      const res = await fetch(`/api/ideas/${id}/collaborators`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: collabName.trim(), email: collabEmail.trim(), role: collabRole.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Failed to add collaborator')
+      setCollaborators(data.data)
+      setCollabName('')
+      setCollabEmail('')
+      setCollabRole('')
+      setShowCollabModal(false)
+      toast.success('Collaborator added and notified!')
+    } catch (err: any) {
+      toast.error(err.message)
+    }
+    setAddingCollab(false)
   }
 
   const handleCopyLink = () => {
@@ -202,20 +229,50 @@ export default function ManageIdeaPage() {
             <h3 className="text-sm font-black text-zed-foreground uppercase tracking-widest mb-6 flex items-center gap-2">
               <Users size={16} /> Collaborators
             </h3>
-            <p className="text-xs text-zed-foreground-secondary mb-4">
-              List the names of collaborators working on this idea with you (comma-separated).
-            </p>
-            <input
-              type="text"
-              value={collaborators}
-              onChange={(e) => setCollaborators(e.target.value)}
-              placeholder="e.g. John Doe, Jane Smith"
-              className="input-zed mb-4"
-            />
-            <button onClick={handleSaveSettings} disabled={savingSettings} className="btn-primary px-6 py-3 rounded-xl text-xs font-black">
-              {savingSettings ? 'Saving...' : 'Save Settings'}
+            {collaborators.length > 0 && (
+              <div className="mb-6 space-y-2">
+                {collaborators.map((c, i) => (
+                  <div key={i} className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3">
+                    <div>
+                      <p className="text-sm font-bold text-zed-foreground">{c.name}</p>
+                      <p className="text-xs text-zed-foreground-secondary">{c.email}{c.role ? ` · ${c.role}` : ''}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button onClick={() => setShowCollabModal(true)} className="btn-primary px-6 py-3 rounded-xl text-xs font-black">
+              + Add Collaborator
             </button>
           </div>
+
+          {showCollabModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowCollabModal(false)}>
+              <div className="bg-zed-card border border-white/10 rounded-3xl p-8 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+                <h3 className="text-lg font-black text-zed-foreground mb-6">Add Collaborator</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1.5">Name</label>
+                    <input type="text" value={collabName} onChange={(e) => setCollabName(e.target.value)} placeholder="John Doe" className="input-zed" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1.5">Email</label>
+                    <input type="email" value={collabEmail} onChange={(e) => setCollabEmail(e.target.value)} placeholder="john@example.com" className="input-zed" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-1.5">Role (optional)</label>
+                    <input type="text" value={collabRole} onChange={(e) => setCollabRole(e.target.value)} placeholder="e.g. Designer, Developer" className="input-zed" />
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-8">
+                  <button onClick={() => setShowCollabModal(false)} className="flex-1 px-6 py-3 rounded-xl text-xs font-black bg-white/5 text-zed-foreground-secondary hover:bg-white/10 transition-all">Cancel</button>
+                  <button onClick={handleAddCollaborator} disabled={addingCollab} className="flex-1 px-6 py-3 rounded-xl text-xs font-black btn-primary">
+                    {addingCollab ? 'Adding...' : 'Invite'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="card-zed p-8 border-red-500/20">
             <h3 className="text-sm font-black text-red-400 uppercase tracking-widest mb-6 flex items-center gap-2">

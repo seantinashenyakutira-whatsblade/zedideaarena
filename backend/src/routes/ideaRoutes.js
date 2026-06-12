@@ -13,6 +13,7 @@ router.get('/public/:id', ideaController.getPublicIdeaById);
 router.delete('/:id', verifyToken, ideaController.deleteOwnIdea);
 router.get('/:id/insights', verifyToken, ideaController.getIdeaInsights);
 router.patch('/:id/settings', verifyToken, ideaController.updateIdeaSettings);
+router.post('/:id/collaborators', verifyToken, ideaController.addCollaborator);
 router.get('/:id', ideaController.getIdeaById);
 
 module.exports = router;

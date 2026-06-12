@@ -80,6 +80,18 @@ export default function IdeaDetailPage() {
     }
   }
 
+  const fallbackCopy = (text: string) => {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+    toast.success('Pitch link copied!')
+  }
+
   if (loading) return <div>Loading...</div>
   if (!idea) return <div>Idea not found</div>
 
@@ -196,7 +208,14 @@ export default function IdeaDetailPage() {
                       >
                         {castingVote ? 'Casting...' : hasVoted ? 'Voted' : 'Cast Your Vote'} <ThumbsUp size={18} />
                       </button>
-                      <button className="btn-secondary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-sm font-black uppercase tracking-widest">
+                      <button onClick={() => {
+                        const url = `${window.location.origin}/pitch/${id}`
+                        if (navigator.clipboard?.writeText) {
+                          navigator.clipboard.writeText(url).then(() => toast.success('Pitch link copied!')).catch(() => fallbackCopy(url))
+                        } else {
+                          fallbackCopy(url)
+                        }
+                      }} className="btn-secondary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-sm font-black uppercase tracking-widest">
                         Share Pitch <Share2 size={18} />
                       </button>
                     </div>

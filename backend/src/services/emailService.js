@@ -88,4 +88,28 @@ async function sendVoterVerified(email) {
   }
 }
 
-module.exports = { sendIdeaConfirmation, sendIdeaApproved, sendIdeaRejected, sendVoterVerified };
+async function sendCollaboratorInvite(email, ideaTitle, inviterName, role) {
+  if (!resend) return;
+  try {
+    const pitchUrl = `${process.env.FRONTEND_URL || 'https://zedideaarena.com'}/pitch/${encodeURIComponent(ideaTitle)}`;
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `You've been invited to collaborate on "${ideaTitle}"`,
+      html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+        <h2 style="color:#4f46e5;">Collaboration Invitation</h2>
+        <p><strong>${inviterName}</strong> has invited you to collaborate on their idea <strong>${ideaTitle}</strong>.</p>
+        ${role ? `<p>Your role: <strong>${role}</strong></p>` : ''}
+        <p>Click the link below to view the pitch:</p>
+        <a href="${pitchUrl}" style="display:inline-block;background:#4f46e5;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin:16px 0;">View Pitch</a>
+        <p style="color:#666;font-size:12px;">If you don't have an account, you'll be asked to sign up first.</p>
+        <p style="color:#666;">— The ZedIdeaArena Team</p>
+      </div>`,
+    });
+    console.log(`[EMAIL] Collaborator invite sent to ${email}`);
+  } catch (err) {
+    console.error('[EMAIL] Failed to send collaborator invite:', err.message);
+  }
+}
+
+module.exports = { sendIdeaConfirmation, sendIdeaApproved, sendIdeaRejected, sendVoterVerified, sendCollaboratorInvite };
