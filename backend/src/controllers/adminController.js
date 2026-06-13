@@ -115,6 +115,24 @@ const getAdminStats = async (req, res) => {
       .from('votes')
       .select('*', { count: 'exact', head: true });
 
+    // Pending verification counts
+    const { count: pendingIdeasCount } = await supabase
+      .from('ideas')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['draft', 'submitted'])
+      .or('payment_status.is.null,payment_status.neq.paid');
+
+    const { count: unverifiedUsersCount } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .or('is_verified.is.null,is_verified.neq.true');
+
+    const { count: pendingKycCount } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .not('identity_document_url', 'is', null)
+      .or('is_verified.is.null,is_verified.neq.true');
+
     // Prize distribution breakdown
     const prizeDistribution = [
       { position: 1, label: '1st Place', share: 0.5, icon: 'trophy', amount_cents: Math.round(prizePoolCents * 0.5) },
@@ -132,6 +150,11 @@ const getAdminStats = async (req, res) => {
         totalPrizePoolCents: prizePoolCents,
         votes: votesCount || 0,
         prizeDistribution,
+        pending: {
+          ideas: pendingIdeasCount || 0,
+          users: unverifiedUsersCount || 0,
+          kyc: pendingKycCount || 0,
+        },
       },
     });
   } catch (error) {

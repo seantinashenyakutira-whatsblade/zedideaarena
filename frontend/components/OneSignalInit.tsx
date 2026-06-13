@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 
 declare global {
   interface Window {
+    OneSignalDeferred?: any
     OneSignal?: any
   }
 }
@@ -15,28 +16,22 @@ export function OneSignalInit() {
     if (!APP_ID) return
     if (typeof window === 'undefined') return
 
-    const init = () => {
-      if (window.OneSignal) {
-        window.OneSignal.init({
-          appId: APP_ID,
-          allowLocalhostAsSecureOrigin: true,
-          serviceWorkerPath: '/OneSignalSDKWorker.js',
-          serviceWorkerUpdaterPath: '/OneSignalSDKUpdaterWorker.js',
-        })
-        window.dispatchEvent(new Event('onesignal-loaded'))
-      }
-    }
+    // Load OneSignal SDK
+    const script = document.createElement('script')
+    script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js'
+    script.defer = true
+    document.head.appendChild(script)
 
-    // Load OneSignal SDK if not already loaded
-    if (!window.OneSignal) {
-      const script = document.createElement('script')
-      script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js'
-      script.defer = true
-      script.onload = init
-      document.head.appendChild(script)
-    } else {
-      init()
-    }
+    // Initialize using deferred pattern (OneSignal v16+)
+    window.OneSignalDeferred = window.OneSignalDeferred || []
+    window.OneSignalDeferred.push(function (OneSignal: any) {
+      OneSignal.init({
+        appId: APP_ID,
+        allowLocalhostAsSecureOrigin: true,
+        serviceWorkerPath: '/OneSignalSDKWorker.js',
+        serviceWorkerUpdaterPath: '/OneSignalSDKUpdaterWorker.js',
+      })
+    })
   }, [])
 
   return null

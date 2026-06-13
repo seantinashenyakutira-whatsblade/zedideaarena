@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { Users, FileText, Trophy, Vote, DollarSign, AlertCircle, Loader2, ArrowRight, ShieldCheck, Medal, Crown, Award } from 'lucide-react'
+import { Users, FileText, Trophy, Vote, DollarSign, AlertCircle, Loader2, ArrowRight, ShieldCheck, Medal, Crown, Award, Bell, FileWarning, UserX, FileCheck } from 'lucide-react'
 import api from '@/lib/api'
 import { adminService } from '@/services/core'
 import Link from 'next/link'
@@ -83,6 +83,53 @@ export default function AdminOverview() {
                 <div className="flex justify-center py-20"><Loader2 size={40} className="animate-spin opacity-30" /></div>
               ) : (
                 <>
+                  {/* Pending Notifications */}
+                  {(stats?.pending?.ideas > 0 || stats?.pending?.users > 0 || stats?.pending?.kyc > 0) && (
+                    <div className="mb-8 space-y-3">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-zed-foreground-secondary flex items-center gap-2">
+                        <Bell size={14} /> Pending Review
+                      </h3>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        {stats.pending.ideas > 0 && (
+                          <Link href="/dashboard/admin/ideas" className="card-zed p-4 border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-all flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <FileWarning size={20} className="text-amber-400" />
+                              <div>
+                                <p className="text-xs font-bold uppercase tracking-widest text-amber-400">Ideas</p>
+                                <p className="text-lg font-black text-amber-300">{stats.pending.ideas} pending</p>
+                              </div>
+                            </div>
+                            <ArrowRight size={16} className="text-amber-400/50" />
+                          </Link>
+                        )}
+                        {stats.pending.users > 0 && (
+                          <Link href="/dashboard/admin/users" className="card-zed p-4 border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10 transition-all flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <UserX size={20} className="text-blue-400" />
+                              <div>
+                                <p className="text-xs font-bold uppercase tracking-widest text-blue-400">Unverified Users</p>
+                                <p className="text-lg font-black text-blue-300">{stats.pending.users} pending</p>
+                              </div>
+                            </div>
+                            <ArrowRight size={16} className="text-blue-400/50" />
+                          </Link>
+                        )}
+                        {stats.pending.kyc > 0 && (
+                          <Link href="/dashboard/admin/users" className="card-zed p-4 border-purple-500/30 bg-purple-500/5 hover:bg-purple-500/10 transition-all flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <FileCheck size={20} className="text-purple-400" />
+                              <div>
+                                <p className="text-xs font-bold uppercase tracking-widest text-purple-400">KYC Documents</p>
+                                <p className="text-lg font-black text-purple-300">{stats.pending.kyc} awaiting review</p>
+                              </div>
+                            </div>
+                            <ArrowRight size={16} className="text-purple-400/50" />
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                     {statCards.map((card) => {
                       const Icon = card.icon
