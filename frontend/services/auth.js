@@ -1,14 +1,22 @@
 import api from '../lib/api';
 import { supabase } from '../lib/supabase';
 
-const persistToken = (token) => {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('token', token);
+export const getToken = () => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('token') || sessionStorage.getItem('token');
 };
 
-const clearToken = () => {
+export const persistToken = (token, rememberMe = true) => {
+  if (typeof window === 'undefined') return;
+  clearToken();
+  const storage = rememberMe ? localStorage : sessionStorage;
+  storage.setItem('token', token);
+};
+
+export const clearToken = () => {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('token');
+  sessionStorage.removeItem('token');
 };
 
 const syncUserWithBackend = async (token) => {
@@ -32,7 +40,7 @@ export const authService = {
     }
 
     const token = data.session.access_token;
-    persistToken(token);
+    persistToken(token, credentials.rememberMe !== false);
 
     try {
       return await syncUserWithBackend(token);
@@ -64,7 +72,7 @@ export const authService = {
     }
 
     if (data.session?.access_token) {
-      persistToken(data.session.access_token);
+      persistToken(data.session.access_token, true);
       try {
         const syncResponse = await syncUserWithBackend(data.session.access_token);
         await supabase.auth.signOut();

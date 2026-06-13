@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { persistToken } from '@/services/auth'
 import { routes } from '@/lib/routes'
 import { Loader2 } from 'lucide-react'
 
@@ -18,7 +19,7 @@ export default function AuthCallbackPage() {
         return
       }
 
-      localStorage.setItem('token', session.access_token)
+      persistToken(session.access_token, true)
 
       try {
         const { data: { user } } = await supabase.auth.getUser()

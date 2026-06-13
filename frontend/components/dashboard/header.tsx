@@ -3,6 +3,7 @@
 import { Bell, Settings, User, ChevronDown, LogOut, ShieldCheck, Lock } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { getToken } from '@/services/auth'
 import { supabase } from '@/lib/supabase'
 import { routes } from '@/lib/routes'
 import { toast } from 'sonner'
@@ -60,7 +61,7 @@ export function DashboardHeader() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${getToken()}`,
         },
         body: JSON.stringify({ current_mode: pendingRole }),
       })

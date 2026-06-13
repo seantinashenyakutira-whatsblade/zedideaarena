@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { authService } from '@/services/auth'
+import { authService, getToken, clearToken } from '@/services/auth'
 import { routes } from '@/lib/routes'
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -10,7 +10,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [authorized, setAuthorized] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
+    const token = getToken()
     if (!token) {
       window.location.href = routes.login
       return
@@ -36,7 +36,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         setAuthorized(true)
       } catch (_) {
         if (cancelled) return
-        localStorage.removeItem('token')
+        clearToken()
         window.location.href = routes.login
       }
     })()

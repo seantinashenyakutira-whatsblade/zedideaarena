@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { VerificationBanner } from '@/components/dashboard/KycBanner'
+import { getToken } from '@/services/auth'
 import { useEffect, useState } from 'react'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -12,7 +13,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (loading) return
-    const token = localStorage.getItem('token')
+    const token = getToken()
     if (!token) {
       window.location.replace('/auth/login')
       return

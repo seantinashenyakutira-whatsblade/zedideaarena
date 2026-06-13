@@ -6,6 +6,7 @@ import { Home, Trophy, Lightbulb, User, Vote, CheckCircle, Wallet, Settings, Log
 import { AdSidebar } from '@/components/ads/AdSidebar'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { getToken } from '@/services/auth'
 import { supabase } from '@/lib/supabase'
 import { routes } from '@/lib/routes'
 import { toast } from 'sonner'
@@ -95,7 +96,7 @@ export function Sidebar() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${getToken()}`,
         },
         body: JSON.stringify({ current_mode: pendingRole }),
       })

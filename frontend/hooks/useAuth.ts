@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { authService } from '@/services/auth'
+import { authService, getToken, clearToken } from '@/services/auth'
 import { routes } from '@/lib/routes'
 import { toast } from 'sonner'
 
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentRole, setCurrentRole] = useState<string>('contestant')
 
   const fetchProfile = useCallback(async () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const token = typeof window !== 'undefined' ? getToken() : null
     if (!token) {
       setLoading(false)
       return
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCurrentRole(res.data.current_mode || res.data.role || 'contestant')
       }
     } catch (err: any) {
-      localStorage.removeItem('token')
+      clearToken()
       setProfile(null)
     } finally {
       setLoading(false)
