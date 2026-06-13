@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { MessageCircle, Send, Loader2, Image, FileText, Paperclip, Check, WifiOff } from 'lucide-react'
+import { MessageCircle, Send, Loader2, Image, FileText, Paperclip, Check, WifiOff, AlertCircle } from 'lucide-react'
 import api from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 export default function UserMessages() {
   const { profile } = useAuth()
@@ -56,7 +57,7 @@ export default function UserMessages() {
         const msgRes: any = await api.get(`/arena/chat?conversation_id=${conv.conversation_id}`)
         setMessages(msgRes?.data || [])
       }
-    } catch {} finally { setLoading(false) }
+    } catch (e: any) { console.error('Fetch chat error:', e) } finally { setLoading(false) }
   }
 
   const sendMessage = async () => {
@@ -70,7 +71,7 @@ export default function UserMessages() {
         setConversationId(res.data.conversation_id)
         setMessages(prev => [...prev, res.data])
       }
-    } catch {} finally { setSending(false) }
+    } catch (e: any) { toast.error(e?.data?.message || e?.message || 'Failed to send'); console.error('Send error:', e) } finally { setSending(false) }
   }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,7 +98,7 @@ export default function UserMessages() {
           setMessages(prev => [...prev, res.data])
         }
       }
-    } catch {} finally { setUploading(false); if (fileRef.current) fileRef.current.value = '' }
+    } catch (e: any) { toast.error(e?.data?.message || e?.message || 'Upload failed'); console.error('Upload error:', e) } finally { setUploading(false); if (fileRef.current) fileRef.current.value = '' }
   }
 
   const FileMessage = ({ msg }: { msg: any }) => {
