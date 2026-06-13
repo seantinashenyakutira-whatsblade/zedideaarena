@@ -375,8 +375,8 @@ export default function LandingPage() {
                 <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-purple-500 via-fuchsia-400 to-purple-600 opacity-60" />
                 <div className="relative bg-[#0A0A0F]/80 backdrop-blur-sm rounded-2xl px-6 py-4">
                   <p className="text-base sm:text-lg text-white/70 leading-relaxed font-medium">
-                    Submit your idea. Let the world vote.<br />
-                    The best idea takes the prize.
+                    ZedIdeaArena is a competition platform where innovators submit business ideas,<br />
+                    voters judge and earn rewards, and winning ideas split the prize pool.
                   </p>
                 </div>
               </motion.div>

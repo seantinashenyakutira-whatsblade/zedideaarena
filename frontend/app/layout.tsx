@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     default: 'ZedIdeaArena — Win by Sharing Your Ideas',
     template: '%s | ZedIdeaArena',
   },
-  description: 'A fintech-style idea competition and crowdfunding platform. Pitch your ideas, compete with others, and win funding.',
+    description: 'ZedIdeaArena is an idea competition platform where innovators submit business ideas, voters judge entries and earn rewards, and winning ideas split the prize pool.',
   metadataBase: new URL('https://zedideaarena.com'),
   generator: 'v0.app',
   icons: {
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     locale: 'en_US',
     siteName: 'ZedIdeaArena',
     title: 'ZedIdeaArena — Win by Sharing Your Ideas',
-    description: 'A fintech-style idea competition and crowdfunding platform. Pitch your ideas, compete with others, and win funding.',
+  description: 'ZedIdeaArena is an idea competition platform where innovators submit business ideas, voters judge entries and earn rewards, and winning ideas split the prize pool. Pitch, compete, and win funding.',
     images: [{ url: '/og', width: 1200, height: 630 }],
     url: 'https://zedideaarena.com',
   },
