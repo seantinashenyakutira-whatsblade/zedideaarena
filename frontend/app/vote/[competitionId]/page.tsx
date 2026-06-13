@@ -11,6 +11,7 @@ import { Trophy, Vote, Search, ThumbsUp, Loader2, ArrowLeft, AlertTriangle, Chec
 import { motion } from 'framer-motion'
 import { voteService } from '@/services/core'
 import { RatingModal } from '@/components/voter/RatingModal'
+import { IdeaDetailModal } from '@/components/voter/IdeaDetailModal'
 import { ContestantProfileCard } from '@/components/ContestantProfileCard'
 import { AdCard, shouldShowAd } from '@/components/ads/AdCard'
 import { toast } from 'sonner'
@@ -31,6 +32,7 @@ export default function CompetitionVotingPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [guardErrors, setGuardErrors] = useState<string[]>([])
   const [selectedIdea, setSelectedIdea] = useState<any>(null)
+  const [viewingIdea, setViewingIdea] = useState<any>(null)
 
   useEffect(() => {
     const results = ideas.filter(idea =>
@@ -170,6 +172,7 @@ export default function CompetitionVotingPage() {
                     guardErrors={guardErrors}
                     profile={profile}
                     onVoteClick={handleVoteClick}
+                    onViewIdea={setViewingIdea}
                   />
                 </Suspense>
               )}
@@ -178,6 +181,17 @@ export default function CompetitionVotingPage() {
         </div>
       </div>
 
+      {viewingIdea && (
+        <IdeaDetailModal
+          idea={viewingIdea}
+          competitionId={competitionId}
+          hasVoted={votedIdeas.includes(viewingIdea.id)}
+          isOwn={viewingIdea.user_id === profile?.id}
+          guardErrors={guardErrors}
+          onClose={() => setViewingIdea(null)}
+          onVoteClick={() => { setSelectedIdea(viewingIdea); setViewingIdea(null) }}
+        />
+      )}
       <RatingModal
         idea={selectedIdea}
         onClose={() => setSelectedIdea(null)}
@@ -202,12 +216,14 @@ function IdeasGrid({
   guardErrors,
   profile,
   onVoteClick,
+  onViewIdea,
 }: {
   ideas: any[]
   votedIdeas: string[]
   guardErrors: string[]
   profile: any
   onVoteClick: (idea: any) => void
+  onViewIdea: (idea: any) => void
 }) {
   const [thumbFailed, setThumbFailed] = useState<Set<string>>(new Set())
   return (
@@ -223,7 +239,8 @@ function IdeasGrid({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.06 }}
-            className={`card-zed group flex flex-col transition-all duration-500 ${
+            onClick={() => onViewIdea(idea)}
+            className={`card-zed group flex flex-col transition-all duration-500 cursor-pointer ${
               hasVoted
                 ? 'border-zed-success/50 shadow-[0_0_30px_rgba(34,197,94,0.25)] hover:shadow-[0_0_50px_rgba(34,197,94,0.4)]'
                 : isOwn
@@ -295,7 +312,7 @@ function IdeasGrid({
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => !hasVoted && !isOwn && guardErrors.length === 0 && onVoteClick(idea)}
+                    onClick={(e) => { e.stopPropagation(); !hasVoted && !isOwn && guardErrors.length === 0 && onVoteClick(idea) }}
                     disabled={hasVoted || isOwn || guardErrors.length > 0}
                     className={`flex items-center gap-2 h-11 px-6 rounded-xl font-black text-xs transition-all duration-200 ${
                       hasVoted
