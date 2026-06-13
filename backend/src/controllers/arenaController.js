@@ -319,16 +319,24 @@ const trackAdImpression = async (req, res) => {
 
     if (duration_seconds >= 3) {
       const credit_cents = 1;
-      await supabase
+      const { data: existing } = await supabase
         .from('voter_earnings')
-        .upsert({
-          voter_id: user_id,
-          competition_id: null,
-          ad_amount_cents: credit_cents,
-        }, {
-          onConflict: 'voter_id,competition_id',
-          ignoreDuplicates: false,
-        });
+        .select('ad_amount_cents')
+        .eq('voter_id', user_id)
+        .is('competition_id', null)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from('voter_earnings')
+          .update({ ad_amount_cents: (existing.ad_amount_cents || 0) + credit_cents })
+          .eq('voter_id', user_id)
+          .is('competition_id', null);
+      } else {
+        await supabase
+          .from('voter_earnings')
+          .insert({ voter_id: user_id, competition_id: null, ad_amount_cents: credit_cents });
+      }
     }
 
     res.json({ tracked: true });

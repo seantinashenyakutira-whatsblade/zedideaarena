@@ -36,7 +36,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await authService.login(result.data)
-      window.location.replace('/dashboard')
+      window.location.replace('/arena')
     } catch (err: any) {
       setError(err?.message || 'Login failed')
       setLoading(false)

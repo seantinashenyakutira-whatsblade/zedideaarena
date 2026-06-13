@@ -37,7 +37,7 @@ export default function AuthCallbackPage() {
         // backend sync failure is non-blocking for OAuth
       }
 
-      window.location.replace(routes.hub)
+      window.location.replace('/arena')
     }
 
     handleCallback()

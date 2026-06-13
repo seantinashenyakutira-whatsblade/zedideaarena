@@ -73,7 +73,7 @@ export function Sidebar() {
     setPasswordError(null)
 
     try {
-      const email = profile?.email || profile?.fullName
+      const email = profile?.email
       if (!email) {
         setPasswordError('Could not verify identity. Try logging out and back in.')
         setConfirmLoading(false)

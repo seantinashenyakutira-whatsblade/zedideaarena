@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (credentials: any) => {
     await authService.login(credentials)
-    window.location.replace(routes.hub)
+    window.location.replace('/arena')
   }
 
   const logout = async () => {

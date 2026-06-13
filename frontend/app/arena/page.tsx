@@ -179,7 +179,6 @@ function RepostIndicator({ repost }: { repost: ArenaPost }) {
       </div>
       {repost.content && <p className="text-xs text-zinc-300 mb-2">{repost.content}</p>}
       <PostMedia post={repost} />
-      {repost.image_url && !repost.video_url && !repost.link_url && null}
     </div>
   )
 }

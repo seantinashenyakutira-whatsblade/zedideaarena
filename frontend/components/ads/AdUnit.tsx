@@ -17,6 +17,7 @@ export function AdUnit({ slot, format = 'rectangle', className = '' }: AdUnitPro
   const tracked = useRef(false)
   const [inView, setInView] = useState(false)
   const { profile } = useAuth()
+  const adSlot = slot || adConfig.slots.infeed
 
   useEffect(() => {
     if (!adsEnabled || !ref.current) return
@@ -46,7 +47,7 @@ export function AdUnit({ slot, format = 'rectangle', className = '' }: AdUnitPro
         tracked.current = true
         try {
           await api.post('/ads/impression', {
-            ad_unit: slot || 'arena-sidebar',
+            ad_unit: adSlot || 'arena-sidebar',
             duration_seconds: duration,
           })
         } catch {}
@@ -54,12 +55,16 @@ export function AdUnit({ slot, format = 'rectangle', className = '' }: AdUnitPro
     }, 3000)
 
     return () => clearTimeout(timer)
-  }, [inView, profile, slot])
+  }, [inView, profile, adSlot])
 
-  if (!adsEnabled) return null
+  useEffect(() => {
+    if (!adsEnabled || !adSlot) return
+    try {
+      (window.adsbygoogle || []).push({})
+    } catch {}
+  }, [adsEnabled, adSlot])
 
-  const adSlot = slot || adConfig.slots.infeed
-  if (!adSlot) return null
+  if (!adsEnabled || !adSlot) return null
 
   return (
     <div ref={ref} className={`flex justify-center ${className}`}>

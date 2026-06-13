@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronRight, FileText, BookOpen } from 'lucide-react'
+import { FileText, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 
 const docSections = [
@@ -128,16 +128,14 @@ export default function DocsPage() {
                 {/* Section Items */}
                 <div className="mt-6 space-y-2 pt-6 border-t border-zed-border">
                   {section.items.map((item, itemIndex) => (
-                    <Link
+                    <div
                       key={itemIndex}
-                      href={`/docs/${item.slug}`}
-                      className="flex items-center justify-between px-4 py-3 rounded-zed-md hover:bg-zed-surface transition-colors group/item"
+                      className="flex items-center justify-between px-4 py-3 rounded-zed-md"
                     >
-                      <span className="text-sm text-zed-foreground-secondary group-hover/item:text-zed-foreground transition-colors">
+                      <span className="text-sm text-zed-foreground-secondary">
                         {item.title}
                       </span>
-                      <ChevronRight size={16} className="text-zed-foreground-secondary group-hover/item:text-zed-primary transition-colors" />
-                    </Link>
+                    </div>
                   ))}
                 </div>
               </div>

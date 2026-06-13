@@ -317,16 +317,16 @@ const getIdeaInsights = async (req, res) => {
     try {
       const { data: v, error: votesError } = await supabase
         .from('votes')
-        .select('innovation_rating, impact_rating, feasibility_rating, comment, created_at')
+        .select('innovation_score, feasibility_score, impact_score, presentation_score, comment, created_at')
         .eq('idea_id', id);
 
       if (!votesError && v) {
         votes = v;
         votesCount = v.length;
         v.forEach((vote) => {
-          if (vote.innovation_rating) avgInnovation += Number(vote.innovation_rating);
-          if (vote.impact_rating) avgImpact += Number(vote.impact_rating);
-          if (vote.feasibility_rating) avgFeasibility += Number(vote.feasibility_rating);
+          if (vote.innovation_score != null) avgInnovation += Number(vote.innovation_score);
+          if (vote.impact_score != null) avgImpact += Number(vote.impact_score);
+          if (vote.feasibility_score != null) avgFeasibility += Number(vote.feasibility_score);
         });
         if (votesCount) {
           avgInnovation /= votesCount;
@@ -334,7 +334,7 @@ const getIdeaInsights = async (req, res) => {
           avgFeasibility /= votesCount;
         }
       }
-    } catch { /* columns may not exist yet */ }
+    } catch (err) { console.error('getIdeaInsights error:', err?.message || err); }
 
     // Fallback: just count votes without ratings
     if (!votes.length) {
