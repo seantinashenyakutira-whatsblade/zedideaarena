@@ -484,7 +484,12 @@ const getPostsByTopic = async (req, res) => {
 const getChatMessages = async (req, res) => {
   try {
     const userId = req.user.uid;
-    const isAdmin = req.user.is_admin;
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('is_admin')
+      .eq('id', userId)
+      .single();
+    const isAdmin = userRow?.is_admin || false;
     const { conversation_id, before, limit = 50 } = req.query;
 
     let query = supabase
