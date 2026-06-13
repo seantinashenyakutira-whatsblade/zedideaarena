@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, Mail, Lock, Sparkles } from 'lucide-react'
+import { ArrowRight, Mail, Lock, Sparkles, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
@@ -10,6 +10,7 @@ import { loginSchema } from '@/lib/validators/login'
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false })
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -97,14 +98,22 @@ export default function LoginPage() {
             <div className="relative group">
               <Lock className="absolute left-3.5 top-3.5 text-white/30 group-focus-within:text-zed-primary transition-colors" size={18} />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 pl-11 rounded-2xl text-sm bg-white/5 border border-white/10 outline-none transition-all focus:border-zed-primary/50 focus:bg-white/[0.07] text-white placeholder-white/20"
+                className="w-full px-4 py-3 pl-11 pr-11 rounded-2xl text-sm bg-white/5 border border-white/10 outline-none transition-all focus:border-zed-primary/50 focus:bg-white/[0.07] text-white placeholder-white/20"
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-3.5 text-white/30 hover:text-white/60 transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
               {fieldErrors.password && <p className="text-red-400 text-xs mt-1.5 ml-1">{fieldErrors.password}</p>}
             </div>
           </div>
