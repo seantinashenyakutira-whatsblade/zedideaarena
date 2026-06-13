@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { MessageCircle, Send, Loader2, Image, FileText, Paperclip, Check, WifiOff, AlertCircle } from 'lucide-react'
+import { MessageCircle, Send, Loader2, Image, FileText, Paperclip, Check, WifiOff, AlertCircle, Trash2 } from 'lucide-react'
 import api from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -72,6 +72,14 @@ export default function UserMessages() {
         setMessages(prev => [...prev, res.data])
       }
     } catch (e: any) { toast.error(e?.data?.message || e?.message || 'Failed to send'); console.error('Send error:', e) } finally { setSending(false) }
+  }
+
+  const deleteMessage = async (msgId: string) => {
+    try {
+      await api.delete(`/arena/chat/${msgId}`)
+      setMessages(prev => prev.filter(m => m.id !== msgId))
+      toast.success('Message deleted')
+    } catch (e: any) { toast.error(e?.data?.message || e?.message || 'Failed to delete') }
   }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,7 +165,7 @@ export default function UserMessages() {
           </div>
         ) : (
           messages.map((msg, i) => (
-            <div key={msg.id || i} className={`flex ${msg.is_admin_reply ? 'justify-start' : 'justify-end'}`}>
+            <div key={msg.id || i} className={`flex gap-1 items-start group ${msg.is_admin_reply ? 'justify-start' : 'justify-end'}`}>
               <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${
                 msg.is_admin_reply
                   ? 'bg-white/5 text-white/80 rounded-bl-md'
@@ -177,6 +185,11 @@ export default function UserMessages() {
                   )}
                 </div>
               </div>
+              {!msg.is_admin_reply && (
+                <button onClick={() => deleteMessage(msg.id)} className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400 transition-all shrink-0 mt-1" title="Delete message">
+                  <Trash2 size={12} />
+                </button>
+              )}
             </div>
           ))
         )}

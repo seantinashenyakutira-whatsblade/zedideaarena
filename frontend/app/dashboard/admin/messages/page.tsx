@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { MessageCircle, ArrowLeft, Send, Loader2, Image, FileText, Paperclip, ChevronDown, Search, Clock, Check, AlertCircle } from 'lucide-react'
+import { MessageCircle, ArrowLeft, Send, Loader2, Image, FileText, Paperclip, ChevronDown, Search, Clock, Check, AlertCircle, Trash2 } from 'lucide-react'
 import api from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
@@ -61,6 +61,13 @@ export default function AdminMessages() {
       // Mark as read
       api.post(`/arena/chat/${conv.conversation_id}/read`).catch(() => {})
     } catch {}
+  }
+
+  const deleteMessage = async (msgId: string) => {
+    try {
+      await api.delete(`/arena/chat/${msgId}`)
+      setMessages(prev => prev.filter(m => m.id !== msgId))
+    } catch {} 
   }
 
   const sendReply = async () => {
@@ -209,7 +216,7 @@ export default function AdminMessages() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {messages.map((msg, i) => (
-                <div key={msg.id || i} className={`flex ${msg.is_admin_reply ? 'justify-end' : 'justify-start'}`}>
+                <div key={msg.id || i} className={`flex gap-1 items-start group ${msg.is_admin_reply ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${
                     msg.is_admin_reply
                       ? 'bg-indigo-500/20 text-white rounded-br-md'
@@ -225,6 +232,9 @@ export default function AdminMessages() {
                       {msg.is_admin_reply && <Check size={10} className="inline ml-1 text-blue-400" />}
                     </p>
                   </div>
+                  <button onClick={() => deleteMessage(msg.id)} className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400 transition-all shrink-0 mt-1" title="Delete message">
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               ))}
               <div ref={bottomRef} />

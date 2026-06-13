@@ -33,5 +33,6 @@ router.get('/rules', arenaController.getRules);
 router.get('/profile/:userId', arenaController.getUserProfile);
 
 router.post('/reports', verifyToken, reportController.submitReport);
+router.delete('/chat/:id', verifyToken, arenaController.deleteChatMessage);
 
 module.exports = router;

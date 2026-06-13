@@ -775,11 +775,34 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+const deleteChatMessage = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('is_admin')
+      .eq('id', userId)
+      .single();
+    const isAdmin = userRow?.is_admin || false;
+    const { id } = req.params;
+
+    let query = supabase.from('arena_chat_messages').delete().eq('id', id);
+    if (!isAdmin) query = query.eq('user_id', userId);
+
+    const { error } = await query;
+    if (error) throw error;
+    res.json({ status: 'success', message: 'Message deleted' });
+  } catch (err) {
+    console.error('Delete chat message error:', err);
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
 module.exports = {
   getPosts, createPost, updatePost, deletePost, createRepost,
   toggleLike, getComments, addComment, trackShare, trackAdImpression,
   getTrendingTopics, getPostsByTopic,
   getChatMessages, sendChatMessage, adminChatReply,
-  uploadChatFile, markConversationRead,
+  uploadChatFile, markConversationRead, deleteChatMessage,
   getRules, getUserProfile,
 };
