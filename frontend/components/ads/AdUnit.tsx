@@ -60,7 +60,7 @@ export function AdUnit({ slot, format = 'rectangle', className = '' }: AdUnitPro
   useEffect(() => {
     if (!adsEnabled || !adSlot) return
     try {
-      (window.adsbygoogle || []).push({})
+      ;(window as any).adsbygoogle?.push({})
     } catch {}
   }, [adsEnabled, adSlot])
 
