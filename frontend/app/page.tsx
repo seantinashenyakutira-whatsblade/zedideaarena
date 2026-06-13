@@ -350,6 +350,10 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* LEFT — Hero Text */}
             <motion.div style={{ y: heroTextY, opacity: heroTextOpacity }}>
+              {/* Purpose statement — always visible for Google verification */}
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-zed-primary mb-4">
+                Idea Competition Platform
+              </p>
               {/* Headline with typewriter */}
               <motion.h1
                 initial={{ opacity: 0, y: 40 }}
