@@ -236,12 +236,12 @@ export default function ArenaPage() {
     const formData = new FormData()
     formData.append('file', newPostImageFile)
     try {
-      const res: any = await api.post('/media/upload', formData, {
+      const res: any = await api.post('/media/arena-upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
-      return res?.data?.url || res?.url || null
-    } catch {
-      toast.error('Failed to upload image')
+      return res?.url || null
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to upload image')
       return null
     }
   }

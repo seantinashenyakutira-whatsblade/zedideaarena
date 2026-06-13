@@ -95,4 +95,41 @@ const uploadDocument = async (req, res) => {
   }
 };
 
-module.exports = { uploadMedia, uploadDocument };
+const ALLOWED_ARENA_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/quicktime', 'video/webm'];
+
+const uploadArenaMedia = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ status: 'error', message: 'No file uploaded' });
+  }
+
+  if (!ALLOWED_ARENA_TYPES.includes(req.file.mimetype)) {
+    return res.status(400).json({ status: 'error', message: 'Only JPEG, PNG, WebP, GIF images and MP4/MOV/WebM videos are allowed' });
+  }
+
+  try {
+    const ext = path.extname(req.file.originalname).toLowerCase() || `.${req.file.mimetype.split('/')[1]}`;
+    const fileName = `${req.user.uid}/${uuidv4()}${ext}`;
+
+    const { data, error } = await supabase.storage
+      .from('arena-media')
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        cacheControl: '31536000',
+        upsert: false,
+      });
+
+    if (error) throw error;
+
+    const publicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/arena-media/${fileName}`;
+
+    res.json({
+      status: 'success',
+      url: publicUrl,
+    });
+  } catch (error) {
+    console.error('Arena upload error:', error);
+    res.status(500).json({ status: 'error', message: 'Internal server error during upload' });
+  }
+};
+
+module.exports = { uploadMedia, uploadDocument, uploadArenaMedia };
