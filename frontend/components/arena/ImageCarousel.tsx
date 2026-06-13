@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ImageOff } from 'lucide-react'
 
 interface ImageCarouselProps {
   images: string[]
@@ -11,17 +11,44 @@ interface ImageCarouselProps {
 
 export function ImageCarousel({ images, className = '' }: ImageCarouselProps) {
   const [idx, setIdx] = useState(0)
+  const [errors, setErrors] = useState<Set<number>>(new Set())
+
   if (!images?.length) return null
+
+  const handleError = (i: number) => setErrors(prev => new Set(prev).add(i))
+
+  const renderImage = (src: string, i: number) => {
+    if (errors.has(i)) {
+      return (
+        <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+          <ImageOff size={32} className="text-white/20" />
+        </div>
+      )
+    }
+    return (
+      <Image
+        src={src}
+        alt=""
+        width={1200}
+        height={900}
+        className="w-full max-h-96 object-contain bg-black/40"
+        unoptimized
+        onError={() => handleError(i)}
+      />
+    )
+  }
+
   if (images.length === 1) {
     return (
       <div className={`relative rounded-xl overflow-hidden ${className}`}>
-        <Image src={images[0]} alt="" width={1200} height={900} className="w-full max-h-96 object-contain bg-black/40" unoptimized />
+        {renderImage(images[0], 0)}
       </div>
     )
   }
+
   return (
     <div className={`relative rounded-xl overflow-hidden group ${className}`}>
-      <Image src={images[idx]} alt="" width={1200} height={900} className="w-full max-h-96 object-contain bg-black/40" unoptimized />
+      {renderImage(images[idx], idx)}
       {images.length > 1 && (
         <>
           <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">

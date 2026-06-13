@@ -18,6 +18,7 @@ import {
 import { ImageCarousel } from '@/components/arena/ImageCarousel'
 import { TopicsSidebar } from '@/components/arena/TopicsSidebar'
 import { ArenaChat } from '@/components/arena/ArenaChat'
+import { ImageCropper } from '@/components/ImageCropper'
 
 type PostType = 'discussion' | 'question' | 'announcement' | 'idea_highlight' | 'media'
 
@@ -148,14 +149,10 @@ function PostMedia({ post }: { post: ArenaPost }) {
 function RepostIndicator({ repost }: { repost: ArenaPost }) {
   return (
     <div className="mb-3 p-3 rounded-xl bg-zinc-800/30 border border-zinc-700/30">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
-          {repost.users?.picture ? (
-            <Image src={repost.users.picture} alt="" width={20} height={20} className="object-cover rounded-full" />
-          ) : (
-            <span className="text-[7px] font-bold text-zinc-400">{repost.users?.full_name?.[0] || '?'}</span>
-          )}
-        </div>
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+            <AvatarDisplay src={repost.users?.picture} name={repost.users?.full_name} size={20} />
+          </div>
         <span className="text-[10px] font-bold text-zinc-400">{repost.users?.full_name || 'Anonymous'}</span>
         <span className="text-[8px] text-zinc-600">{timeAgo(repost.created_at)}</span>
       </div>
@@ -163,6 +160,14 @@ function RepostIndicator({ repost }: { repost: ArenaPost }) {
       <PostMedia post={repost} />
     </div>
   )
+}
+
+function AvatarDisplay({ src, name, size = 36 }: { src?: string | null; name?: string | null; size?: number }) {
+  const [error, setError] = useState(false)
+  if (src && !error) {
+    return <img src={src} alt="" width={size} height={size} className="object-cover rounded-full" onError={() => setError(true)} />
+  }
+  return <span className="text-xs font-bold text-indigo-400">{name?.[0] || '?'}</span>
 }
 
 export default function ArenaPage() {
@@ -193,6 +198,8 @@ export default function ArenaPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const multiFileInputRef = useRef<HTMLInputElement>(null)
   const feedRef = useRef<HTMLDivElement>(null)
+  const [cropImage, setCropImage] = useState<string | null>(null)
+  const [cropIndex, setCropIndex] = useState(-1)
 
   const fetchPosts = useCallback(async (topic?: string | null) => {
     try {
@@ -229,6 +236,15 @@ export default function ArenaPage() {
     URL.revokeObjectURL(newImagePreviews[idx])
     setNewImages(prev => prev.filter((_, i) => i !== idx))
     setNewImagePreviews(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  const handlePostImageCrop = (blob: Blob) => {
+    const newUrl = URL.createObjectURL(blob)
+    URL.revokeObjectURL(newImagePreviews[cropIndex])
+    setNewImages(prev => prev.map((f, i) => i === cropIndex ? new File([blob], f.name, { type: 'image/jpeg' }) : f))
+    setNewImagePreviews(prev => prev.map((u, i) => i === cropIndex ? newUrl : u))
+    setCropImage(null)
+    setCropIndex(-1)
   }
 
   const uploadImages = async (): Promise<string[]> => {
@@ -477,9 +493,12 @@ export default function ArenaPage() {
                   {newImagePreviews.length > 0 && (
                     <div className="mt-2 grid grid-cols-3 gap-2">
                       {newImagePreviews.map((preview, idx) => (
-                        <div key={idx} className="relative rounded-xl overflow-hidden bg-zinc-900 aspect-square">
+                        <div key={idx} className="relative rounded-xl overflow-hidden bg-zinc-900 aspect-square group cursor-pointer" onClick={() => { setCropImage(preview); setCropIndex(idx) }}>
                           <Image src={preview} alt="" width={200} height={200} className="w-full h-full object-cover" />
-                          <button onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5"><X size={12} /></button>
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                            <span className="text-white/0 group-hover:text-white/70 text-[10px] font-bold transition-all">Crop</span>
+                          </div>
+                          <button onClick={e => { e.stopPropagation(); removeImage(idx) }} className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5"><X size={12} /></button>
                         </div>
                       ))}
                     </div>
@@ -619,11 +638,7 @@ export default function ArenaPage() {
                         <div className="flex items-start gap-3 mb-3">
                           <Link href={`/arena/profile/${post.user_id}`}>
                             <div className="w-9 h-9 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0 overflow-hidden hover:ring-2 ring-indigo-400/50 transition-all">
-                              {post.users?.picture ? (
-                                <Image src={post.users.picture} alt="" width={36} height={36} className="object-cover" />
-                              ) : (
-                                <span className="text-xs font-bold text-indigo-400">{post.users?.full_name?.[0] || '?'}</span>
-                              )}
+                              <AvatarDisplay src={post.users?.picture} name={post.users?.full_name} />
                             </div>
                           </Link>
                           <div className="flex-1 min-w-0">
@@ -777,11 +792,7 @@ export default function ArenaPage() {
                                 {(comments[post.id] || []).map((comment: any) => (
                                   <div key={comment.id} className="flex gap-2">
                                     <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                      {comment.users?.picture ? (
-                                        <Image src={comment.users.picture} alt="" width={24} height={24} className="object-cover" />
-                                      ) : (
-                                        <span className="text-[8px] font-bold text-zinc-400">{comment.users?.full_name?.[0] || '?'}</span>
-                                      )}
+                                      <AvatarDisplay src={comment.users?.picture} name={comment.users?.full_name} size={24} />
                                     </div>
                                     <div className="flex-1">
                                       <div className="flex items-center gap-1.5">
@@ -868,6 +879,9 @@ export default function ArenaPage() {
         </div>
       </div>
       <ArenaChat />
+      {cropImage && (
+        <ImageCropper src={cropImage} aspect={1} onCrop={handlePostImageCrop} onCancel={() => { setCropImage(null); setCropIndex(-1) }} />
+      )}
     </div>
   )
 }

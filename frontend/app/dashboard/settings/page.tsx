@@ -6,6 +6,7 @@ import { User, Mail, Shield, LogOut, Save, Loader2, Camera, MapPin, Plus, X, Glo
 import { useState, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { ImageCropper } from '@/components/ImageCropper'
 
 const SOCIAL_PLATFORMS = [
   {
@@ -69,6 +70,7 @@ export default function SettingsPage() {
   const [loadingRole, setLoadingRole] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploadingPic, setUploadingPic] = useState(false)
+  const [cropImage, setCropImage] = useState<string | null>(null)
   const [fullName, setFullName] = useState('')
   const [bio, setBio] = useState('')
   const [phone, setPhone] = useState('')
@@ -116,16 +118,22 @@ export default function SettingsPage() {
     }
   }
 
-  const handlePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePicturePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image too large (max 5MB)')
       return
     }
+    setCropImage(URL.createObjectURL(file))
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleCroppedPicture = async (blob: Blob) => {
+    setCropImage(null)
     setUploadingPic(true)
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', blob, 'profile.jpg')
     try {
       const res: any = await api.post('/media/profile-upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -139,7 +147,6 @@ export default function SettingsPage() {
       toast.error('Failed to upload picture')
     } finally {
       setUploadingPic(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -204,7 +211,7 @@ export default function SettingsPage() {
                 </div>
               </button>
               <p className="text-[10px] text-zed-foreground-secondary font-bold uppercase tracking-widest">Click to change</p>
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePictureUpload} />
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePicturePick} />
             </div>
 
             <div className="flex-1 space-y-6">
@@ -414,6 +421,9 @@ export default function SettingsPage() {
           </div>
         </section>
       </div>
+      {cropImage && (
+        <ImageCropper src={cropImage} aspect={1} onCrop={handleCroppedPicture} onCancel={() => { setCropImage(null); URL.revokeObjectURL(cropImage) }} />
+      )}
     </div>
   )
 }
