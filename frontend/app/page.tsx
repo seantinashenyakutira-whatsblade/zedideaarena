@@ -347,13 +347,15 @@ export default function LandingPage() {
         </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto pt-28 pb-16">
+          {/* Purpose statement — static, no animations for Google verification */}
+          <div className="text-center mb-4 lg:mb-6">
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-zed-primary">
+              Idea Competition Platform — Innovators submit business ideas, voters judge and earn rewards, winning ideas split the prize pool
+            </p>
+          </div>
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* LEFT — Hero Text */}
             <motion.div style={{ y: heroTextY, opacity: heroTextOpacity }}>
-              {/* Purpose statement — always visible for Google verification */}
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-zed-primary mb-4">
-                Idea Competition Platform
-              </p>
               {/* Headline with typewriter */}
               <motion.h1
                 initial={{ opacity: 0, y: 40 }}

@@ -18,10 +18,10 @@ import {
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: {
-    default: 'ZedIdeaArena — Win by Sharing Your Ideas',
-    template: '%s | ZedIdeaArena',
-  },
+    title: {
+      default: 'ZedIdeaArena — Idea Competition Platform: Submit, Vote & Win Prize Pool Funding',
+      template: '%s | ZedIdeaArena',
+    },
     description: 'ZedIdeaArena is an idea competition platform where innovators submit business ideas, voters judge entries and earn rewards, and winning ideas split the prize pool.',
   metadataBase: new URL('https://zedideaarena.com'),
   generator: 'v0.app',
