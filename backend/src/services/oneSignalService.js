@@ -1,19 +1,13 @@
 const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
 const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
 
-async function sendNotification({ title, content, url, userIds, segments }: {
-  title: string
-  content: string
-  url?: string
-  userIds?: string[]
-  segments?: string[]
-}) {
+async function sendNotification({ title, content, url, userIds, segments }) {
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
     console.warn('[OneSignal] Missing credentials, skipping notification');
     return null;
   }
 
-  const body: Record<string, any> = {
+  const body = {
     app_id: ONESIGNAL_APP_ID,
     headings: { en: title },
     contents: { en: content },
