@@ -1,15 +1,5 @@
 import api from '../lib/api';
 
-export const mediaService = {
-  uploadFile: async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.post('/media/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
-};
-
 export const voteService = {
   castVote: (ideaId: string, competitionId: string) => api.post('/votes/cast', { ideaId, competitionId }),
   castVoteV2: (idea_id: string, competition_id: string, ratings?: any) => api.post('/voter/vote', { idea_id, competition_id, ...ratings }),
