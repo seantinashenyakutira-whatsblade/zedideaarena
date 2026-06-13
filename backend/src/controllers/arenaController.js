@@ -481,6 +481,20 @@ const getPostsByTopic = async (req, res) => {
   }
 };
 
+const attachUserData = async (items) => {
+  if (!items || (Array.isArray(items) && items.length === 0)) return items;
+  const arr = Array.isArray(items) ? items : [items];
+  const userIds = [...new Set(arr.map(d => d.user_id).filter(Boolean))];
+  if (userIds.length === 0) return items;
+  const { data: users } = await supabase
+    .from('users')
+    .select('id, full_name, picture, role')
+    .in('id', userIds);
+  const userMap = Object.fromEntries((users || []).map(u => [u.id, u]));
+  const attach = (item) => ({ ...item, users: userMap[item.user_id] || null });
+  return Array.isArray(items) ? arr.map(attach) : attach(arr[0]);
+};
+
 const getChatMessages = async (req, res) => {
   try {
     const userId = req.user.uid;
@@ -494,7 +508,7 @@ const getChatMessages = async (req, res) => {
 
     let query = supabase
       .from('arena_chat_messages')
-      .select(`*, users!inner(full_name, picture, role)`)
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(parseInt(limit));
 
@@ -514,15 +528,15 @@ const getChatMessages = async (req, res) => {
 
     if (error) throw error;
 
+    const enriched = await attachUserData(data || []);
+
     if (conversation_id) {
-      // Return flat messages array for a conversation
-      const messages = (data || []).reverse();
+      const messages = (enriched || []).reverse();
       return res.json({ status: 'success', data: messages });
     }
 
-    // Group by conversation for inbox view
     const conversations = {};
-    (data || []).forEach(msg => {
+    (enriched || []).forEach(msg => {
       const convId = msg.conversation_id;
       if (!conversations[convId]) {
         conversations[convId] = {
@@ -568,11 +582,12 @@ const sendChatMessage = async (req, res) => {
     const { data, error } = await supabase
       .from('arena_chat_messages')
       .insert(insert)
-      .select(`*, users!inner(full_name, picture, role)`)
+      .select('*')
       .single();
 
     if (error) throw error;
-    res.json({ status: 'success', data });
+    const enriched = await attachUserData(data);
+    res.json({ status: 'success', data: enriched });
   } catch (err) {
     console.error('Send chat error:', err);
     res.status(500).json({ status: 'error', message: err.message });
@@ -613,12 +628,13 @@ const adminChatReply = async (req, res) => {
     const { data, error } = await supabase
       .from('arena_chat_messages')
       .insert(insert)
-      .select(`*, users!inner(full_name, picture, role)`)
+      .select('*')
       .single();
 
     if (error) throw error;
 
-    // Send push notification to the user
+    const enriched = await attachUserData(data);
+
     try {
       const { sendNotification } = require('../services/oneSignalService');
       await sendNotification({
@@ -629,7 +645,7 @@ const adminChatReply = async (req, res) => {
       });
     } catch {}
 
-    res.json({ status: 'success', data });
+    res.json({ status: 'success', data: enriched });
   } catch (err) {
     console.error('Admin reply error:', err);
     res.status(500).json({ status: 'error', message: err.message });
