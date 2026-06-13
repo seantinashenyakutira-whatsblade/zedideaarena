@@ -9,7 +9,6 @@ import api from '@/lib/api'
 import { team } from '@/lib/team'
 import { social } from '@/lib/social'
 import { AdBanner } from '@/components/ads/AdBanner'
-import { HorizontalScroll } from '@/components/HorizontalScroll'
 
 const fadeUp = {
   initial: { opacity: 0, y: 40 },
@@ -348,7 +347,7 @@ export default function LandingPage() {
         </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto pt-28 pb-16">
-          <HorizontalScroll showControls={true} wheelScroll={true} wheelScrollSpeed={2} className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* LEFT — Hero Text */}
             <motion.div style={{ y: heroTextY, opacity: heroTextOpacity }}>
               {/* Headline with typewriter */}
@@ -417,7 +416,7 @@ export default function LandingPage() {
             >
               <VideoPlayer />
             </motion.div>
-          </HorizontalScroll>
+          </div>
         </div>
 
         {/* Scroll Indicator */}
