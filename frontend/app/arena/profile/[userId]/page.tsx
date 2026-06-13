@@ -7,9 +7,10 @@ import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import api from '@/lib/api'
 import { toast } from 'sonner'
+import ReportModal from '@/components/report/ReportModal'
 import {
   ArrowLeft, Calendar, MessageCircle, Heart, Lightbulb, Trophy,
-  Grid3X3, Bookmark, Loader2, X, ChevronLeft, ChevronRight, Check, Edit3,
+  Grid3X3, Bookmark, Loader2, X, ChevronLeft, ChevronRight, Check, Edit3, Flag,
 } from 'lucide-react'
 
 type Tab = 'posts' | 'ideas'
@@ -68,6 +69,7 @@ export default function ArenaProfilePage() {
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [editingBio, setEditingBio] = useState(false)
   const [bioText, setBioText] = useState('')
+  const [reportOpen, setReportOpen] = useState(false)
 
   const isOwnProfile = myProfile?.id === userId
 
@@ -135,10 +137,15 @@ export default function ArenaProfilePage() {
       <div className="max-w-4xl mx-auto px-4">
 
         {/* Back */}
-        <div className="py-4">
+        <div className="py-4 flex items-center justify-between">
           <Link href="/arena" className="inline-flex items-center gap-2 text-white/40 hover:text-white text-sm font-semibold transition-colors">
             <ArrowLeft size={16} /> Back
           </Link>
+          {myProfile?.id !== profile.id && (
+            <button onClick={() => setReportOpen(true)} className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-400 transition-colors">
+              <Flag size={12} /> Report user
+            </button>
+          )}
         </div>
 
         {/* Profile Card */}
@@ -413,6 +420,7 @@ export default function ArenaProfilePage() {
           </div>
         </div>
       )}
+      <ReportModal targetType="profile" targetId={profile.id} open={reportOpen} onClose={() => setReportOpen(false)} />
     </div>
   )
 }

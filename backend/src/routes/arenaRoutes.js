@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const arenaController = require('../controllers/arenaController');
+const reportController = require('../controllers/reportController');
 const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 
 const uploadChat = multer({
@@ -30,5 +31,7 @@ router.post('/chat/:conversationId/read', verifyToken, arenaController.markConve
 router.get('/rules', arenaController.getRules);
 
 router.get('/profile/:userId', arenaController.getUserProfile);
+
+router.post('/reports', verifyToken, reportController.submitReport);
 
 module.exports = router;

@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { MessageCircle, X, Send, Sparkles, Loader2, Image, Paperclip, FileText, Video, Music, ChevronDown, Check, WifiOff } from 'lucide-react'
+import { MessageCircle, X, Send, Sparkles, Loader2, Image, Paperclip, FileText, Video, Music, ChevronDown, Check, WifiOff, Flag } from 'lucide-react'
 import api from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
+import ReportModal from '@/components/report/ReportModal'
 
 type FileAttachment = {
   url: string
@@ -25,6 +26,7 @@ export function ArenaChat() {
   const [uploading, setUploading] = useState(false)
   const [connected, setConnected] = useState(true)
   const { profile } = useAuth()
+  const [reportTarget, setReportTarget] = useState<string | null>(null)
   const router = useRouter()
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -268,6 +270,9 @@ export function ArenaChat() {
                     {msg.message && <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>}
                     <FileMessage msg={msg} />
                     <div className="flex items-center gap-1.5 mt-1">
+                      <button onClick={() => setReportTarget(msg.id)} className="text-white/15 hover:text-red-400 transition-colors" title="Report message">
+                        <Flag size={8} />
+                      </button>
                       <p className="text-[10px] text-white/30">
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
@@ -316,6 +321,7 @@ export function ArenaChat() {
           </div>
         </div>
       )}
+      <ReportModal targetType="message" targetId={reportTarget || ''} open={!!reportTarget} onClose={() => setReportTarget(null)} />
     </>
   )
 }

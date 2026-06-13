@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Trophy, Lightbulb, User, Vote, CheckCircle, Wallet, Settings, LogOut, Menu, X, AlertTriangle, Lock, Shield, Users, FileText, BarChart3, MessageCircle } from 'lucide-react'
+import { Home, Trophy, Lightbulb, User, Vote, CheckCircle, Wallet, Settings, LogOut, Menu, X, AlertTriangle, Lock, Shield, Users, FileText, BarChart3, MessageCircle, Flag } from 'lucide-react'
 import { AdSidebar } from '@/components/ads/AdSidebar'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
@@ -34,6 +34,8 @@ const adminNav = [
   { href: '/dashboard/admin/users', icon: Users, label: 'Users' },
   { href: '/dashboard/admin/ideas', icon: FileText, label: 'Ideas' },
   { href: '/dashboard/admin/analytics', icon: BarChart3, label: 'Analytics' },
+  { href: '/dashboard/admin/messages', icon: MessageCircle, label: 'Messages' },
+  { href: '/dashboard/admin/reports', icon: Flag, label: 'Reports' },
 ]
 
 export function Sidebar() {

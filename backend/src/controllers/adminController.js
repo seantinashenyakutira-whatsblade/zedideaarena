@@ -133,6 +133,11 @@ const getAdminStats = async (req, res) => {
       .not('identity_document_url', 'is', null)
       .or('is_verified.is.null,is_verified.neq.true');
 
+    const { count: openReportsCount } = await supabase
+      .from('arena_reports')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'open');
+
     // Prize distribution breakdown
     const prizeDistribution = [
       { position: 1, label: '1st Place', share: 0.5, icon: 'trophy', amount_cents: Math.round(prizePoolCents * 0.5) },
@@ -154,6 +159,7 @@ const getAdminStats = async (req, res) => {
           ideas: pendingIdeasCount || 0,
           users: unverifiedUsersCount || 0,
           kyc: pendingKycCount || 0,
+          reports: openReportsCount || 0,
         },
       },
     });

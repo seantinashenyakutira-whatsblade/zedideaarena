@@ -13,13 +13,14 @@ import {
   MessageCircle, Heart, Share2, Send, Pin, Trophy,
   Users, TrendingUp, Loader2, Sparkles,
   Hash, ChevronDown, ImageIcon, Video, Link2, Repeat2,
-  X, Play, ExternalLink, Expand, MoreHorizontal, Edit3, Trash2, Plus,
+  X, Play, ExternalLink, Expand, MoreHorizontal, Edit3, Trash2, Plus, Flag,
 } from 'lucide-react'
 import { ImageCarousel } from '@/components/arena/ImageCarousel'
 import { TopicsSidebar } from '@/components/arena/TopicsSidebar'
 import { ArenaChat } from '@/components/arena/ArenaChat'
 import { ImageCropper } from '@/components/ImageCropper'
 import { OneSignalInit } from '@/components/OneSignalInit'
+import ReportModal from '@/components/report/ReportModal'
 
 type PostType = 'discussion' | 'question' | 'announcement' | 'idea_highlight' | 'media'
 
@@ -194,6 +195,7 @@ export default function ArenaPage() {
   const [editingPost, setEditingPost] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
   const [showMenu, setShowMenu] = useState<string | null>(null)
+  const [reportTarget, setReportTarget] = useState<{ type: 'post' | 'comment'; id: string } | null>(null)
   const [newImages, setNewImages] = useState<File[]>([])
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -673,29 +675,38 @@ export default function ArenaPage() {
                               <span className="text-[10px] text-zinc-500">{timeAgo(post.created_at)}</span>
                             </div>
                           </div>
-                          {profile?.id === post.user_id && (
-                            <div className="relative">
-                              <button onClick={() => setShowMenu(showMenu === post.id ? null : post.id)} className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-all">
-                                <MoreHorizontal size={14} />
-                              </button>
-                              {showMenu === post.id && (
-                                <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1 z-20 min-w-[140px] shadow-xl">
+                          <div className="relative">
+                            <button onClick={() => setShowMenu(showMenu === post.id ? null : post.id)} className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-all">
+                              <MoreHorizontal size={14} />
+                            </button>
+                            {showMenu === post.id && (
+                              <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1 z-20 min-w-[140px] shadow-xl">
+                                {profile?.id === post.user_id ? (
+                                  <>
+                                    <button
+                                      onClick={() => { setEditingPost(post.id); setEditContent(post.content); setShowMenu(null) }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
+                                    >
+                                      <Edit3 size={12} /> Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeletePost(post.id)}
+                                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
+                                    >
+                                      <Trash2 size={12} /> Delete
+                                    </button>
+                                  </>
+                                ) : (
                                   <button
-                                    onClick={() => { setEditingPost(post.id); setEditContent(post.content); setShowMenu(null) }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
-                                  >
-                                    <Edit3 size={12} /> Edit
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeletePost(post.id)}
+                                    onClick={() => { setReportTarget({ type: 'post', id: post.id }); setShowMenu(null) }}
                                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
                                   >
-                                    <Trash2 size={12} /> Delete
+                                    <Flag size={12} /> Report
                                   </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {/* Content */}
@@ -803,7 +814,7 @@ export default function ArenaPage() {
                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                               <div className="mt-3 pt-3 border-t border-white/5 space-y-3">
                                 {(comments[post.id] || []).map((comment: any) => (
-                                  <div key={comment.id} className="flex gap-2">
+                                  <div key={comment.id} className="flex gap-2 group">
                                     <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
                                       <AvatarDisplay src={comment.users?.picture} name={comment.users?.full_name} size={24} />
                                     </div>
@@ -814,6 +825,9 @@ export default function ArenaPage() {
                                       </div>
                                       <p className="text-xs text-zinc-300 mt-0.5">{comment.content}</p>
                                     </div>
+                                    <button onClick={() => setReportTarget({ type: 'comment', id: comment.id })} className="text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all self-start mt-1" title="Report comment">
+                                      <Flag size={10} />
+                                    </button>
                                   </div>
                                 ))}
                                 {profile ? (
@@ -892,6 +906,7 @@ export default function ArenaPage() {
         </div>
       </div>
       <ArenaChat />
+      <ReportModal targetType={reportTarget?.type || 'post'} targetId={reportTarget?.id || ''} open={!!reportTarget} onClose={() => setReportTarget(null)} />
       {cropImage && (
         <ImageCropper src={cropImage} aspect={1} onCrop={handlePostImageCrop} onCancel={() => { setCropImage(null); setCropIndex(-1) }} />
       )}
