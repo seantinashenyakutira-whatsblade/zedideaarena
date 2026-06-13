@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { MessageCircle, X, Send, Sparkles, Loader2 } from 'lucide-react'
 import api from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
+import { useRouter } from 'next/navigation'
 
 export function ArenaChat() {
   const [open, setOpen] = useState(false)
@@ -13,6 +14,7 @@ export function ArenaChat() {
   const [sending, setSending] = useState(false)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const { profile } = useAuth()
+  const router = useRouter()
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -77,18 +79,19 @@ export function ArenaChat() {
     } catch {} finally { setSending(false) }
   }
 
-  if (!profile) return null
-
   return (
     <>
-      <button onClick={() => setOpen(!open)} className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-zed-primary flex items-center justify-center shadow-lg shadow-zed-primary/20 hover:scale-105 transition-all">
+      <button
+        onClick={() => { if (!profile) { router.push('/auth/login'); return }; setOpen(!open) }}
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 hover:scale-105 transition-all hover:bg-indigo-400"
+      >
         {open ? <X size={20} /> : <MessageCircle size={20} />}
       </button>
 
       {open && (
         <div className="fixed bottom-20 right-6 z-50 w-80 sm:w-96 h-96 rounded-2xl border border-white/10 bg-[#0A0A0F] backdrop-blur-xl flex flex-col shadow-2xl overflow-hidden">
           <div className="p-3 border-b border-white/10 flex items-center gap-2">
-            <MessageCircle size={16} className="text-zed-primary" />
+            <MessageCircle size={16} className="text-indigo-400" />
             <span className="text-sm font-bold">Support Chat</span>
             <span className="text-[10px] text-white/30 ml-auto">Admins are online</span>
           </div>
@@ -104,9 +107,9 @@ export function ArenaChat() {
                   <div className={`max-w-[80%] p-2.5 rounded-2xl text-sm ${
                     msg.is_admin_reply
                       ? 'bg-white/5 text-white/80 rounded-bl-md'
-                      : 'bg-zed-primary/20 text-white rounded-br-md'
+                      : 'bg-indigo-500/20 text-white rounded-br-md'
                   }`}>
-                    {msg.is_admin_reply && <p className="text-[10px] text-zed-primary font-semibold mb-0.5">Admin</p>}
+                    {msg.is_admin_reply && <p className="text-[10px] text-indigo-400 font-semibold mb-0.5">Admin</p>}
                     <p className="leading-relaxed">{msg.message}</p>
                     <p className="text-[10px] text-white/30 mt-1">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
@@ -124,13 +127,13 @@ export function ArenaChat() {
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                 placeholder="Type a message..."
-                className="w-full px-4 py-2.5 pr-20 rounded-xl text-sm bg-white/5 border border-white/10 outline-none focus:border-zed-primary/50 text-white placeholder-white/30"
+                className="w-full px-4 py-2.5 pr-20 rounded-xl text-sm bg-white/5 border border-white/10 outline-none focus:border-indigo-500/50 text-white placeholder-white/30"
               />
               <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 <button onClick={polishWithAI} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors" title="Polish with AI">
-                  <Sparkles size={14} className="text-zed-primary" />
+                  <Sparkles size={14} className="text-indigo-400" />
                 </button>
-                <button onClick={sendMessage} disabled={sending || !input.trim()} className="w-7 h-7 rounded-lg bg-zed-primary flex items-center justify-center hover:bg-zed-primary/80 transition-colors disabled:opacity-30">
+                <button onClick={sendMessage} disabled={sending || !input.trim()} className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center hover:bg-indigo-500/80 transition-colors disabled:opacity-30">
                   {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                 </button>
               </div>

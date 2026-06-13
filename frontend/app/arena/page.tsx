@@ -19,6 +19,7 @@ import { ImageCarousel } from '@/components/arena/ImageCarousel'
 import { TopicsSidebar } from '@/components/arena/TopicsSidebar'
 import { ArenaChat } from '@/components/arena/ArenaChat'
 import { ImageCropper } from '@/components/ImageCropper'
+import { OneSignalInit } from '@/components/OneSignalInit'
 
 type PostType = 'discussion' | 'question' | 'announcement' | 'idea_highlight' | 'media'
 
@@ -308,6 +309,12 @@ export default function ArenaPage() {
           ? { ...p, is_liked_by_viewer: res.liked, likes_count: res.liked ? p.likes_count + 1 : Math.max(0, p.likes_count - 1) }
           : p
       ))
+      if (res.liked) {
+        const post = posts.find(p => p.id === postId)
+        if (post && post.user_id !== profile.id) {
+          api.post('/notifications/like', { postId, postOwnerId: post.user_id, likerName: profile.full_name }).catch(() => {})
+        }
+      }
     } catch {}
   }
 
@@ -423,6 +430,11 @@ export default function ArenaPage() {
       setComments(prev => ({ ...prev, [postId]: [...(prev[postId] || []), res.data] }))
       setCommentText(prev => ({ ...prev, [postId]: '' }))
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments_count: p.comments_count + 1 } : p))
+
+      const post = posts.find(p => p.id === postId)
+      if (post && post.user_id !== profile.id) {
+        api.post('/notifications/comment', { postId, postOwnerId: post.user_id, commenterName: profile.full_name, commentContent: text }).catch(() => {})
+      }
     } catch (err: any) {
       toast.error(err?.message || 'Failed to add comment')
     } finally {
@@ -440,6 +452,7 @@ export default function ArenaPage() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-white">
+      <OneSignalInit />
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
       <input ref={multiFileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImagePick} />
 

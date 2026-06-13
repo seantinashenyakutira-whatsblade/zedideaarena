@@ -2,11 +2,12 @@
 
 import { useAuth } from '@/hooks/useAuth'
 import { authService } from '@/services/auth'
-import { User, Mail, Shield, LogOut, Save, Loader2, Camera, MapPin, Plus, X, Globe, Check } from 'lucide-react'
+import { User, Mail, Shield, LogOut, Save, Loader2, Camera, MapPin, Plus, X, Globe, Check, Bell } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { ImageCropper } from '@/components/ImageCropper'
+import { NotificationPreferences } from '@/components/dashboard/NotificationPreferences'
 
 const SOCIAL_PLATFORMS = [
   {
@@ -374,6 +375,8 @@ export default function SettingsPage() {
             <p className="text-xs text-white/30 py-4 text-center">No social links added yet</p>
           )}
         </section>
+
+        <NotificationPreferences />
 
         <section className="card-zed p-8 border-white/5 bg-white/5">
           <h3 className="text-xl font-black text-zed-foreground mb-8 flex items-center gap-3">
