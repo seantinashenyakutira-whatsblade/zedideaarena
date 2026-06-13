@@ -485,26 +485,51 @@ const getChatMessages = async (req, res) => {
   try {
     const userId = req.user.uid;
     const isAdmin = req.user.is_admin;
+    const { conversation_id, before, limit = 50 } = req.query;
 
     let query = supabase
       .from('arena_chat_messages')
       .select(`*, users!inner(full_name, picture, role)`)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit));
+
+    if (conversation_id) {
+      query = query.eq('conversation_id', conversation_id);
+    }
 
     if (!isAdmin) {
       query = query.eq('user_id', userId);
     }
 
-    const { data, error } = await query.limit(100);
+    if (before) {
+      query = query.lt('created_at', before);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
-    // Group by conversation
+    if (conversation_id) {
+      // Return flat messages array for a conversation
+      const messages = (data || []).reverse();
+      return res.json({ status: 'success', data: messages });
+    }
+
+    // Group by conversation for inbox view
     const conversations = {};
     (data || []).forEach(msg => {
       const convId = msg.conversation_id;
       if (!conversations[convId]) {
-        conversations[convId] = { conversation_id: convId, user_id: msg.user_id, messages: [] };
+        conversations[convId] = {
+          conversation_id: convId,
+          user_id: msg.user_id,
+          user_name: msg.users?.full_name || 'Unknown',
+          user_picture: msg.users?.picture || null,
+          last_message: msg.message,
+          last_message_at: msg.created_at,
+          unread: !msg.read_at && msg.is_admin_reply !== true,
+          messages: [],
+        };
       }
       conversations[convId].messages.unshift(msg);
     });
@@ -519,19 +544,25 @@ const getChatMessages = async (req, res) => {
 const sendChatMessage = async (req, res) => {
   try {
     const userId = req.user.uid;
-    const { message, conversation_id } = req.body;
+    const { message, conversation_id, file_url, file_type, file_name, file_size } = req.body;
 
-    if (!message || !message.trim()) {
-      return res.status(400).json({ status: 'error', message: 'Message is required' });
+    if (!message?.trim() && !file_url) {
+      return res.status(400).json({ status: 'error', message: 'Message or file is required' });
     }
+
+    const insert = {
+      user_id: userId,
+      message: message?.trim() || '',
+      conversation_id: conversation_id || undefined,
+    };
+    if (file_url) insert.file_url = file_url;
+    if (file_type) insert.file_type = file_type;
+    if (file_name) insert.file_name = file_name;
+    if (file_size) insert.file_size = parseInt(file_size);
 
     const { data, error } = await supabase
       .from('arena_chat_messages')
-      .insert({
-        user_id: userId,
-        message: message.trim(),
-        conversation_id: conversation_id || undefined,
-      })
+      .insert(insert)
       .select(`*, users!inner(full_name, picture, role)`)
       .single();
 
@@ -547,28 +578,121 @@ const adminChatReply = async (req, res) => {
   try {
     const { conversationId } = req.params;
     const adminId = req.user.uid;
-    const { message } = req.body;
+    const { message, file_url, file_type, file_name, file_size } = req.body;
 
-    if (!message || !message.trim()) {
-      return res.status(400).json({ status: 'error', message: 'Message is required' });
+    if (!message?.trim() && !file_url) {
+      return res.status(400).json({ status: 'error', message: 'Message or file is required' });
     }
+
+    // Find the original user for this conversation
+    const { data: original } = await supabase
+      .from('arena_chat_messages')
+      .select('user_id')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single();
+
+    const insert = {
+      conversation_id: conversationId,
+      user_id: original?.user_id || adminId,
+      admin_id: adminId,
+      message: message?.trim() || '',
+      is_admin_reply: true,
+    };
+    if (file_url) insert.file_url = file_url;
+    if (file_type) insert.file_type = file_type;
+    if (file_name) insert.file_name = file_name;
+    if (file_size) insert.file_size = parseInt(file_size);
 
     const { data, error } = await supabase
       .from('arena_chat_messages')
-      .insert({
-        conversation_id: conversationId,
-        user_id: conversationId, // preserve original user context
-        admin_id: adminId,
-        message: message.trim(),
-        is_admin_reply: true,
-      })
+      .insert(insert)
       .select(`*, users!inner(full_name, picture, role)`)
       .single();
 
     if (error) throw error;
+
+    // Send push notification to the user
+    try {
+      const { sendNotification } = require('../services/oneSignalService');
+      await sendNotification({
+        title: 'New support reply',
+        content: message?.trim()?.slice(0, 100) || 'Sent you a file',
+        url: `${process.env.FRONTEND_URL || 'https://zedideaarena.com'}/arena`,
+        userIds: [original?.user_id],
+      });
+    } catch {}
+
     res.json({ status: 'success', data });
   } catch (err) {
     console.error('Admin reply error:', err);
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+const uploadChatFile = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ status: 'error', message: 'No file uploaded' });
+    }
+
+    const userId = req.user.uid;
+    const file = req.file;
+    const ext = file.originalname.split('.').pop() || 'bin';
+    const fileName = `chat/${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('arena-media')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        cacheControl: '31536000',
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from('arena-media')
+      .getPublicUrl(fileName);
+
+    // Determine file type category
+    let fileType = 'document';
+    if (file.mimetype.startsWith('image/')) fileType = 'image';
+    else if (file.mimetype.startsWith('video/')) fileType = 'video';
+    else if (file.mimetype.startsWith('audio/')) fileType = 'audio';
+
+    res.json({
+      status: 'success',
+      data: {
+        file_url: urlData.publicUrl,
+        file_type: fileType,
+        file_name: file.originalname,
+        file_size: file.size,
+      },
+    });
+  } catch (err) {
+    console.error('Upload chat file error:', err);
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+const markConversationRead = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user.uid;
+
+    const { error } = await supabase
+      .from('arena_chat_messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('conversation_id', conversationId)
+      .eq('is_admin_reply', false)
+      .is('read_at', null);
+
+    if (error) throw error;
+    res.json({ status: 'success' });
+  } catch (err) {
+    console.error('Mark read error:', err);
     res.status(500).json({ status: 'error', message: err.message });
   }
 };
@@ -635,5 +759,6 @@ module.exports = {
   toggleLike, getComments, addComment, trackShare, trackAdImpression,
   getTrendingTopics, getPostsByTopic,
   getChatMessages, sendChatMessage, adminChatReply,
+  uploadChatFile, markConversationRead,
   getRules, getUserProfile,
 };
