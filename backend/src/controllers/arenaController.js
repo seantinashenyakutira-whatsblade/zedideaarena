@@ -611,9 +611,18 @@ const getUserProfile = async (req, res) => {
 
     if (postsError) throw postsError;
 
+    const { data: ideas, error: ideasError } = await supabase
+      .from('ideas')
+      .select('id, title, industry, description, status, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (ideasError) throw ideasError;
+
     res.json({
       status: 'success',
-      data: { profile, posts: posts || [] },
+      data: { profile, posts: posts || [], ideas: ideas || [] },
     });
   } catch (err) {
     console.error('Get user profile error:', err);
