@@ -14,7 +14,13 @@ const uploadArena = multer({
   limits: { fileSize: 50 * 1024 * 1024 },
 });
 
+const uploadProfile = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
 router.post('/upload-document', verifyToken, uploadDoc.single('file'), mediaController.uploadDocument);
 router.post('/arena-upload', verifyToken, uploadArena.single('file'), mediaController.uploadArenaMedia);
+router.post('/profile-upload', verifyToken, uploadProfile.single('file'), mediaController.uploadProfilePicture);
 
 module.exports = router;

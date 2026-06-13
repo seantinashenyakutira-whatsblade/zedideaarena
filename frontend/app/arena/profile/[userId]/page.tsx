@@ -4,32 +4,68 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useAuth } from '@/hooks/useAuth'
+import api from '@/lib/api'
+import { toast } from 'sonner'
 import {
   ArrowLeft, Calendar, MessageCircle, Heart, Lightbulb, Trophy,
-  Grid3X3, Bookmark, Loader2, X, ChevronLeft, ChevronRight,
+  Grid3X3, Bookmark, Loader2, X, ChevronLeft, ChevronRight, Check, Edit3,
 } from 'lucide-react'
-import api from '@/lib/api'
-import { ImageCarousel } from '@/components/arena/ImageCarousel'
 
 type Tab = 'posts' | 'ideas'
 
+const SOCIAL_PLATFORMS: Record<string, { icon: string; color: string }> = {
+  twitter: { icon: '𝕏', color: 'text-white' },
+  instagram: { icon: '📸', color: 'text-pink-400' },
+  linkedin: { icon: '💼', color: 'text-blue-400' },
+  github: { icon: '⌘', color: 'text-white' },
+  youtube: { icon: '▶', color: 'text-red-400' },
+  tiktok: { icon: '♪', color: 'text-cyan-400' },
+  facebook: { icon: 'f', color: 'text-blue-500' },
+  whatsapp: { icon: '📱', color: 'text-green-400' },
+  discord: { icon: '💬', color: 'text-indigo-400' },
+  website: { icon: '🌐', color: 'text-emerald-400' },
+}
+
 export default function ArenaProfilePage() {
   const { userId } = useParams<{ userId: string }>()
+  const { profile: myProfile } = useAuth()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [savingBio, setSavingBio] = useState(false)
   const [tab, setTab] = useState<Tab>('posts')
   const [selectedPost, setSelectedPost] = useState<any>(null)
   const [selectedIdx, setSelectedIdx] = useState(0)
+  const [editingBio, setEditingBio] = useState(false)
+  const [bioText, setBioText] = useState('')
+
+  const isOwnProfile = myProfile?.id === userId
 
   useEffect(() => {
     if (!userId) return
     api.get(`/arena/profile/${userId}`).then((res: any) => {
       setData(res?.data || null)
+      setBioText(res?.data?.profile?.bio || '')
     }).catch(() => {}).finally(() => setLoading(false))
   }, [userId])
 
+  const saveBio = async () => {
+    setSavingBio(true)
+    try {
+      await api.post('/user/profile', { bio: bioText })
+      setData((prev: any) => prev ? { ...prev, profile: { ...prev.profile, bio: bioText } } : prev)
+      setEditingBio(false)
+      toast.success('Bio updated')
+    } catch {
+      toast.error('Failed to update bio')
+    } finally {
+      setSavingBio(false)
+    }
+  }
+
   const postsWithImages = (data?.posts || []).filter((p: any) => p.image_url || p.images?.length > 0)
   const postsTextOnly = (data?.posts || []).filter((p: any) => !p.image_url && (!p.images || p.images.length === 0))
+  const socialLinks = data?.profile?.social_links || []
 
   const openPost = (post: any, idx: number) => {
     setSelectedPost(post)
@@ -109,7 +145,76 @@ export default function ArenaProfilePage() {
                 <p className="text-[10px] text-white/40 uppercase tracking-wider">Joined</p>
               </div>
             </div>
-            {profile.bio && <p className="text-sm text-white/60 leading-relaxed max-w-lg">{profile.bio}</p>}
+
+            {/* Bio - editable inline for own profile */}
+            <div className="max-w-lg">
+              {editingBio ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={bioText}
+                    onChange={e => setBioText(e.target.value)}
+                    maxLength={300}
+                    rows={2}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/30 resize-none focus:outline-none focus:border-zed-primary/50"
+                    placeholder="Tell us about yourself..."
+                    autoFocus
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={saveBio}
+                      disabled={savingBio}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zed-primary text-white text-[10px] font-bold hover:bg-zed-primary/80 transition-all disabled:opacity-50"
+                    >
+                      {savingBio ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                      Save
+                    </button>
+                    <button
+                      onClick={() => { setEditingBio(false); setBioText(profile.bio || '') }}
+                      className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-white/40 hover:text-white transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="group flex items-start gap-2">
+                  {profile.bio ? (
+                    <p className="text-sm text-white/60 leading-relaxed">{profile.bio}</p>
+                  ) : (
+                    <p className="text-sm text-white/20 italic">No bio yet</p>
+                  )}
+                  {isOwnProfile && (
+                    <button
+                      onClick={() => setEditingBio(true)}
+                      className="p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all shrink-0 mt-0.5"
+                    >
+                      <Edit3 size={12} className="text-white/40" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Social Links */}
+            {socialLinks.filter((s: any) => s.url).length > 0 && (
+              <div className="flex items-center gap-2 mt-3">
+                {socialLinks.filter((s: any) => s.url).map((link: any) => {
+                  const platform = SOCIAL_PLATFORMS[link.platform] || { icon: '🔗', color: 'text-white' }
+                  return (
+                    <a
+                      key={link.platform}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all ${platform.color} text-sm`}
+                      title={link.url}
+                    >
+                      {platform.icon}
+                    </a>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -230,7 +335,6 @@ export default function ArenaProfilePage() {
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setSelectedPost(null)}>
           <button className="absolute top-4 right-4 text-white/50 hover:text-white z-10"><X size={24} /></button>
           <div className="max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            {/* Nav arrows */}
             <div className="flex items-center justify-between mb-4">
               <button onClick={prevPost} className="text-white/50 hover:text-white p-2"><ChevronLeft size={20} /></button>
               <span className="text-xs text-white/30">{selectedIdx + 1} / {(data?.posts || []).length}</span>
@@ -238,10 +342,13 @@ export default function ArenaProfilePage() {
             </div>
 
             <div className="bg-zinc-900 rounded-2xl overflow-hidden">
-              {/* Post images */}
               {(() => {
                 const imgs = selectedPost.images?.length ? selectedPost.images : selectedPost.image_url ? [selectedPost.image_url] : []
-                if (imgs.length > 0) return <ImageCarousel images={imgs} />
+                if (imgs.length > 0) return (
+                  <div className="relative">
+                    <ImageCarouselCustom images={imgs} />
+                  </div>
+                )
               })()}
 
               <div className="p-4">
@@ -275,6 +382,27 @@ export default function ArenaProfilePage() {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+function ImageCarouselCustom({ images }: { images: string[] }) {
+  const [idx, setIdx] = useState(0)
+  if (images.length === 1) {
+    return (
+      <Image src={images[0]} alt="" width={600} height={600} className="w-full aspect-square object-cover" unoptimized />
+    )
+  }
+  return (
+    <div className="relative">
+      <Image src={images[idx]} alt="" width={600} height={600} className="w-full aspect-square object-cover" unoptimized />
+      <div className="absolute top-3 right-3 bg-black/60 rounded-full px-2 py-0.5 text-[10px] font-bold">{idx + 1}/{images.length}</div>
+      {idx > 0 && (
+        <button onClick={() => setIdx(idx - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 rounded-full p-1.5 hover:bg-black/80"><ChevronLeft size={14} /></button>
+      )}
+      {idx < images.length - 1 && (
+        <button onClick={() => setIdx(idx + 1)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 rounded-full p-1.5 hover:bg-black/80"><ChevronRight size={14} /></button>
       )}
     </div>
   )

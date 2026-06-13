@@ -89,4 +89,44 @@ const uploadArenaMedia = async (req, res) => {
   }
 };
 
-module.exports = { uploadDocument, uploadArenaMedia };
+const uploadProfilePicture = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ status: 'error', message: 'No file uploaded' });
+  }
+
+  const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  if (!ALLOWED.includes(req.file.mimetype)) {
+    return res.status(400).json({ status: 'error', message: 'Only JPEG, PNG, WebP, GIF images are allowed' });
+  }
+
+  if (req.file.size > 5 * 1024 * 1024) {
+    return res.status(400).json({ status: 'error', message: 'File size exceeds 5MB limit' });
+  }
+
+  try {
+    const ext = path.extname(req.file.originalname).toLowerCase() || `.${req.file.mimetype.split('/')[1]}`;
+    const fileName = `profiles/${req.user.uid}/${uuidv4()}${ext}`;
+
+    const { error } = await supabase.storage
+      .from('arena-media')
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        cacheControl: '31536000',
+        upsert: true,
+      });
+
+    if (error) throw error;
+
+    const publicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/arena-media/${fileName}`;
+
+    res.json({
+      status: 'success',
+      url: publicUrl,
+    });
+  } catch (error) {
+    console.error('Profile picture upload error:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to upload profile picture' });
+  }
+};
+
+module.exports = { uploadDocument, uploadArenaMedia, uploadProfilePicture };

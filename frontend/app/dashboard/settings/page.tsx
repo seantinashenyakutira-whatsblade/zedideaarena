@@ -2,10 +2,28 @@
 
 import { useAuth } from '@/hooks/useAuth'
 import { authService } from '@/services/auth'
-import { User, Mail, Shield, LogOut, Save, Loader2, Camera, MapPin } from 'lucide-react'
+import { User, Mail, Shield, LogOut, Save, Loader2, Camera, MapPin, Plus, X, Globe } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+
+const SOCIAL_PLATFORMS = [
+  { id: 'twitter', label: 'X (Twitter)', icon: '𝕏', color: 'text-white' },
+  { id: 'instagram', label: 'Instagram', icon: '📸', color: 'text-pink-400' },
+  { id: 'linkedin', label: 'LinkedIn', icon: '💼', color: 'text-blue-400' },
+  { id: 'github', label: 'GitHub', icon: '⌘', color: 'text-white' },
+  { id: 'youtube', label: 'YouTube', icon: '▶', color: 'text-red-400' },
+  { id: 'tiktok', label: 'TikTok', icon: '♪', color: 'text-cyan-400' },
+  { id: 'facebook', label: 'Facebook', icon: 'f', color: 'text-blue-500' },
+  { id: 'whatsapp', label: 'WhatsApp', icon: '📱', color: 'text-green-400' },
+  { id: 'discord', label: 'Discord', icon: '💬', color: 'text-indigo-400' },
+  { id: 'website', label: 'Website', icon: '🌐', color: 'text-emerald-400' },
+]
+
+interface SocialLink {
+  platform: string
+  url: string
+}
 
 export default function SettingsPage() {
   const { profile, logout, refreshProfile } = useAuth()
@@ -18,6 +36,8 @@ export default function SettingsPage() {
   const [country, setCountry] = useState('')
   const [city, setCity] = useState('')
   const [address, setAddress] = useState('')
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([])
+  const [showPlatformPicker, setShowPlatformPicker] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -28,8 +48,11 @@ export default function SettingsPage() {
       setCountry(profile?.country || '')
       setCity(profile?.city || '')
       setAddress(profile?.address || '')
+      setSocialLinks(profile?.social_links || [])
     }
   }, [profile])
+
+  const availablePlatforms = SOCIAL_PLATFORMS.filter(p => !socialLinks.find(s => s.platform === p.id))
 
   const handleRoleChange = async (newRole: string) => {
     if (profile?.current_mode === newRole) return
@@ -56,7 +79,7 @@ export default function SettingsPage() {
     const formData = new FormData()
     formData.append('file', file)
     try {
-      const res: any = await api.post('/media/arena-upload', formData, {
+      const res: any = await api.post('/media/profile-upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       if (res?.url) {
@@ -72,10 +95,26 @@ export default function SettingsPage() {
     }
   }
 
+  const addSocialLink = (platformId: string) => {
+    setSocialLinks(prev => [...prev, { platform: platformId, url: '' }])
+    setShowPlatformPicker(false)
+  }
+
+  const updateSocialUrl = (platform: string, url: string) => {
+    setSocialLinks(prev => prev.map(s => s.platform === platform ? { ...s, url } : s))
+  }
+
+  const removeSocialLink = (platform: string) => {
+    setSocialLinks(prev => prev.filter(s => s.platform !== platform))
+  }
+
   const handleSave = async () => {
     setSaving(true)
     try {
-      await authService.updateProfile({ fullName, bio, phone, country, city, address })
+      await authService.updateProfile({
+        fullName, bio, phone, country, city, address,
+        social_links: socialLinks.filter(s => s.url.trim()),
+      })
       refreshProfile()
       toast.success('Profile saved')
     } catch {
@@ -100,7 +139,7 @@ export default function SettingsPage() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingPic}
-                className="relative w-32 h-32 rounded-3xl bg-zed-gradient-primary group overflow-hidden shadow-2xl hover:scale-105 transition-transform disabled:opacity-50"
+                className="relative w-32 h-32 rounded-full bg-zed-gradient-primary group overflow-hidden shadow-2xl hover:scale-105 transition-transform disabled:opacity-50"
               >
                 {profile?.picture ? (
                   <img src={profile.picture} alt="" className="w-full h-full object-cover" />
@@ -109,7 +148,7 @@ export default function SettingsPage() {
                     <User size={48} />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                   {uploadingPic ? (
                     <Loader2 size={24} className="animate-spin text-white" />
                   ) : (
@@ -195,6 +234,68 @@ export default function SettingsPage() {
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
+          </div>
+        </section>
+
+        {/* Social Links */}
+        <section className="card-zed p-8 border-white/5 bg-white/5">
+          <h3 className="text-xl font-black text-zed-foreground mb-8 flex items-center gap-3">
+            <Globe className="text-zed-accent" size={24} /> Social Links
+          </h3>
+
+          <div className="space-y-4">
+            {socialLinks.map(link => {
+              const platform = SOCIAL_PLATFORMS.find(p => p.id === link.platform)
+              return (
+                <div key={link.platform} className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0 ${platform?.color || 'text-white'}`}>
+                    <span className="text-lg">{platform?.icon || '?'}</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-1">{platform?.label || link.platform}</p>
+                    <input
+                      type="url"
+                      value={link.url}
+                      onChange={e => updateSocialUrl(link.platform, e.target.value)}
+                      placeholder={`https://${link.platform}.com/yourprofile`}
+                      className="input-zed text-sm"
+                    />
+                  </div>
+                  <button onClick={() => removeSocialLink(link.platform)} className="p-2 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400 transition-all">
+                    <X size={16} />
+                  </button>
+                </div>
+              )
+            })}
+
+            {availablePlatforms.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowPlatformPicker(!showPlatformPicker)}
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl border border-dashed border-white/10 text-white/40 hover:text-white hover:border-white/20 transition-all text-sm w-full"
+                >
+                  <Plus size={16} /> Add Social Link
+                </button>
+
+                {showPlatformPicker && (
+                  <div className="mt-2 p-3 rounded-xl bg-zinc-900 border border-zinc-700 grid grid-cols-2 gap-1">
+                    {availablePlatforms.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => addSocialLink(p.id)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-white/50 hover:text-white hover:bg-white/5 transition-all"
+                      >
+                        <span className={p.color}>{p.icon}</span> {p.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {socialLinks.length === 0 && !showPlatformPicker && (
+              <p className="text-xs text-white/30 py-4 text-center">No social links added yet</p>
+            )}
           </div>
         </section>
 
