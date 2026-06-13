@@ -7,6 +7,8 @@ import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import { Sidebar } from '@/components/dashboard/sidebar'
+import { DashboardHeader } from '@/components/dashboard/header'
 import { AdUnit } from '@/components/ads/AdUnit'
 import { toast } from 'sonner'
 import {
@@ -453,33 +455,16 @@ export default function ArenaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-white">
-      <OneSignalInit />
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
-      <input ref={multiFileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImagePick} />
+    <div className="flex h-screen bg-[#0A0A0F]">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <DashboardHeader />
+        <OneSignalInit />
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
+        <input ref={multiFileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImagePick} />
 
-      {/* Top Nav */}
-      <header className="sticky top-0 z-40 border-b border-white/5 bg-[#0A0A0F]/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-4">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
-              <Image src="/logo-icon.png" alt="" width={24} height={24} className="object-contain" />
-              <span className="font-black text-sm tracking-tight gradient-text">The Arena</span>
-            </Link>
-          </div>
-          <nav className="flex items-center gap-4">
-            <Link href="/arena/rules" className="text-xs font-bold text-white/50 hover:text-white transition-colors">Rules</Link>
-            <Link href="/competitions" className="text-xs font-bold text-white/50 hover:text-white transition-colors">Competitions</Link>
-            {profile ? (
-              <Link href="/dashboard" className="text-xs font-bold px-3 py-1.5 rounded-full bg-indigo-500 text-white">Dashboard</Link>
-            ) : (
-              <Link href="/auth/login" className="text-xs font-bold px-3 py-1.5 rounded-full border border-white/20 text-white/70 hover:text-white hover:border-white/40 transition-all">Sign In</Link>
-            )}
-          </nav>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 py-6">
+        <main className="flex-1 overflow-auto p-8">
+          <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-[1fr_320px] gap-8">
           {/* Main Feed */}
           <div ref={feedRef}>
@@ -904,6 +889,8 @@ export default function ArenaPage() {
             <AdUnit slot="arena-sidebar" format="rectangle" className="sticky top-20" />
           </aside>
         </div>
+      </div>
+        </main>
       </div>
       <ArenaChat />
       <ReportModal targetType={reportTarget?.type || 'post'} targetId={reportTarget?.id || ''} open={!!reportTarget} onClose={() => setReportTarget(null)} />
