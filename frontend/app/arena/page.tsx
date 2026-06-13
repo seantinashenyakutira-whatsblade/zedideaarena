@@ -11,12 +11,15 @@ import { AdUnit } from '@/components/ads/AdUnit'
 import { toast } from 'sonner'
 import {
   MessageCircle, Heart, Share2, Send, Pin, Trophy,
-  Users, TrendingUp, Loader2,
+  Users, TrendingUp, Loader2, Sparkles,
   Hash, ChevronDown, ImageIcon, Video, Link2, Repeat2,
-  X, Play, ExternalLink, Expand,
+  X, Play, ExternalLink, Expand, MoreHorizontal, Edit3, Trash2, Plus,
 } from 'lucide-react'
+import { ImageCarousel } from '@/components/arena/ImageCarousel'
+import { TopicsSidebar } from '@/components/arena/TopicsSidebar'
+import { ArenaChat } from '@/components/arena/ArenaChat'
 
-type PostType = 'discussion' | 'question' | 'announcement' | 'idea_highlight'
+type PostType = 'discussion' | 'question' | 'announcement' | 'idea_highlight' | 'media'
 
 interface ArenaPost {
   id: string
@@ -26,6 +29,7 @@ interface ArenaPost {
   linked_idea_id: string | null
   linked_competition_id: string | null
   image_url: string | null
+  images: string[]
   video_url: string | null
   link_url: string | null
   link_preview: { title?: string; description?: string; image?: string } | null
@@ -40,6 +44,7 @@ interface ArenaPost {
   users: { full_name: string; picture: string | null; role: string }
   linked_idea?: { id: string; title: string; industry: string } | null
   linked_competition?: { id: string; title: string } | null
+  topics: string[]
 }
 
 const POST_TYPE_OPTIONS: { value: PostType; label: string; icon: string }[] = [
@@ -54,6 +59,7 @@ const POST_TYPE_BADGES: Record<PostType, { label: string; color: string }> = {
   question: { label: 'Question', color: 'bg-amber-500/20 text-amber-400' },
   announcement: { label: 'Announcement', color: 'bg-purple-500/20 text-purple-400' },
   idea_highlight: { label: 'Idea Highlight', color: 'bg-emerald-500/20 text-emerald-400' },
+  media: { label: 'Media', color: 'bg-pink-500/20 text-pink-400' },
 }
 
 function timeAgo(date: string): string {
@@ -79,34 +85,10 @@ function getYouTubeThumbnail(url: string): string | null {
 }
 
 function PostMedia({ post }: { post: ArenaPost }) {
-  const [lightbox, setLightbox] = useState(false)
+  const allImages = (post.images?.length ? post.images : post.image_url ? [post.image_url] : [])
 
-  if (post.image_url) {
-    return (
-      <>
-        <div
-          className="relative rounded-xl overflow-hidden mb-3 bg-zinc-900 cursor-pointer group"
-          onClick={() => setLightbox(true)}
-        >
-          <Image
-            src={post.image_url}
-            alt="Post image"
-            width={600}
-            height={400}
-            className="w-full max-h-80 object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-            <Expand size={20} className="text-white/0 group-hover:text-white/70 transition-all" />
-          </div>
-        </div>
-        {lightbox && (
-          <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(false)}>
-            <button className="absolute top-4 right-4 text-white/70 hover:text-white z-10"><X size={24} /></button>
-            <Image src={post.image_url} alt="" width={1200} height={900} className="max-w-full max-h-[90vh] object-contain" onClick={e => e.stopPropagation()} />
-          </div>
-        )}
-      </>
-    )
+  if (allImages.length > 0) {
+    return <ImageCarousel images={allImages} />
   }
 
   if (post.video_url) {
@@ -202,12 +184,20 @@ export default function ArenaPage() {
   const [commentText, setCommentText] = useState<Record<string, string>>({})
   const [submittingComment, setSubmittingComment] = useState<string | null>(null)
   const [reposting, setReposting] = useState<string | null>(null)
+  const [activeTopic, setActiveTopic] = useState<string | null>(null)
+  const [editingPost, setEditingPost] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState('')
+  const [showMenu, setShowMenu] = useState<string | null>(null)
+  const [newImages, setNewImages] = useState<File[]>([])
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const multiFileInputRef = useRef<HTMLInputElement>(null)
   const feedRef = useRef<HTMLDivElement>(null)
 
-  const fetchPosts = useCallback(async () => {
+  const fetchPosts = useCallback(async (topic?: string | null) => {
     try {
-      const res: any = await api.get('/arena/posts?limit=50')
+      const url = topic ? `/arena/posts/by-topic?topic=${encodeURIComponent(topic)}` : '/arena/posts?limit=50'
+      const res: any = await api.get(url)
       setPosts(res?.data || [])
     } catch (err) {
       console.error('Failed to load arena posts:', err)
@@ -217,64 +207,75 @@ export default function ArenaPage() {
   }, [])
 
   useEffect(() => {
-    fetchPosts()
-  }, [fetchPosts])
+    fetchPosts(activeTopic)
+  }, [fetchPosts, activeTopic])
 
   const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Image too large (max 10MB)')
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+    if (newImages.length + files.length > 6) {
+      toast.error('Max 6 images per post')
       return
     }
-    setNewPostImageFile(file)
-    setNewPostImage(URL.createObjectURL(file))
+    const validFiles = files.filter(f => {
+      if (f.size > 10 * 1024 * 1024) { toast.error(`${f.name} is too large (max 10MB)`); return false }
+      return true
+    })
+    setNewImages(prev => [...prev, ...validFiles])
+    setNewImagePreviews(prev => [...prev, ...validFiles.map(f => URL.createObjectURL(f))])
   }
 
-  const uploadImage = async (): Promise<string | null> => {
-    if (!newPostImageFile) return null
-    const formData = new FormData()
-    formData.append('file', newPostImageFile)
-    try {
-      const res: any = await api.post('/media/arena-upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      return res?.url || null
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to upload image')
-      return null
+  const removeImage = (idx: number) => {
+    URL.revokeObjectURL(newImagePreviews[idx])
+    setNewImages(prev => prev.filter((_, i) => i !== idx))
+    setNewImagePreviews(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  const uploadImages = async (): Promise<string[]> => {
+    const urls: string[] = []
+    for (const file of newImages) {
+      const formData = new FormData()
+      formData.append('file', file)
+      try {
+        const res: any = await api.post('/media/arena-upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        if (res?.url) urls.push(res.url)
+      } catch (err: any) {
+        toast.error(err?.message || `Failed to upload ${file.name}`)
+      }
     }
+    return urls
   }
 
   const handleCreatePost = async () => {
     if (!profile) { router.push('/auth/login'); return }
     const content = newPostContent.trim()
-    if (!content && !newPostImageFile && !newPostVideoUrl && !newPostLinkUrl) return
+    if (!content && newImages.length === 0 && !newPostVideoUrl && !newPostLinkUrl) return
     setSubmitting(true)
     try {
-      let image_url = newPostImage
-      if (newPostImageFile) {
-        image_url = await uploadImage()
-      }
-
+      const images = await uploadImages()
       const body: Record<string, any> = {
         content: content || '(media)',
         post_type: newPostType,
       }
-      if (image_url) body.image_url = image_url
+      if (images.length > 0) {
+        body.images = images
+        body.image_url = images[0]
+      }
       if (newPostVideoUrl.trim()) body.video_url = newPostVideoUrl.trim()
       if (newPostLinkUrl.trim()) body.link_url = newPostLinkUrl.trim()
 
       await api.post('/arena/posts', body)
       setNewPostContent('')
       setNewPostType('discussion')
-      setNewPostImage(null)
-      setNewPostImageFile(null)
+      setNewImages([])
+      setNewImagePreviews([])
       setNewPostVideoUrl('')
       setNewPostLinkUrl('')
       setShowMediaBar(false)
       toast.success('Post created!')
-      fetchPosts()
+      fetchPosts(activeTopic)
     } catch (err: any) {
       toast.error(err?.message || 'Failed to create post')
     } finally {
@@ -323,6 +324,65 @@ export default function ArenaPage() {
     }
   }
 
+  const handleEditPost = async (postId: string) => {
+    if (!editContent.trim()) return
+    try {
+      await api.put(`/arena/posts/${postId}`, { content: editContent.trim() })
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, content: editContent.trim() } : p))
+      setEditingPost(null)
+      setEditContent('')
+      toast.success('Post updated')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update post')
+    }
+  }
+
+  const handleDeletePost = async (postId: string) => {
+    if (!confirm('Delete this post?')) return
+    try {
+      await api.delete(`/arena/posts/${postId}`)
+      setPosts(prev => prev.filter(p => p.id !== postId))
+      toast.success('Post deleted')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete post')
+    }
+    setShowMenu(null)
+  }
+
+  const generateAIPost = async () => {
+    if (!profile) { router.push('/auth/login'); return }
+    setSubmitting(true)
+    try {
+      const names = ['Tech Innovators', 'Creative Thinkers', 'Idea Shapers', 'Future Builders', 'Arena Champions']
+      const name = names[Math.floor(Math.random() * names.length)]
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENROUTER_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'openai/gpt-oss-120b:free',
+          messages: [
+            { role: 'system', content: `You are a community manager for an idea competition platform called "The Arena". Generate a short, engaging discussion prompt (max 200 chars) to spark conversation about innovation, startups, or competitions. Include 2-3 relevant hashtags.` },
+            { role: 'user', content: `Generate a discussion prompt for ${name} in The Arena.` },
+          ],
+          max_tokens: 150,
+        }),
+      })
+      const data = await res.json()
+      const prompt = data?.choices?.[0]?.message?.content?.trim()
+      if (prompt) {
+        setNewPostContent(prompt)
+        toast.success('AI prompt ready! Feel free to edit before posting.')
+      }
+    } catch {
+      toast.error('Failed to generate AI prompt')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const toggleComments = async (postId: string) => {
     if (expandedComments.has(postId)) {
       setExpandedComments(prev => { const n = new Set(prev); n.delete(postId); return n })
@@ -365,6 +425,7 @@ export default function ArenaPage() {
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-white">
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
+      <input ref={multiFileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImagePick} />
 
       {/* Top Nav */}
       <header className="sticky top-0 z-40 border-b border-white/5 bg-[#0A0A0F]/80 backdrop-blur-xl">
@@ -376,8 +437,8 @@ export default function ArenaPage() {
             </Link>
           </div>
           <nav className="flex items-center gap-4">
+            <Link href="/arena/rules" className="text-xs font-bold text-white/50 hover:text-white transition-colors">Rules</Link>
             <Link href="/competitions" className="text-xs font-bold text-white/50 hover:text-white transition-colors">Competitions</Link>
-            <Link href="/how-it-works" className="text-xs font-bold text-white/50 hover:text-white transition-colors">How It Works</Link>
             {profile ? (
               <Link href="/dashboard" className="text-xs font-bold px-3 py-1.5 rounded-full bg-indigo-500 text-white">Dashboard</Link>
             ) : (
@@ -412,11 +473,15 @@ export default function ArenaPage() {
                     onClick={() => !profile && router.push('/auth/login')}
                   />
 
-                  {/* Media preview */}
-                  {newPostImage && (
-                    <div className="relative mt-2 rounded-xl overflow-hidden bg-zinc-900 max-h-40">
-                      <Image src={newPostImage} alt="" width={300} height={200} className="w-full h-40 object-cover" />
-                      <button onClick={() => { setNewPostImage(null); setNewPostImageFile(null) }} className="absolute top-2 right-2 bg-black/60 rounded-full p-1"><X size={14} /></button>
+                  {/* Media previews */}
+                  {newImagePreviews.length > 0 && (
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {newImagePreviews.map((preview, idx) => (
+                        <div key={idx} className="relative rounded-xl overflow-hidden bg-zinc-900 aspect-square">
+                          <Image src={preview} alt="" width={200} height={200} className="w-full h-full object-cover" />
+                          <button onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5"><X size={12} /></button>
+                        </div>
+                      ))}
                     </div>
                   )}
 
@@ -470,9 +535,9 @@ export default function ArenaPage() {
                         )}
                       </div>
                       <button
-                        onClick={() => profile ? fileInputRef.current?.click() : router.push('/auth/login')}
-                        className={`p-1.5 rounded-lg transition-all ${newPostImage ? 'text-indigo-400 bg-indigo-500/20' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
-                        title="Attach image"
+                        onClick={() => profile ? multiFileInputRef.current?.click() : router.push('/auth/login')}
+                        className={`p-1.5 rounded-lg transition-all ${newImages.length > 0 ? 'text-indigo-400 bg-indigo-500/20' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
+                        title="Attach images (max 6)"
                       >
                         <ImageIcon size={14} />
                       </button>
@@ -483,11 +548,19 @@ export default function ArenaPage() {
                       >
                         <Link2 size={14} />
                       </button>
+                      <button
+                        onClick={generateAIPost}
+                        disabled={submitting}
+                        className="p-1.5 rounded-lg text-zinc-500 hover:text-amber-400 hover:bg-white/5 transition-all"
+                        title="Generate AI prompt"
+                      >
+                        {submitting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                      </button>
                       <span className="text-[10px] text-zinc-500 ml-1">{newPostContent.length}/500</span>
                     </div>
                     <button
                       onClick={handleCreatePost}
-                      disabled={(!newPostContent.trim() && !newPostImageFile && !newPostVideoUrl && !newPostLinkUrl) || submitting || !profile}
+                      disabled={(!newPostContent.trim() && newImages.length === 0 && !newPostVideoUrl && !newPostLinkUrl) || submitting || !profile}
                       className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-indigo-500 text-white text-[10px] font-bold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-indigo-600 transition-all"
                     >
                       {submitting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
@@ -544,16 +617,20 @@ export default function ArenaPage() {
 
                         {/* Header */}
                         <div className="flex items-start gap-3 mb-3">
-                          <div className="w-9 h-9 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                            {post.users?.picture ? (
-                              <Image src={post.users.picture} alt="" width={36} height={36} className="object-cover" />
-                            ) : (
-                              <span className="text-xs font-bold text-indigo-400">{post.users?.full_name?.[0] || '?'}</span>
-                            )}
-                          </div>
+                          <Link href={`/arena/profile/${post.user_id}`}>
+                            <div className="w-9 h-9 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0 overflow-hidden hover:ring-2 ring-indigo-400/50 transition-all">
+                              {post.users?.picture ? (
+                                <Image src={post.users.picture} alt="" width={36} height={36} className="object-cover" />
+                              ) : (
+                                <span className="text-xs font-bold text-indigo-400">{post.users?.full_name?.[0] || '?'}</span>
+                              )}
+                            </div>
+                          </Link>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-bold text-sm">{post.users?.full_name || 'Anonymous'}</span>
+                              <Link href={`/arena/profile/${post.user_id}`} className="font-bold text-sm hover:text-indigo-400 transition-colors">
+                                {post.users?.full_name || 'Anonymous'}
+                              </Link>
                               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                                 post.users?.role === 'admin' ? 'bg-red-500/20 text-red-400' :
                                 post.users?.role === 'voter' ? 'bg-cyan-500/20 text-cyan-400' :
@@ -568,11 +645,67 @@ export default function ArenaPage() {
                               <span className="text-[10px] text-zinc-500">{timeAgo(post.created_at)}</span>
                             </div>
                           </div>
+                          {profile?.id === post.user_id && (
+                            <div className="relative">
+                              <button onClick={() => setShowMenu(showMenu === post.id ? null : post.id)} className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-all">
+                                <MoreHorizontal size={14} />
+                              </button>
+                              {showMenu === post.id && (
+                                <div className="absolute right-0 top-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl p-1 z-20 min-w-[140px] shadow-xl">
+                                  <button
+                                    onClick={() => { setEditingPost(post.id); setEditContent(post.content); setShowMenu(null) }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
+                                  >
+                                    <Edit3 size={12} /> Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeletePost(post.id)}
+                                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
+                                  >
+                                    <Trash2 size={12} /> Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Content */}
-                        {post.content !== '(media)' && (
-                          <p className="text-sm leading-relaxed mb-3 whitespace-pre-wrap">{post.content}</p>
+                        {editingPost === post.id ? (
+                          <div className="mb-3 space-y-2">
+                            <textarea
+                              value={editContent}
+                              onChange={e => setEditContent(e.target.value)}
+                              maxLength={500}
+                              rows={3}
+                              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-white placeholder-zinc-500 resize-none focus:outline-none focus:border-indigo-500"
+                            />
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => handleEditPost(post.id)} className="px-3 py-1 rounded-lg bg-indigo-500 text-white text-[10px] font-bold hover:bg-indigo-600 transition-all">Save</button>
+                              <button onClick={() => { setEditingPost(null); setEditContent('') }} className="px-3 py-1 rounded-lg text-[10px] font-bold text-zinc-400 hover:text-white transition-all">Cancel</button>
+                            </div>
+                          </div>
+                        ) : (
+                          post.content !== '(media)' && (
+                            <p className="text-sm leading-relaxed mb-3 whitespace-pre-wrap">{post.content}</p>
+                          )
+                        )}
+
+                        {/* Topics */}
+                        {post.topics?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {post.topics.map(t => (
+                              <button key={t} onClick={() => setActiveTopic(activeTopic === t ? null : t)}
+                                className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                                  activeTopic === t
+                                    ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400'
+                                    : 'bg-white/5 border-white/10 text-white/40 hover:text-white/70'
+                                }`}
+                              >
+                                #{t}
+                              </button>
+                            ))}
+                          </div>
                         )}
 
                         {/* Reposted content */}
@@ -696,19 +829,7 @@ export default function ArenaPage() {
 
           {/* Right Sidebar */}
           <aside className="hidden lg:block space-y-6">
-            <div className="glass-card p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp size={14} className="text-indigo-400" />
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Trending</h3>
-              </div>
-              <div className="space-y-2">
-                {['#IdeaToWin2026', '#Innovation', '#Funding', '#AI', '#ClimateTech'].map(tag => (
-                  <button key={tag} className="flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors w-full text-left">
-                    <Hash size={12} className="text-zinc-600" />{tag}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <TopicsSidebar activeTopic={activeTopic} onSelectTopic={(t) => { setActiveTopic(t); setLoading(true) }} />
 
             <div className="glass-card p-4">
               <div className="flex items-center gap-2 mb-3">
@@ -733,12 +854,20 @@ export default function ArenaPage() {
                   <p className="text-[9px] text-zinc-500">Comments</p>
                 </div>
               </div>
+
+              {activeTopic && (
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <p className="text-[10px] text-zinc-500 text-center">Filtered by: <span className="text-indigo-400 font-bold">#{activeTopic}</span></p>
+                  <button onClick={() => { setActiveTopic(null); setLoading(true) }} className="mt-1 w-full text-[10px] text-indigo-400 hover:underline text-center">Clear filter</button>
+                </div>
+              )}
             </div>
 
             <AdUnit slot="arena-sidebar" format="rectangle" className="sticky top-20" />
           </aside>
         </div>
       </div>
+      <ArenaChat />
     </div>
   )
 }
