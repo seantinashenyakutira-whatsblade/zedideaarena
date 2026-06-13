@@ -209,6 +209,7 @@ function IdeasGrid({
   profile: any
   onVoteClick: (idea: any) => void
 }) {
+  const [thumbFailed, setThumbFailed] = useState<Set<string>>(new Set())
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
       {ideas.flatMap((idea, i) => {
@@ -232,7 +233,13 @@ function IdeasGrid({
           >
             <div className="relative aspect-video rounded-xl overflow-hidden mb-6 bg-white/5">
               {(() => {
-                const imgSrc = idea.image_url || getYouTubeThumbnail(idea.pitch_video_url || idea.video_url)
+                let imgSrc = idea.image_url
+                if (!imgSrc) {
+                  const vid = idea.pitch_video_url || idea.video_url
+                  imgSrc = thumbFailed.has(idea.id)
+                    ? getYouTubeThumbnail(vid, 'hq')
+                    : getYouTubeThumbnail(vid)
+                }
                 if (imgSrc) {
                   return (
                     <>
@@ -243,6 +250,7 @@ function IdeasGrid({
                         className="object-cover group-hover:scale-105 transition-transform duration-700"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         loading="lazy"
+                        onError={() => setThumbFailed(prev => new Set(prev).add(idea.id))}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                     </>
