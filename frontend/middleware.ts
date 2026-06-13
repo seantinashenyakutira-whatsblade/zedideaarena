@@ -13,10 +13,11 @@ function isPublicRoute(pathname: string): boolean {
   )
 }
 
-function isProtectedRoute(pathname: string): 'dashboard' | 'vote' | 'admin' | null {
+function isProtectedRoute(pathname: string): 'dashboard' | 'vote' | 'admin' | 'arena' | null {
   if (pathname.startsWith('/dashboard')) return 'dashboard'
   if (pathname.startsWith('/vote')) return 'vote'
   if (pathname.startsWith('/admin')) return 'admin'
+  if (pathname.startsWith('/arena')) return 'arena'
   return null
 }
 
@@ -33,33 +34,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Landing page — redirect to arena if logged in (skip for PWA)
-  if (pathname === '/') {
-    const res = NextResponse.next()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return request.cookies.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              res.cookies.set(name, value, options)
-            })
-          },
-        },
-      }
-    )
-    try {
-      const { data } = await supabase.auth.getSession()
-      if (data.session) {
-        return NextResponse.redirect(new URL('/arena', request.url))
-      }
-    } catch {}
-    return res
-  }
-
-  // Other public routes — no auth needed
+  // Public routes — no auth needed
   if (isPublicRoute(pathname)) {
     return NextResponse.next()
   }
