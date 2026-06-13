@@ -168,6 +168,16 @@ function TypeWriter({ texts }: { texts: string[] }) {
 }
 
 export default function LandingPage() {
+  // Redirect if opened inside installed PWA
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true
+    if (isStandalone) {
+      const token = localStorage.getItem('token')
+      window.location.replace(token ? '/arena' : '/auth/login')
+    }
+  }, [])
+
   const [competitions, setCompetitions] = useState<any[]>([])
   const [compLoading, setCompLoading] = useState(true)
   const [stats, setStats] = useState({ activeIdeas: 0, communityMembers: 0, fundingDistributed: 0, countries: 0 })
