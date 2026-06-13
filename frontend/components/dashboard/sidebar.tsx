@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Trophy, Lightbulb, User, Vote, CheckCircle, Wallet, Settings, LogOut, Menu, X, AlertTriangle, Lock, Shield, Users, FileText, BarChart3, MessageCircle, Flag } from 'lucide-react'
+import { Home, Trophy, Lightbulb, User, Vote, CheckCircle, Wallet, Settings, LogOut, Menu, X, AlertTriangle, Lock, Shield, Users, FileText, BarChart3, MessageCircle, Flag, LifeBuoy } from 'lucide-react'
 import { AdSidebar } from '@/components/ads/AdSidebar'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
@@ -16,6 +16,7 @@ const contestantNav = [
   { href: '/arena', icon: MessageCircle, label: 'The Arena' },
   { href: '/dashboard/competitions', icon: Trophy, label: 'My Competitions' },
   { href: '/dashboard/ideas', icon: Lightbulb, label: 'My Ideas' },
+  { href: '/dashboard/messages', icon: LifeBuoy, label: 'Support' },
   { href: '/dashboard/settings', icon: User, label: 'My Profile' },
 ]
 
@@ -25,6 +26,7 @@ const voterNav = [
   { href: '/dashboard/voting', icon: Vote, label: 'Vote' },
   { href: '/dashboard/voter', icon: CheckCircle, label: 'My Votes' },
   { href: '/dashboard/earnings', icon: Wallet, label: 'Earnings' },
+  { href: '/dashboard/messages', icon: LifeBuoy, label: 'Support' },
   { href: '/dashboard/settings', icon: User, label: 'My Profile' },
 ]
 
