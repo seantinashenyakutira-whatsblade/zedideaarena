@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     },
     description: 'ZedIdeaArena is an idea competition platform where innovators submit business ideas, voters judge entries and earn rewards, and winning ideas split the prize pool.',
   metadataBase: new URL('https://zedideaarena.com'),
-  generator: 'v0.app',
+    generator: 'ZedIdeaArena',
   icons: {
     icon: [
       { url: '/logo-icon.png', type: 'image/png' },
@@ -35,15 +35,15 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     siteName: 'ZedIdeaArena',
-    title: 'ZedIdeaArena — Win by Sharing Your Ideas',
-  description: 'ZedIdeaArena is an idea competition platform where innovators submit business ideas, voters judge entries and earn rewards, and winning ideas split the prize pool. Pitch, compete, and win funding.',
+    title: 'ZedIdeaArena — Idea Competition Platform: Submit, Vote & Win Prize Pool Funding',
+    description: 'ZedIdeaArena is an idea competition platform where innovators submit business ideas, voters judge entries and earn rewards, and winning ideas split the prize pool. Pitch, compete, and win funding.',
     images: [{ url: '/og', width: 1200, height: 630 }],
     url: 'https://zedideaarena.com',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ZedIdeaArena — Win by Sharing Your Ideas',
-    description: 'Pitch your ideas, compete with others, and win funding.',
+    title: 'ZedIdeaArena — Idea Competition Platform: Submit, Vote & Win Prize Pool Funding',
+    description: 'ZedIdeaArena is an idea competition platform where innovators submit business ideas, voters judge entries and earn rewards, and winning ideas split the prize pool.',
     images: ['/og'],
   },
   other: {

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Target, Heart, Globe, Lightbulb, Users, Award, Shield, Camera, Linkedin } from 'lucide-react'
 import Link from 'next/link'
@@ -108,7 +109,7 @@ export default function AboutPage() {
                 <div className="w-20 h-20 rounded-full mx-auto mb-5 overflow-hidden border-2 border-white/10 group-hover:border-zed-primary/30 transition-all" style={{ background: 'rgba(99,102,241,0.1)' }}>
                   <Image src={member.image} alt={member.name} width={80} height={80} className="w-full h-full object-cover opacity-70" unoptimized />
                 </div>
-                <h4 className="font-bold text-sm mb-1">{member.name}</h4>
+                <h3 className="font-bold text-sm mb-1">{member.name}</h3>
                 <p className="text-xs font-semibold" style={{ color: '#6366F1' }}>{member.role}</p>
                 <p className="text-xs text-white/40 mt-2 mb-3">{member.bio}</p>
                 <div className="flex items-center justify-center gap-2">

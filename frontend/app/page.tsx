@@ -9,6 +9,8 @@ import api from '@/lib/api'
 import { team } from '@/lib/team'
 import { social } from '@/lib/social'
 import { AdBanner } from '@/components/ads/AdBanner'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { faqSchema, teamSchemas } from '@/lib/seo/json-ld'
 
 const fadeUp = {
   initial: { opacity: 0, y: 40 },
@@ -237,8 +239,20 @@ export default function LandingPage() {
 
   const handleDragEnd = () => setIsDragging(false)
 
+  const faqData = [
+    { q: 'What is ZedIdeaArena?', a: 'ZedIdeaArena is an idea competition platform where innovators submit business ideas, voters judge entries and earn rewards, and winning ideas split the prize pool.' },
+    { q: 'Who is the founder of ZedIdeaArena?', a: 'ZedIdeaArena was founded by Sean Tinashe Nyakutira, the Founder & CEO based in Southern Africa.' },
+    { q: 'Who are the team members at ZedIdeaArena?', a: 'The ZedIdeaArena team includes Sean Tinashe Nyakutira (Founder & CEO), Brendon Svotwa (Head of Operations), Chenai Chipato (Community Lead), Tyler B Picolani (Assistant Developer), and Calvin Mupazviriwo (Marketing Director).' },
+    { q: 'How does ZedIdeaArena work?', a: 'Contestants submit their business ideas and pay a small entry fee that goes into the prize pool. Verified voters judge submissions and earn rewards. The best ideas win prize money.' },
+    { q: 'Who can join ZedIdeaArena?', a: 'Anyone can create a free account. Contestants can submit ideas to competitions, and voters can judge entries after paying a one-time verification fee.' },
+  ];
+
   return (
     <div className="bg-[#0A0A0F] text-white min-h-screen overflow-x-hidden">
+      <JsonLd data={faqSchema(faqData)} id="landing-faq" />
+      {teamSchemas().map((schema, i) => (
+        <JsonLd key={schema.name} data={schema} id={`person-${i}`} />
+      ))}
       {/* Nav */}
       <motion.nav
         initial={{ y: -80 }}
@@ -552,7 +566,7 @@ export default function LandingPage() {
                   >
                     <Image src={member.image} alt={member.name} width={80} height={80} className="w-full h-full object-cover opacity-70" unoptimized />
                   </motion.div>
-                  <h4 className="font-bold text-sm mb-1">{member.name}</h4>
+                  <h3 className="font-bold text-sm mb-1">{member.name}</h3>
                   <p className="text-xs font-semibold" style={{ color: '#6366F1' }}>{member.role}</p>
                   <p className="text-xs text-white/40 mt-2 mb-3">{member.bio}</p>
                   <div className="flex items-center justify-center gap-2">

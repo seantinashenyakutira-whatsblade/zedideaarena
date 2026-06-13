@@ -94,14 +94,16 @@ export function webApplicationSchema() {
   }
 }
 
-export function personSchema(name: string, role: string, bio: string, image: string, url?: string) {
+export function personSchema(name: string, role: string, bio: string, image: string, url?: string, sameAs?: string[]) {
   return {
+    '@context': 'https://schema.org',
     '@type': 'Person',
     name,
     jobTitle: role,
     description: bio,
     image: `${BASE_URL}${image}`,
     ...(url ? { url } : {}),
+    ...(sameAs && sameAs.length ? { sameAs } : {}),
   }
 }
 
@@ -113,6 +115,7 @@ export function teamSchemas() {
       bio: 'Lead developer and visionary behind ZedIdeaArena. Building the future of African innovation.',
       image: '/team/sean.jpg',
       url: 'https://mrseannyakutira.com',
+      sameAs: ['https://instagram.com/mrseannyakutira'],
     },
     {
       name: 'Brendon Svotwa',
@@ -138,10 +141,11 @@ export function teamSchemas() {
       role: 'Marketing Director',
       bio: 'Driving growth and brand awareness across Southern Africa and beyond.',
       image: '/team/calvin.jpg',
+      sameAs: ['https://instagram.com/ck_flames'],
     },
   ]
 
-  return team.map((m) => personSchema(m.name, m.role, m.bio, m.image, m.url))
+  return team.map((m) => personSchema(m.name, m.role, m.bio, m.image, m.url, m.sameAs))
 }
 
 export function faqSchema(questions: { q: string; a: string }[]) {
