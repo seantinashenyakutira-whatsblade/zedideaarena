@@ -29,6 +29,14 @@ export default function AdminMessages() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
+  const enrichMessage = async (msg: any) => {
+    if (msg.users) return msg
+    try {
+      const { data: user } = await supabase.from('users').select('id, full_name, picture, role').eq('id', msg.user_id).single()
+      return { ...msg, users: user || null }
+    } catch { return msg }
+  }
+
   // Real-time subscription for selected conversation
   useEffect(() => {
     if (!selectedConv) return
@@ -39,11 +47,9 @@ export default function AdminMessages() {
         schema: 'public',
         table: 'arena_chat_messages',
         filter: `conversation_id=eq.${selectedConv.conversation_id}`,
-      }, (payload) => {
-        setMessages(prev => {
-          if (prev.some(m => m.id === payload.new.id)) return prev
-          return [...prev, payload.new]
-        })
+      }, async (payload) => {
+        const enriched = await enrichMessage(payload.new)
+        setMessages(prev => prev.some(m => m.id === enriched.id) ? prev : [...prev, enriched])
       })
       .subscribe()
     return () => { sub.unsubscribe() }
@@ -239,14 +245,28 @@ export default function AdminMessages() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {messages.map((msg, i) => (
-                <div key={msg.id || i} className={`flex gap-1 items-start group ${msg.is_admin_reply ? 'justify-end' : 'justify-start'}`}>
+                <div key={msg.id || i} className={`flex gap-1.5 items-start group ${msg.is_admin_reply ? 'justify-end' : 'justify-start'}`}>
+                  {!msg.is_admin_reply && (
+                    <div className="w-6 h-6 rounded-full bg-indigo-500/20 shrink-0 mt-1 overflow-hidden">
+                      {msg.users?.picture ? (
+                        <img src={msg.users.picture} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-indigo-400">
+                          {(msg.users?.full_name || selectedConv.user_name || 'U').charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${
                     msg.is_admin_reply
                       ? 'bg-indigo-500/20 text-white rounded-br-md'
                       : 'bg-white/5 text-white/80 rounded-bl-md'
                   }`}>
                     {!msg.is_admin_reply && (
-                      <p className="text-[10px] text-indigo-400 font-semibold mb-0.5">{selectedConv.user_name || 'User'}</p>
+                      <p className="text-[10px] text-indigo-400 font-semibold mb-0.5">{msg.users?.full_name || selectedConv.user_name || 'User'}</p>
+                    )}
+                    {msg.is_admin_reply && (
+                      <p className="text-[10px] text-indigo-400 font-semibold mb-0.5">{msg.users?.full_name || 'Admin'}</p>
                     )}
                     {editingId === msg.id ? (
                       <div className="flex flex-col gap-1.5">
@@ -267,6 +287,17 @@ export default function AdminMessages() {
                       </>
                     )}
                   </div>
+                  {msg.is_admin_reply && (
+                    <div className="w-6 h-6 rounded-full bg-indigo-500/20 shrink-0 mt-1 overflow-hidden">
+                      {msg.users?.picture ? (
+                        <img src={msg.users.picture} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-indigo-400">
+                          {(msg.users?.full_name || 'A').charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-all shrink-0 mt-1">
                     <button onClick={() => startEdit(msg)} className="p-1.5 rounded-lg hover:bg-indigo-500/10 text-white/30 hover:text-indigo-400" title="Edit message">
                       <Pencil size={12} />

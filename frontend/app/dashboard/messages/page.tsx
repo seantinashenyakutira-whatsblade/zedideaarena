@@ -26,6 +26,14 @@ export default function UserMessages() {
   const inputRef = useRef<HTMLInputElement>(null)
   const editRef = useRef<HTMLInputElement>(null)
 
+  const enrichMessage = async (msg: any) => {
+    if (msg.users) return msg
+    try {
+      const { data: user } = await supabase.from('users').select('id, full_name, picture, role').eq('id', msg.user_id).single()
+      return { ...msg, users: user || null }
+    } catch { return msg }
+  }
+
   useEffect(() => { if (profile) fetchChat() }, [profile])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
@@ -40,11 +48,9 @@ export default function UserMessages() {
         schema: 'public',
         table: 'arena_chat_messages',
         filter: `conversation_id=eq.${conversationId}`,
-      }, (payload) => {
-        setMessages(prev => {
-          if (prev.some(m => m.id === payload.new.id)) return prev
-          return [...prev, payload.new]
-        })
+      }, async (payload) => {
+        const enriched = await enrichMessage(payload.new)
+        setMessages(prev => prev.some(m => m.id === enriched.id) ? prev : [...prev, enriched])
       })
       .subscribe((status) => setConnected(status === 'SUBSCRIBED'))
     return () => { sub.unsubscribe() }
@@ -189,7 +195,18 @@ export default function UserMessages() {
           </div>
         ) : (
           messages.map((msg, i) => (
-            <div key={msg.id || i} className={`flex gap-1 items-start group ${msg.is_admin_reply ? 'justify-start' : 'justify-end'}`}>
+            <div key={msg.id || i} className={`flex gap-1.5 items-start group ${msg.is_admin_reply ? 'justify-start' : 'justify-end'}`}>
+              {msg.is_admin_reply && (
+                <div className="w-6 h-6 rounded-full bg-indigo-500/20 shrink-0 mt-1 overflow-hidden">
+                  {msg.users?.picture ? (
+                    <img src={msg.users.picture} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-indigo-400">
+                      {(msg.users?.full_name || 'A').charAt(0)}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${
                 msg.is_admin_reply
                   ? 'bg-white/5 text-white/80 rounded-bl-md'
@@ -229,6 +246,17 @@ export default function UserMessages() {
                   <button onClick={() => deleteMessage(msg.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400" title="Delete message">
                     <Trash2 size={12} />
                   </button>
+                </div>
+              )}
+              {!msg.is_admin_reply && (
+                <div className="w-6 h-6 rounded-full bg-indigo-500/20 shrink-0 mt-1 overflow-hidden">
+                  {profile?.picture ? (
+                    <img src={profile.picture} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-indigo-400">
+                      {(profile?.full_name || 'U').charAt(0)}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
