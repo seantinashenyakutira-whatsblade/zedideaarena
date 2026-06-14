@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { authService } from '@/services/auth'
+import { authService, getHubUrl } from '@/services/auth'
 import { loginSchema } from '@/lib/validators/login'
 
 export default function LoginPage() {
@@ -37,7 +37,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await authService.login(result.data)
-      window.location.replace('/arena')
+      window.location.replace(getHubUrl('/arena'))
     } catch (err: any) {
       setError(err?.message || 'Login failed')
       setLoading(false)

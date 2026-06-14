@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { persistToken } from '@/services/auth'
-import { routes } from '@/lib/routes'
+import { persistToken, getHubUrl } from '@/services/auth'
 import { Loader2 } from 'lucide-react'
 
 export default function AuthCallbackPage() {
@@ -15,7 +14,7 @@ export default function AuthCallbackPage() {
 
       if (error || !session) {
         setError(error?.message || 'No session found')
-        setTimeout(() => window.location.replace(routes.login), 2000)
+        setTimeout(() => window.location.replace(getHubUrl('/auth/login')), 2000)
         return
       }
 
@@ -38,7 +37,7 @@ export default function AuthCallbackPage() {
         // backend sync failure is non-blocking for OAuth
       }
 
-      window.location.replace('/arena')
+      window.location.replace(getHubUrl('/arena'))
     }
 
     handleCallback()

@@ -10,7 +10,7 @@ import { team } from '@/lib/team'
 import { social } from '@/lib/social'
 import { AdBanner } from '@/components/ads/AdBanner'
 import { JsonLd } from '@/components/seo/JsonLd'
-import { getToken } from '@/services/auth'
+import { getToken, getHubUrl, getMainUrl } from '@/services/auth'
 import { faqSchema, teamSchemas } from '@/lib/seo/json-ld'
 
 const fadeUp = {
@@ -175,7 +175,7 @@ export default function LandingPage() {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true
     if (isStandalone) {
       const token = getToken()
-      window.location.replace(token ? '/arena' : '/auth/login')
+      window.location.replace(token ? getHubUrl('/arena') : getMainUrl('/auth/login'))
     }
   }, [])
 

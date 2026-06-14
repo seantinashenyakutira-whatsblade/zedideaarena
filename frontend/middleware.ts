@@ -21,9 +21,30 @@ function isProtectedRoute(pathname: string): 'dashboard' | 'vote' | 'admin' | 'a
   return null
 }
 
+const PRODUCTION_DOMAIN = 'zedideaarena.com'
+const HUB_SUBDOMAIN = 'hub'
+
+function getCookieDomain(hostname: string): string | undefined {
+  if (hostname === 'localhost' || hostname.includes('127.0.0.1') || hostname.includes('vercel.app')) return undefined
+  if (hostname.endsWith(PRODUCTION_DOMAIN)) return `.${PRODUCTION_DOMAIN}`
+  return undefined
+}
+
+function isHubDomain(hostname: string): boolean {
+  return hostname === `${HUB_SUBDOMAIN}.${PRODUCTION_DOMAIN}`
+}
+
+function isMainDomain(hostname: string): boolean {
+  return hostname === PRODUCTION_DOMAIN || hostname.startsWith('www.')
+}
+
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone()
   const pathname = url.pathname
+  const hostname = request.headers.get('host')?.split(':')[0] || ''
+  const cookieDomain = getCookieDomain(hostname)
+  const isHub = isHubDomain(hostname)
+  const isMain = isMainDomain(hostname) || (!isHub && !hostname.includes(PRODUCTION_DOMAIN))
 
   // Always allow static files, API routes
   if (
@@ -34,6 +55,25 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // ── DOMAIN-BASED ROUTING ──────────────────────────
+  // hub.zedideaarena.com → app routes only (no landing, no auth pages)
+  if (isHub) {
+    if (pathname.startsWith('/auth/')) {
+      return NextResponse.redirect(new URL(pathname, `https://${PRODUCTION_DOMAIN}`))
+    }
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL('/arena', request.url))
+    }
+  }
+
+  // zedideaarena.com → public routes, redirect protected to hub
+  if (isMain) {
+    const protectedArea = isProtectedRoute(pathname)
+    if (protectedArea && !pathname.startsWith('/auth/')) {
+      return NextResponse.redirect(new URL(pathname, `https://${HUB_SUBDOMAIN}.${PRODUCTION_DOMAIN}`))
+    }
+  }
+
   // Public routes — no auth needed
   if (isPublicRoute(pathname)) {
     return NextResponse.next()
@@ -41,7 +81,6 @@ export async function middleware(request: NextRequest) {
 
   const protectedArea = isProtectedRoute(pathname)
   if (!protectedArea) {
-    // Unknown route — let it through (will 404 naturally)
     return NextResponse.next()
   }
 
@@ -55,7 +94,12 @@ export async function middleware(request: NextRequest) {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            res.cookies.set(name, value, options)
+            res.cookies.set(name, value, {
+              ...options,
+              domain: cookieDomain,
+              sameSite: 'lax',
+              secure: !!cookieDomain,
+            })
           })
         },
       },
@@ -72,9 +116,9 @@ export async function middleware(request: NextRequest) {
     console.error('Middleware session error:', err)
   }
 
-  // Not logged in → send to login
+  // Not logged in → send to login on main domain
   if (!session) {
-    const loginUrl = new URL('/auth/login', request.url)
+    const loginUrl = new URL('/auth/login', isMain ? request.url : `https://${PRODUCTION_DOMAIN}`)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
@@ -98,18 +142,21 @@ export async function middleware(request: NextRequest) {
     !profile.onboarding_skipped
 
   if (needsOnboarding && protectedArea !== 'admin') {
-    const onboardUrl = new URL('/onboarding/personal', request.url)
+    const targetHost = isHub ? `https://${HUB_SUBDOMAIN}.${PRODUCTION_DOMAIN}` : request.url
+    const onboardUrl = new URL('/onboarding/personal', targetHost)
     return NextResponse.redirect(onboardUrl)
   }
 
   // Admin route — admin role required
   if (protectedArea === 'admin' && !profile?.is_admin) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const targetHost = isHub ? `https://${HUB_SUBDOMAIN}.${PRODUCTION_DOMAIN}` : request.url
+    return NextResponse.redirect(new URL('/dashboard', targetHost))
   }
 
   // Vote route — verification required
   if (protectedArea === 'vote' && !profile?.is_verified) {
-    return NextResponse.redirect(new URL('/dashboard?msg=verification_required', request.url))
+    const targetHost = isHub ? `https://${HUB_SUBDOMAIN}.${PRODUCTION_DOMAIN}` : request.url
+    return NextResponse.redirect(new URL('/dashboard?msg=verification_required', targetHost))
   }
 
   return res

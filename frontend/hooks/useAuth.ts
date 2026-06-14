@@ -1,8 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { authService, getToken, clearToken } from '@/services/auth'
-import { routes } from '@/lib/routes'
+import { authService, getToken, clearToken, getHubUrl, getMainUrl } from '@/services/auth'
 import { toast } from 'sonner'
 
 interface AuthContextType {
@@ -51,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (credentials: any) => {
     await authService.login(credentials)
-    window.location.replace('/arena')
+    window.location.replace(getHubUrl('/arena'))
   }
 
   const logout = async () => {
@@ -59,11 +58,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await authService.logout()
       setProfile(null)
       setUser(null)
-      window.location.replace(routes.login)
+      window.location.replace(getMainUrl('/auth/login'))
       toast.info('Logged out.')
     } catch (err) {
-      localStorage.removeItem('token')
-      window.location.href = routes.login
+      clearToken()
+      window.location.replace(getMainUrl('/auth/login'))
     }
   }
 
