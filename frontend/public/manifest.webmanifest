@@ -1,0 +1,17 @@
+{
+  "name": "ZedIdeaArena — Pitch, Compete & Win",
+  "short_name": "ZedArena",
+  "description": "Idea competition platform where innovators submit business ideas, voters judge entries and earn rewards, and winning ideas split the prize pool.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/logo-icon.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/logo-icon.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "categories": ["social", "entertainment", "business"],
+  "lang": "en-US",
+  "scope": "/"
+}

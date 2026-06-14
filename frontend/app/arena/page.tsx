@@ -21,7 +21,6 @@ import { ImageCarousel } from '@/components/arena/ImageCarousel'
 import { TopicsSidebar } from '@/components/arena/TopicsSidebar'
 import { ArenaChat } from '@/components/arena/ArenaChat'
 import { ImageCropper } from '@/components/ImageCropper'
-import { OneSignalInit } from '@/components/OneSignalInit'
 import ReportModal from '@/components/report/ReportModal'
 
 type PostType = 'discussion' | 'question' | 'announcement' | 'idea_highlight' | 'media'
@@ -459,7 +458,6 @@ export default function ArenaPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashboardHeader />
-        <OneSignalInit />
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
         <input ref={multiFileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImagePick} />
 

@@ -6,6 +6,8 @@ import { AuthProvider } from '@/hooks/useAuth'
 import { CookieConsent } from '@/components/CookieConsent'
 import { ChatBot } from '@/components/ChatBot'
 import { InstallPWA } from '@/components/InstallPWA'
+import { OneSignalInit } from '@/components/OneSignalInit'
+import { RoutePrefetcher } from '@/components/RoutePrefetcher'
 import { AdScript } from '@/components/ads/AdScript'
 import { Toaster } from 'sonner'
 import { JsonLd } from '@/components/seo/JsonLd'
@@ -78,6 +80,8 @@ export default function RootLayout({
           {children}
           <CookieConsent />
           <ChatBot />
+          <OneSignalInit />
+          <RoutePrefetcher />
         </AuthProvider>
         <AdScript />
         <Toaster position="bottom-center" toastOptions={{ style: { background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }, className: 'text-xs font-bold' }} />

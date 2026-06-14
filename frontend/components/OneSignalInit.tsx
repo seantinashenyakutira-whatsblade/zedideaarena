@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 
 declare global {
   interface Window {
@@ -12,17 +13,21 @@ declare global {
 const APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID
 
 export function OneSignalInit() {
+  const { profile } = useAuth()
+
   useEffect(() => {
     if (!APP_ID) return
     if (typeof window === 'undefined') return
 
-    // Load OneSignal SDK
-    const script = document.createElement('script')
-    script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js'
-    script.defer = true
-    document.head.appendChild(script)
+    const scriptId = 'onesignal-sdk'
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script')
+      script.id = scriptId
+      script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js'
+      script.defer = true
+      document.head.appendChild(script)
+    }
 
-    // Initialize using deferred pattern (OneSignal v16+)
     window.OneSignalDeferred = window.OneSignalDeferred || []
     window.OneSignalDeferred.push(function (OneSignal: any) {
       OneSignal.init({
@@ -31,8 +36,19 @@ export function OneSignalInit() {
         serviceWorkerPath: '/OneSignalSDKWorker.js',
         serviceWorkerUpdaterPath: '/OneSignalSDKUpdaterWorker.js',
       })
+
+      if (profile?.id) {
+        OneSignal.setExternalUserId(profile.id)
+      }
+
+      OneSignal.on('notificationClick', function (event: any) {
+        const url = event?.notification?.url
+        if (url && window.location.origin) {
+          window.location.href = url
+        }
+      })
     })
-  }, [])
+  }, [profile?.id])
 
   return null
 }

@@ -1,6 +1,64 @@
 const { sendNotification } = require('../services/oneSignalService');
 const { supabase } = require('../config/supabase');
 
+const insertNotification = async ({ user_id, type, title, message, link }) => {
+  try {
+    const { error } = await supabase.from('notifications').insert({
+      user_id, type, title, message: message || null, link: link || null,
+    });
+    if (error) console.error('DB notification insert error:', error);
+  } catch (err) {
+    console.error('DB notification insert error:', err);
+  }
+};
+
+const getNotifications = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    res.json({ status: 'success', data: data || [] });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+const markRead = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { id } = req.params;
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', id)
+      .eq('user_id', userId);
+    if (error) throw error;
+    res.json({ status: 'success' });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+const markAllRead = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', userId)
+      .is('is_read', false);
+    if (error) throw error;
+    res.json({ status: 'success' });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
 const sendLikeNotification = async (req, res) => {
   try {
     const { postId, postOwnerId, likerName } = req.body;
@@ -16,6 +74,14 @@ const sendLikeNotification = async (req, res) => {
       content: snippet,
       url: `${process.env.FRONTEND_URL}/arena`,
       userIds: [postOwnerId],
+    });
+
+    await insertNotification({
+      user_id: postOwnerId,
+      type: 'like',
+      title: `${likerName} liked your post`,
+      message: snippet,
+      link: '/arena',
     });
 
     res.json({ status: 'success', data: result });
@@ -41,6 +107,14 @@ const sendCommentNotification = async (req, res) => {
       userIds: [postOwnerId],
     });
 
+    await insertNotification({
+      user_id: postOwnerId,
+      type: 'comment',
+      title: `${commenterName} commented on your post`,
+      message: snippet || 'view the comment',
+      link: '/arena',
+    });
+
     res.json({ status: 'success', data: result });
   } catch (err) {
     console.error('Comment notification error:', err);
@@ -60,6 +134,14 @@ const sendChatNotification = async (req, res) => {
       content: message.length > 100 ? message.slice(0, 100) + '...' : message,
       url: `${process.env.FRONTEND_URL}/arena`,
       userIds: [userId],
+    });
+
+    await insertNotification({
+      user_id: userId,
+      type: 'chat',
+      title: `New message${senderName ? ` from ${senderName}` : ''}`,
+      message: message.length > 100 ? message.slice(0, 100) + '...' : message,
+      link: '/dashboard/messages',
     });
 
     res.json({ status: 'success', data: result });
@@ -102,6 +184,18 @@ const notifyCompetitionUpdate = async (req, res) => {
       segments: !userIds?.length ? ['All'] : undefined,
     });
 
+    if (userIds?.length) {
+      for (const uid of userIds) {
+        await insertNotification({
+          user_id: uid,
+          type: 'competition',
+          title: 'Competition Update',
+          message: `New activity in "${competitionTitle || 'a competition'}"`,
+          link: '/competitions',
+        });
+      }
+    }
+
     res.json({ status: 'success', data: result });
   } catch (err) {
     console.error('Competition notification error:', err);
@@ -136,4 +230,7 @@ module.exports = {
   sendBroadcast,
   notifyCompetitionUpdate,
   notifyNewIdeas,
+  getNotifications,
+  markRead,
+  markAllRead,
 };

@@ -1,6 +1,7 @@
 'use client'
 
-import { Bell, Settings, User, ChevronDown, LogOut, ShieldCheck, Lock } from 'lucide-react'
+import { Settings, User, ChevronDown, LogOut, ShieldCheck, Lock } from 'lucide-react'
+import { NotificationBell } from '@/components/NotificationBell'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { getToken } from '@/services/auth'
@@ -106,10 +107,7 @@ export function DashboardHeader() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button className="btn-icon relative">
-            <Bell size={20} />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-zed-success rounded-full" />
-          </button>
+          <NotificationBell />
 
           <div className="relative">
             <button onClick={() => setShowDropdown(!showDropdown)} className="flex items-center gap-3 px-3 py-1.5 rounded-xl hover:bg-white/5 transition-all click-push">
