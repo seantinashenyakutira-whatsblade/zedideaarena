@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users see own notifications" ON notifications
+CREATE POLICY IF NOT EXISTS "Users see own notifications" ON notifications
   FOR ALL USING (auth.uid() = user_id);
 
 -- Comments table
