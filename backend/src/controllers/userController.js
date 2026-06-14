@@ -188,4 +188,65 @@ const getUserProfileById = async (req, res) => {
   }
 };
 
-module.exports = { getUserProfile, getUserProfileById, syncUserProfile, login, updateMode };
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ success: false, error: 'Email is required' });
+  }
+
+  try {
+    const { error } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+    });
+
+    if (error) {
+      console.error(`[FORGOT_PASSWORD_ERROR] ${email}:`, error);
+      return res.status(400).json({ success: false, error: error.message });
+    }
+
+    res.json({ status: 'success', message: 'Password reset email sent' });
+  } catch (error) {
+    console.error(`[FORGOT_PASSWORD_ERROR] ${email}:`, error);
+    res.status(500).json({ success: false, error: 'Failed to send reset email' });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { password } = req.body;
+
+  if (!password || password.length < 6) {
+    return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, error: 'Authorization token required' });
+  }
+
+  const token = authHeader.slice('Bearer '.length).trim();
+
+  try {
+    const { data: user, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      return res.status(401).json({ success: false, error: 'Invalid or expired token' });
+    }
+
+    const { error } = await supabase.auth.admin.updateUserById(user.user.id, {
+      password,
+    });
+
+    if (error) {
+      console.error(`[RESET_PASSWORD_ERROR] UID: ${user.user.id}:`, error);
+      return res.status(400).json({ success: false, error: error.message });
+    }
+
+    res.json({ status: 'success', message: 'Password updated successfully' });
+  } catch (error) {
+    console.error(`[RESET_PASSWORD_ERROR]:`, error);
+    res.status(500).json({ success: false, error: 'Failed to reset password' });
+  }
+};
+
+module.exports = { getUserProfile, getUserProfileById, syncUserProfile, login, updateMode, forgotPassword, resetPassword };

@@ -1,6 +1,6 @@
 'use client'
 
-import { Settings, User, ChevronDown, LogOut, ShieldCheck, Lock } from 'lucide-react'
+import { Settings, User, ChevronDown, LogOut, ShieldCheck, Lock, KeyRound } from 'lucide-react'
 import { NotificationBell } from '@/components/NotificationBell'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
@@ -16,6 +16,10 @@ export function DashboardHeader() {
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [pendingRole, setPendingRole] = useState<string | null>(null)
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false)
+  const [changePassword, setChangePassword] = useState({ current: '', newPass: '', confirm: '' })
+  const [changePasswordError, setChangePasswordError] = useState<string | null>(null)
+  const [changePasswordLoading, setChangePasswordLoading] = useState(false)
   const { profile, currentRole, setCurrentRole, logout, refreshProfile } = useAuth()
 
   const roles = [
@@ -155,6 +159,10 @@ export function DashboardHeader() {
                     <Settings size={14} />
                     Arena Preferences
                   </a>
+                  <button onClick={() => { setShowChangePasswordModal(true); setShowDropdown(false) }} className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold hover:bg-white/5 rounded-xl transition-all">
+                    <KeyRound size={14} />
+                    Change Password
+                  </button>
                   <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold hover:bg-red-500/10 rounded-xl transition-all text-red-400">
                     <LogOut size={14} />
                     {profile?.is_admin ? 'Sign Out' : 'Exit Arena'}
@@ -165,6 +173,99 @@ export function DashboardHeader() {
           </div>
         </div>
       </header>
+
+      {/* Change Password Modal */}
+      {showChangePasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setShowChangePasswordModal(false); setChangePasswordError(null) }}>
+          <div className="bg-[#0A0A0F] border border-white/10 rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="w-16 h-16 rounded-full bg-zed-primary/20 flex items-center justify-center mx-auto mb-4">
+              <KeyRound size={32} className="text-zed-primary" />
+            </div>
+            <h3 className="text-xl font-black text-zed-foreground mb-2 text-center">Change Password</h3>
+            <p className="text-sm text-zed-foreground-secondary mb-6 text-center">Enter your current and new password.</p>
+
+            <div className="space-y-4">
+              <input
+                type="password"
+                placeholder="Current password"
+                value={changePassword.current}
+                onChange={e => setChangePassword(p => ({ ...p, current: e.target.value }))}
+                className="input-zed"
+              />
+              <input
+                type="password"
+                placeholder="New password (min 6 chars)"
+                value={changePassword.newPass}
+                onChange={e => setChangePassword(p => ({ ...p, newPass: e.target.value }))}
+                className="input-zed"
+              />
+              <input
+                type="password"
+                placeholder="Confirm new password"
+                value={changePassword.confirm}
+                onChange={e => setChangePassword(p => ({ ...p, confirm: e.target.value }))}
+                className="input-zed"
+              />
+            </div>
+
+            {changePasswordError && (
+              <p className="text-red-400 text-sm mt-4">{changePasswordError}</p>
+            )}
+
+            <button
+              onClick={async () => {
+                setChangePasswordError(null)
+                if (!changePassword.current || !changePassword.newPass || !changePassword.confirm) {
+                  setChangePasswordError('All fields are required')
+                  return
+                }
+                if (changePassword.newPass.length < 6) {
+                  setChangePasswordError('New password must be at least 6 characters')
+                  return
+                }
+                if (changePassword.newPass !== changePassword.confirm) {
+                  setChangePasswordError('New passwords do not match')
+                  return
+                }
+                if (changePassword.current === changePassword.newPass) {
+                  setChangePasswordError('New password must be different from current')
+                  return
+                }
+
+                setChangePasswordLoading(true)
+                try {
+                  const email = profile?.email
+                  if (!email) { setChangePasswordError('Could not verify identity.'); setChangePasswordLoading(false); return }
+
+                  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: changePassword.current })
+                  if (signInError) { setChangePasswordError('Current password is incorrect'); setChangePasswordLoading(false); return }
+
+                  const { error: updateError } = await supabase.auth.updateUser({ password: changePassword.newPass })
+                  if (updateError) { setChangePasswordError(updateError.message); setChangePasswordLoading(false); return }
+
+                  setShowChangePasswordModal(false)
+                  setChangePassword({ current: '', newPass: '', confirm: '' })
+                  toast.success('Password changed successfully')
+                } catch (err: any) {
+                  setChangePasswordError(err?.message || 'Something went wrong')
+                } finally {
+                  setChangePasswordLoading(false)
+                }
+              }}
+              disabled={changePasswordLoading}
+              className="btn-primary w-full flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+            >
+              {changePasswordLoading ? 'Updating...' : 'Update Password'}
+            </button>
+            <button
+              onClick={() => { setShowChangePasswordModal(false); setChangePasswordError(null); setChangePassword({ current: '', newPass: '', confirm: '' }) }}
+              className="w-full mt-2 text-zed-foreground-secondary text-sm font-bold py-2 hover:text-zed-foreground transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Password Confirmation Modal */}
       {showPasswordModal && (

@@ -10,5 +10,7 @@ router.post('/profile', verifyToken, userController.syncUserProfile);
 router.patch('/profile', verifyToken, userController.updateMode);
 router.post('/signup', authLimiter, verifyToken, userController.syncUserProfile);
 router.post('/login', authLimiter, verifyToken, userController.login);
+router.post('/forgot-password', authLimiter, userController.forgotPassword);
+router.post('/reset-password', authLimiter, userController.resetPassword);
 
 module.exports = router;

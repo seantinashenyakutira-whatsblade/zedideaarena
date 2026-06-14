@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { authService, getHubUrl } from '@/services/auth'
+import { authService, getHubUrl, getMainUrl } from '@/services/auth'
 import { loginSchema } from '@/lib/validators/login'
 
 export default function LoginPage() {
@@ -118,16 +118,25 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="rememberMe"
-              name="rememberMe"
-              checked={formData.rememberMe}
-              onChange={handleChange}
-              className="w-4 h-4 rounded border-white/20 bg-white/5 accent-zed-primary"
-            />
-            <label htmlFor="rememberMe" className="text-sm text-white/50">Remember me</label>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                name="rememberMe"
+                checked={formData.rememberMe}
+                onChange={handleChange}
+                className="w-4 h-4 rounded border-white/20 bg-white/5 accent-zed-primary"
+              />
+              <label htmlFor="rememberMe" className="text-sm text-white/50">Remember me</label>
+            </div>
+            <Link
+              href={getMainUrl('/auth/forgot-password')}
+              className="text-xs font-bold hover:underline"
+              style={{ color: '#6366F1' }}
+            >
+              Forgot Password?
+            </Link>
           </div>
 
           {error && (

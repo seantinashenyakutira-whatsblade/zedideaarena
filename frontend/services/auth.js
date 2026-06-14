@@ -167,6 +167,35 @@ export const authService = {
     return session;
   },
 
+  forgotPassword: async (email) => {
+    const redirectTo = typeof window !== 'undefined'
+      ? `${getMainUrl('/auth/reset-password')}`
+      : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+    if (error) {
+      if (error.message.includes('Email not found')) {
+        throw new Error('No account found with this email address.');
+      }
+      throw new Error(error.message);
+    }
+    return { message: 'Check your email for a password reset link.' };
+  },
+
+  resetPassword: async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    if (error) {
+      if (error.message.includes('weak')) {
+        throw new Error('Password should be at least 6 characters.');
+      }
+      throw new Error(error.message);
+    }
+    return { message: 'Password updated successfully.' };
+  },
+
   getProfile: () => api.get('/user/profile'),
   updateProfile: (data) => api.post('/user/profile', data),
 };
