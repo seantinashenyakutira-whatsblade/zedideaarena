@@ -22,8 +22,20 @@ const ideaLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
+  max: 20,
+  keyGenerator: (req) => req.ip || req.connection?.remoteAddress || 'unknown',
+  validate: { xForwardedForHeader: false },
   message: { status: 'error', message: 'Too many auth attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  keyGenerator: (req) => req.ip || req.connection?.remoteAddress || 'unknown',
+  validate: { xForwardedForHeader: false },
+  message: { status: 'error', message: 'Too many password reset requests. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
