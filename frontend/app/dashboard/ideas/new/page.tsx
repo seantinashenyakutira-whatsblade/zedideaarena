@@ -550,9 +550,103 @@ function NewIdeaForm() {
               <button type="button" onClick={handlePrev} disabled={currentStep === 1 || isSubmitting} className="btn-secondary px-10 h-16 flex items-center gap-3 text-xs font-black uppercase tracking-widest disabled:opacity-20">
                 <ChevronLeft size={20} /> Back
               </button>
-              {(currentStep >= 2 && currentStep < 5) && (
-                <button type="button" onClick={handleSaveDraft} disabled={isSavingDraft} className="btn-secondary px-8 h-16 flex items-center gap-2 text-xs font-black uppercase tracking-widest disabled:opacity-20">
-                  <Save size={16} /> {isSavingDraft ? 'Saving...' : 'Save Draft'}
+              {currentStep >= 2 && currentStep < 5 && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (currentStep === 1) {
+                      toast.error('Please complete Step 1 first')
+                      return
+                    }
+                    if (currentStep === 2) {
+                      if (!formData.fullName) {
+                        toast.error('Full name is required.')
+                        return
+                      }
+                      try {
+                        await authService.updateProfile({
+                          fullName: formData.fullName,
+                          dob: formData.dob,
+                          nationality: formData.nationality,
+                          bio: formData.bio,
+                          profession: formData.profession
+                        })
+                      } catch {
+                        // silent
+                      }
+                    }
+                    if (currentStep === 3) {
+                      if (!formData.title || !formData.competition_id) {
+                        toast.error('Idea title and competition are required.')
+                        return
+                      }
+                      if (!formData.problem || !formData.solution) {
+                        toast.error('Problem and solution are required.')
+                        return
+                      }
+                    }
+                    if (currentStep === 4 && !hasScrolledToEnd) {
+                      toast.error('Please scroll to the end of the guidelines to continue.')
+                      return
+                    }
+
+                    setIsSubmitting(true)
+                    try {
+                      const collaboratorsArray = formData.collaborators
+                        .split('\n')
+                        .map(s => s.trim())
+                        .filter(Boolean)
+
+                      // First save as draft
+                      let ideaId = draftId
+                      if (!ideaId) {
+                        const draftRes: any = await ideaService.saveDraft({
+                          ...formData,
+                          collaborators: collaboratorsArray,
+                          competition_id: formData.competition_id || undefined,
+                        })
+                        ideaId = draftRes.id
+                      } else {
+                        await ideaService.saveDraft({
+                          ...formData,
+                          collaborators: collaboratorsArray,
+                          competition_id: formData.competition_id || undefined,
+                          id: ideaId,
+                        })
+                      }
+
+                      // Then submit the idea
+                      if (!ideaId) {
+                        console.error('No idea ID available for submission')
+                        return
+                      }
+                      const submitRes: any = await ideaService.submitIdea(ideaId)
+
+                      // Check if payment is needed
+                      if (!hasPaidEntry && formData.competition_id) {
+                        const payRes: any = await api.post(`/competitions/${formData.competition_id}/enter`)
+                        if (payRes.checkoutUrl) {
+                          window.location.href = payRes.checkoutUrl
+                          return
+                        }
+                      }
+
+                      // Success - no payment needed
+                      setIsSuccess(true)
+                      const competitionName = competitions.find(c => c.id === formData.competition_id)?.title || ''
+                      const params = new URLSearchParams({ title: formData.title, competition: competitionName })
+                      if (ideaId) params.append('id', ideaId)
+                      router.replace(`/dashboard/ideas/success?${params}`)
+                    } catch (err: any) {
+                      toast.error(err.message || 'Submission failed')
+                    } finally {
+                      setIsSubmitting(false)
+                    }
+                  }}
+                  disabled={isSubmitting || !formData.termsAccepted}
+                  className="btn-primary px-16 h-16 flex items-center gap-3 text-xs font-black uppercase tracking-widest shadow-2xl shadow-zed-primary/40"
+                >
+                  {isSubmitting ? 'Processing...' : 'Submit & Pay Now'} <CreditCard size={20} />
                 </button>
               )}
               {currentStep < 5 ? (
