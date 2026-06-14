@@ -16,8 +16,16 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Users see own notifications" ON notifications
-  FOR ALL USING (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'notifications' AND policyname = 'Users see own notifications'
+  ) THEN
+    CREATE POLICY "Users see own notifications" ON notifications
+      FOR ALL USING (auth.uid() = user_id);
+  END IF;
+END
+$$;
 
 -- Comments table
 CREATE TABLE IF NOT EXISTS comments (
