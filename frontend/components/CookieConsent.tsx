@@ -32,7 +32,7 @@ export function CookieConsent() {
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] w-full max-w-lg px-4"
         >
           <div className="p-5 rounded-2xl border border-white/10 backdrop-blur-xl shadow-2xl" style={{ background: 'rgba(10,10,15,0.95)' }}>
-            <button onClick={() => setVisible(false)} className="absolute top-3 right-3 text-white/30 hover:text-white/60 transition-colors">
+            <button onClick={() => setVisible(false)} aria-label="Close cookie notice" className="absolute top-3 right-3 text-white/30 hover:text-white/60 transition-colors">
               <X size={16} />
             </button>
             <div className="flex items-start gap-3 mb-4">

@@ -126,7 +126,7 @@ function VideoPlayer() {
           controls={playing}
         />
         {!playing && (
-          <button onClick={handlePlay} className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 hover:bg-black/10 group transition-all duration-300">
+          <button onClick={handlePlay} aria-label="Play hero video" className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 hover:bg-black/10 group transition-all duration-300">
             <motion.div
               className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
               style={{ background: 'rgba(99,102,241,0.25)' }}
@@ -495,10 +495,10 @@ export default function LandingPage() {
 
           <div className="relative">
             <div className="flex justify-end gap-3 mb-6">
-              <button onClick={() => scrollBy('left')} className={`w-11 h-11 rounded-full flex items-center justify-center border border-white/10 bg-white/5 backdrop-blur-sm transition-all ${canScrollLeft ? 'opacity-100 hover:bg-white/10 hover:border-white/20' : 'opacity-30 cursor-default'}`}>
+              <button onClick={() => scrollBy('left')} aria-label="Scroll testimonials left" className={`w-11 h-11 rounded-full flex items-center justify-center border border-white/10 bg-white/5 backdrop-blur-sm transition-all ${canScrollLeft ? 'opacity-100 hover:bg-white/10 hover:border-white/20' : 'opacity-30 cursor-default'}`}>
                 <ChevronLeft size={18} />
               </button>
-              <button onClick={() => scrollBy('right')} className={`w-11 h-11 rounded-full flex items-center justify-center border border-white/10 bg-white/5 backdrop-blur-sm transition-all ${canScrollRight ? 'opacity-100 hover:bg-white/10 hover:border-white/20' : 'opacity-30 cursor-default'}`}>
+              <button onClick={() => scrollBy('right')} aria-label="Scroll testimonials right" className={`w-11 h-11 rounded-full flex items-center justify-center border border-white/10 bg-white/5 backdrop-blur-sm transition-all ${canScrollRight ? 'opacity-100 hover:bg-white/10 hover:border-white/20' : 'opacity-30 cursor-default'}`}>
                 <ChevronRight size={18} />
               </button>
             </div>
