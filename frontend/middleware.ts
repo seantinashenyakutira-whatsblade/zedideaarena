@@ -55,12 +55,28 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // ── CLEAR STALE SUPABASE COOKIES ON AUTH PAGES ──────
+  if (pathname.startsWith('/auth/')) {
+    const res = isHub
+      ? NextResponse.redirect(new URL(pathname, `https://${PRODUCTION_DOMAIN}`))
+      : NextResponse.next()
+
+    const sbCookies = request.cookies.getAll().filter(c => c.name.startsWith('sb-'))
+    sbCookies.forEach(c => {
+      res.cookies.set(c.name, '', {
+        path: '/',
+        domain: cookieDomain,
+        maxAge: 0,
+      })
+      res.cookies.set(c.name, '', { path: '/', maxAge: 0 })
+    })
+
+    return res
+  }
+
   // ── DOMAIN-BASED ROUTING ──────────────────────────
   // hub.zedideaarena.com → app routes only (no landing, no auth pages)
   if (isHub) {
-    if (pathname.startsWith('/auth/')) {
-      return NextResponse.redirect(new URL(pathname, `https://${PRODUCTION_DOMAIN}`))
-    }
     if (pathname === '/') {
       return NextResponse.redirect(new URL('/arena', request.url))
     }

@@ -3,16 +3,37 @@
 import { ArrowRight, Mail, Lock, Sparkles, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { authService, getHubUrl, getMainUrl } from '@/services/auth'
 import { loginSchema } from '@/lib/validators/login'
+
+function clearSupabaseCookies() {
+  const isProd = typeof window !== 'undefined' &&
+    window.location.hostname !== 'localhost' &&
+    !window.location.hostname.includes('127.0.0.1')
+  const domain = isProd ? '.zedideaarena.com' : undefined
+  const prefix = 'sb-'
+  document.cookie.split(';').forEach(c => {
+    const name = c.trim().split('=')[0]
+    if (name.startsWith(prefix)) {
+      const parts = [`${name}=`, 'path=/', 'max-age=0']
+      if (domain) parts.push(`domain=${domain}`)
+      document.cookie = parts.join('; ')
+      document.cookie = `${name}=; path=/; max-age=0`
+    }
+  })
+}
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    clearSupabaseCookies()
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
