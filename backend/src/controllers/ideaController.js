@@ -3,7 +3,14 @@ const { sendIdeaConfirmation } = require('../services/emailService');
 
 const saveIdeaDraft = async (req, res) => {
   const { uid } = req.user;
-  const { id, title, category, competition_id, problem_statement, description, video_url, image_url, deck_url, estimated_impact, target_audience, timeline, links } = req.body;
+  const {
+    id, title, category, competition_id,
+    problem, problem_statement, solution, description,
+    industry, business_model,
+    pitch_video_url, video_url,
+    github_url, linkedin_url, instagram_url,
+    image_url, deck_url, collaborators, links
+  } = req.body;
 
   try {
     if (id) {
@@ -26,11 +33,18 @@ const saveIdeaDraft = async (req, res) => {
     const ideaData = {
       user_id: uid,
       title: title || '',
-      category: category || '',
+      category: category || industry || '',
       competition_id: competition_id || null,
-      problem_statement: problem_statement || '',
-      description: description || '',
-      video_url: video_url || '',
+      problem_statement: problem_statement || problem || '',
+      description: description || solution || '',
+      industry: industry || category || '',
+      business_model: business_model || '',
+      pitch_video_url: pitch_video_url || video_url || '',
+      video_url: video_url || pitch_video_url || '',
+      github_url: github_url || '',
+      linkedin_url: linkedin_url || '',
+      instagram_url: instagram_url || '',
+      collaborators: collaborators || [],
       image_url: image_url || '',
       deck_url: deck_url || '',
       links: links || {},

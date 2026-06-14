@@ -4,7 +4,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import { Trophy, Calendar, Clock, DollarSign, ArrowRight, Loader2, Users, Play } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '@/lib/supabase'
 import { CompetitionCountdown } from '@/components/CompetitionCountdown'
 import { getYouTubeThumbnail } from '@/components/YouTubeEmbed'
 
@@ -90,6 +91,38 @@ export default function CompetitionDetailPage() {
     }
     fetchData()
     return () => controller.abort()
+  }, [id])
+
+  // Real-time: live competition metadata + vote counts
+  useEffect(() => {
+    if (!id) return
+    const channel = supabase.channel(`competition-${id}`)
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'competitions', filter: `id=eq.${id}` },
+        (payload: any) => {
+          setComp((prev: any) => prev && typeof prev === 'object' ? { ...prev, ...payload.new } : prev)
+        }
+      )
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'ideas', filter: `competition_id=eq.${id}` },
+        (payload: any) => {
+          if (payload.new?.votes_count !== undefined) {
+            setIdeas(prev => prev.map(i =>
+              i.id === payload.new.id ? { ...i, votes_count: payload.new.votes_count } : i
+            ))
+          }
+        }
+      )
+      .on('broadcast', { event: 'vote_update' }, (payload: any) => {
+        const data = typeof payload === 'string' ? JSON.parse(payload) : payload
+        if (data.type === 'vote_count' && data.idea_id) {
+          setIdeas(prev => prev.map(i =>
+            i.id === data.idea_id ? { ...i, votes_count: data.votes_count } : i
+          ))
+        }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [id])
 
   const handleEnterCompetition = () => {

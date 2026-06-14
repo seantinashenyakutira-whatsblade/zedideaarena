@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import { ChevronLeft, ChevronRight, ImageOff } from 'lucide-react'
 
 interface ImageCarouselProps {
@@ -9,46 +8,52 @@ interface ImageCarouselProps {
   className?: string
 }
 
-export function ImageCarousel({ images, className = '' }: ImageCarouselProps) {
-  const [idx, setIdx] = useState(0)
-  const [errors, setErrors] = useState<Set<number>>(new Set())
+function CarouselImage({ src }: { src: string }) {
+  const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState(false)
 
-  if (!images?.length) return null
-
-  const handleError = (i: number) => setErrors(prev => new Set(prev).add(i))
-
-  const renderImage = (src: string, i: number) => {
-    if (errors.has(i)) {
-      return (
-        <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-          <ImageOff size={32} className="text-white/20" />
-        </div>
-      )
-    }
+  if (error) {
     return (
-      <Image
-        src={src}
-        alt=""
-        width={1200}
-        height={900}
-        className="w-full max-h-96 object-contain bg-black/40"
-        unoptimized
-        onError={() => handleError(i)}
-      />
+      <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+        <ImageOff size={32} className="text-white/20" />
+      </div>
     )
   }
+
+  return (
+    <div className="relative w-full">
+      {!loaded && (
+        <div className="w-full h-48 animate-pulse bg-zinc-800 rounded-xl" />
+      )}
+      <img
+        src={src}
+        alt=""
+        className={`w-full max-h-96 object-contain bg-black/40 transition-all duration-700 ${
+          loaded ? 'grayscale-0' : 'grayscale absolute inset-0 opacity-0'
+        }`}
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+      />
+    </div>
+  )
+}
+
+export function ImageCarousel({ images, className = '' }: ImageCarouselProps) {
+  const [idx, setIdx] = useState(0)
+
+  if (!images?.length) return null
 
   if (images.length === 1) {
     return (
       <div className={`relative rounded-xl overflow-hidden ${className}`}>
-        {renderImage(images[0], 0)}
+        <CarouselImage src={images[0]} />
       </div>
     )
   }
 
   return (
     <div className={`relative rounded-xl overflow-hidden group ${className}`}>
-      {renderImage(images[idx], idx)}
+      <CarouselImage src={images[idx]} />
       {images.length > 1 && (
         <>
           <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">

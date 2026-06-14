@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import Image from 'next/image'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
-import { getYouTubeThumbnail } from '@/components/YouTubeEmbed'
-import { Trophy, Vote, Search, ThumbsUp, Loader2, ArrowLeft, AlertTriangle, CheckCircle2, ImageOff } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { usePageChannel } from '@/hooks/usePageChannel'
+import { MediaCard, IdeaCardSkeleton } from '@/components/ui/MediaCard'
+import { Vote, Search, ThumbsUp, ArrowLeft, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { voteService } from '@/services/core'
 import { RatingModal } from '@/components/voter/RatingModal'
@@ -33,6 +34,28 @@ export default function CompetitionVotingPage() {
   const [guardErrors, setGuardErrors] = useState<string[]>([])
   const [selectedIdea, setSelectedIdea] = useState<any>(null)
   const [viewingIdea, setViewingIdea] = useState<any>(null)
+  // Real-time: one channel per competition — broadcast vote counts + live competition updates
+  usePageChannel(`competition-${competitionId}`, [
+    // Broadcast: lightweight vote count updates from DB trigger
+    { type: 'broadcast', event: 'vote_update', handler: (payload: any) => {
+      const data = typeof payload === 'string' ? JSON.parse(payload) : payload
+      if (data.type === 'vote_count' && data.idea_id) {
+        setIdeas(prev => prev.map(i =>
+          i.id === data.idea_id
+            ? { ...i, votes_count: data.votes_count }
+            : i
+        ))
+        // If the current user cast this vote, ensure votedIdeas is in sync
+        if (data.user_id === profile?.id) {
+          setVotedIdeas(prev => prev.includes(data.idea_id) ? prev : [...prev, data.idea_id])
+        }
+      }
+    }},
+    // Postgres Changes: competition metadata (prize pool, status, deadline)
+    { type: 'pg', event: 'UPDATE', table: 'competitions', filter: `id=eq.${competitionId}`, handler: (payload: any) => {
+      setCompetition((prev: any) => prev ? { ...prev, ...payload.new } : prev)
+    }},
+  ], [competitionId])
 
   useEffect(() => {
     const results = ideas.filter(idea =>
@@ -155,7 +178,7 @@ export default function CompetitionVotingPage() {
               {loading ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {[1, 2, 3, 4, 5, 6].map(i => (
-                    <div key={i} className="card-zed h-96 animate-pulse opacity-50" />
+                    <IdeaCardSkeleton key={i} />
                   ))}
                 </div>
               ) : filteredIdeas.length === 0 ? (
@@ -165,7 +188,7 @@ export default function CompetitionVotingPage() {
                   <p className="text-zed-foreground-secondary">Approved public ideas will appear here once available.</p>
                 </div>
               ) : (
-                <Suspense fallback={<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="card-zed h-96 animate-pulse opacity-50" />)}</div>}>
+                <Suspense fallback={<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">{Array.from({ length: 6 }).map((_, i) => <IdeaCardSkeleton key={i} />)}</div>}>
                   <IdeasGrid
                     ideas={filteredIdeas}
                     votedIdeas={votedIdeas}
@@ -225,7 +248,6 @@ function IdeasGrid({
   onVoteClick: (idea: any) => void
   onViewIdea: (idea: any) => void
 }) {
-  const [thumbFailed, setThumbFailed] = useState<Set<string>>(new Set())
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
       {ideas.flatMap((idea, i) => {
@@ -248,38 +270,13 @@ function IdeasGrid({
                 : 'hover:border-zed-primary/30'
             }`}
           >
-            <div className="relative aspect-video rounded-xl overflow-hidden mb-6 bg-white/5">
-              {(() => {
-                let imgSrc = idea.image_url
-                if (!imgSrc) {
-                  const vid = idea.pitch_video_url || idea.video_url
-                  imgSrc = thumbFailed.has(idea.id)
-                    ? getYouTubeThumbnail(vid, 'hq')
-                    : getYouTubeThumbnail(vid)
-                }
-                if (imgSrc) {
-                  return (
-                    <>
-                      <Image
-                        src={imgSrc}
-                        alt={idea.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-700"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        loading="lazy"
-                        onError={() => setThumbFailed(prev => new Set(prev).add(idea.id))}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                    </>
-                  )
-                }
-                return (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-                    <ImageOff className="text-white/20" size={36} />
-                    <span className="text-[10px] text-white/10 font-bold uppercase tracking-widest">No Image</span>
-                  </div>
-                )
-              })()}
+            <div className="relative mb-6">
+              <MediaCard
+                src={idea.image_url || idea.pitch_video_url || idea.video_url}
+                alt={idea.title}
+                containerClassName="group-hover:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
               <div className="absolute bottom-4 left-4 flex items-center gap-2">
                 <span className="bg-black/60 backdrop-blur-md text-[10px] text-white px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-white/10">
                   {idea.industry || idea.category}

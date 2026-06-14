@@ -18,6 +18,7 @@ function PaymentContent() {
 
   const competitionId = searchParams.get('competition') || searchParams.get('competitionId')
   const type = searchParams.get('type')
+  const ideaId = searchParams.get('ideaId')
 
   useEffect(() => {
     if (!competitionId || !type) {

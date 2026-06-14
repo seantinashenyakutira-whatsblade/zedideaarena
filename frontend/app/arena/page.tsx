@@ -17,6 +17,8 @@ import {
   Hash, ChevronDown, ImageIcon, Video, Link2, Repeat2,
   X, Play, ExternalLink, Expand, MoreHorizontal, Edit3, Trash2, Plus, Flag,
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { usePageChannel } from '@/hooks/usePageChannel'
 import { ImageCarousel } from '@/components/arena/ImageCarousel'
 import { TopicsSidebar } from '@/components/arena/TopicsSidebar'
 import { ArenaChat } from '@/components/arena/ArenaChat'
@@ -204,6 +206,122 @@ export default function ArenaPage() {
   const feedRef = useRef<HTMLDivElement>(null)
   const [cropImage, setCropImage] = useState<string | null>(null)
   const [cropIndex, setCropIndex] = useState(-1)
+
+  // Online users presence
+  const [onlineUsers, setOnlineUsers] = useState<any[]>([])
+
+  // Leaderboard state
+  const [leaderboard, setLeaderboard] = useState<any[]>([])
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false)
+  const [selectedCompId, setSelectedCompId] = useState<string>('')
+  const [competitionList, setCompetitionList] = useState<any[]>([])
+
+  // Fetch competitions for leaderboard dropdown
+  useEffect(() => {
+    const fetchCompetitions = async () => {
+      try {
+        const res: any = await api.get('/competitions')
+        const comps = (res?.data || []).filter((c: any) => !c.is_deleted)
+        setCompetitionList(comps)
+        if (comps.length > 0) {
+          setSelectedCompId(comps[0].id)
+        }
+      } catch (err) {
+        console.error('Failed to fetch competitions:', err)
+      }
+    }
+    fetchCompetitions()
+  }, [])
+
+  // Fetch leaderboard when competition changes
+  useEffect(() => {
+    if (!selectedCompId) return
+    setLeaderboardLoading(true)
+    const fetchLeaderboard = async () => {
+      try {
+        const res: any = await api.get(`/votes/${selectedCompId}/leaderboard`)
+        setLeaderboard(res?.data || [])
+      } catch (err) {
+        console.error('Failed to fetch leaderboard:', err)
+        setLeaderboard([])
+      } finally {
+        setLeaderboardLoading(false)
+      }
+    }
+    fetchLeaderboard()
+  }, [selectedCompId])
+
+  // Presence for online users
+  useEffect(() => {
+    if (!profile?.id) return
+    const presenceChannel = supabase.channel('arena-presence', {
+      config: { presence: { key: profile.id } }
+    })
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState()
+        const users = Object.values(state).flat().map((p: any) => p)
+        setOnlineUsers(users)
+      })
+      .on('presence', { event: 'join' }, ({ newPresences }: any) => {
+        setOnlineUsers(prev => [...prev.filter(u => !newPresences.some((p: any) => p.user_id === u.user_id)), ...newPresences])
+      })
+      .on('presence', { event: 'leave' }, ({ leftPresences }: any) => {
+        setOnlineUsers(prev => prev.filter(u => !leftPresences.some((p: any) => p.user_id === u.user_id)))
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            user_id: profile.id,
+            name: profile.full_name,
+            picture: profile.picture,
+            online_at: new Date().toISOString()
+          })
+        }
+      })
+    return () => {
+      presenceChannel.untrack()
+      supabase.removeChannel(presenceChannel)
+    }
+  }, [profile?.id, profile?.full_name, profile?.picture])
+
+  // Real-time: single channel for the entire arena feed
+  usePageChannel('arena-feed', [
+    // ── Broadcast from DB triggers ──
+    { type: 'broadcast', event: 'like_update', handler: (payload: any) => {
+      const data = typeof payload === 'string' ? JSON.parse(payload) : payload
+      if (data.type === 'like_count' && data.post_id) {
+        setPosts((prev: any[]) => prev.map(p =>
+          p.id === data.post_id
+            ? { ...p, likes_count: data.likes_count, is_liked_by_viewer: data.user_id === profile?.id ? true : p.is_liked_by_viewer }
+            : p
+        ))
+      }
+    }},
+    { type: 'broadcast', event: 'comment_update', handler: (payload: any) => {
+      const data = typeof payload === 'string' ? JSON.parse(payload) : payload
+      if (data.type === 'comment_count' && data.post_id) {
+        setPosts((prev: any[]) => prev.map(p =>
+          p.id === data.post_id
+            ? { ...p, comments_count: data.comments_count }
+            : p
+        ))
+      }
+    }},
+    // ── Postgres Changes for full post sync ──
+    { type: 'pg', event: 'INSERT', table: 'arena_posts', handler: async () => {
+      try {
+        const res: any = await api.get('/arena/posts?limit=50')
+        setPosts(res?.data || [])
+      } catch {}
+    }},
+    { type: 'pg', event: 'UPDATE', table: 'arena_posts', handler: (payload: any) => {
+      setPosts((prev: any[]) => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p))
+    }},
+    { type: 'pg', event: 'DELETE', table: 'arena_posts', handler: (payload: any) => {
+      setPosts((prev: any[]) => prev.filter(p => p.id !== payload.old.id))
+    }},
+  ], [profile?.id])
 
   const fetchPosts = useCallback(async (topic?: string | null) => {
     try {
@@ -589,6 +707,13 @@ export default function ArenaPage() {
             </div>
 
             {/* Feed */}
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Feed</h2>
+              <span className="flex items-center gap-1 text-[10px] font-bold text-green-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                Live
+              </span>
+            </div>
             {loading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map(i => (
@@ -852,17 +977,32 @@ export default function ArenaPage() {
           <aside className="hidden lg:block space-y-6">
             <TopicsSidebar activeTopic={activeTopic} onSelectTopic={(t) => { setActiveTopic(t); setLoading(true) }} />
 
+            {/* Online Users */}
             <div className="glass-card p-4">
               <div className="flex items-center gap-2 mb-3">
-                <Trophy size={14} className="text-amber-400" />
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Top Voters</h3>
+                <Users size={14} className="text-green-400" />
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Online</h3>
               </div>
-              <p className="text-[10px] text-zinc-500">Leaderboard coming soon...</p>
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {onlineUsers.slice(0, 6).map((u: any, i: number) => (
+                    <div key={u.user_id || i} className="w-7 h-7 rounded-full border-2 border-zinc-900 bg-zinc-800 flex items-center justify-center overflow-hidden">
+                      {u.picture ? (
+                        <img src={u.picture} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-[9px] font-bold text-green-400">{u.name?.[0] || '?'}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <span className="text-xs font-bold text-green-400 ml-1">{onlineUsers.length} online</span>
+              </div>
             </div>
 
+            {/* Arena Stats */}
             <div className="glass-card p-4">
               <div className="flex items-center gap-2 mb-3">
-                <Users size={14} className="text-cyan-400" />
+                <TrendingUp size={14} className="text-cyan-400" />
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Arena Stats</h3>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -874,12 +1014,90 @@ export default function ArenaPage() {
                   <p className="text-lg font-black text-white">{posts.reduce((s, p) => s + p.comments_count, 0)}</p>
                   <p className="text-[9px] text-zinc-500">Comments</p>
                 </div>
+                <div className="text-center">
+                  <p className="text-lg font-black text-white">{posts.reduce((s, p) => s + p.likes_count, 0)}</p>
+                  <p className="text-[9px] text-zinc-500">Likes</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-black text-white">{onlineUsers.length}</p>
+                  <p className="text-[9px] text-zinc-500">Online</p>
+                </div>
               </div>
 
               {activeTopic && (
                 <div className="mt-3 pt-3 border-t border-white/10">
                   <p className="text-[10px] text-zinc-500 text-center">Filtered by: <span className="text-indigo-400 font-bold">#{activeTopic}</span></p>
                   <button onClick={() => { setActiveTopic(null); setLoading(true) }} className="mt-1 w-full text-[10px] text-indigo-400 hover:underline text-center">Clear filter</button>
+                </div>
+              )}
+            </div>
+
+            {/* Leaderboard */}
+            <div className="glass-card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Trophy size={14} className="text-amber-400" />
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Leaderboard</h3>
+                </div>
+              </div>
+
+              {/* Competition Selector */}
+              <div className="relative mb-3">
+                <select
+                  value={selectedCompId}
+                  onChange={(e) => setSelectedCompId(e.target.value)}
+                  className="w-full text-[10px] bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-300 font-bold appearance-none cursor-pointer focus:outline-none focus:border-indigo-500/50"
+                >
+                  <option value="">Select Competition</option>
+                  {competitionList.map((comp: any) => (
+                    <option key={comp.id} value={comp.id}>{comp.title}</option>
+                  ))}
+                </select>
+                <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+              </div>
+
+              {leaderboardLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-8 bg-zinc-800/50 rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              ) : !selectedCompId ? (
+                <p className="text-[10px] text-zinc-500 text-center py-4">Select a competition above</p>
+              ) : leaderboard.length === 0 ? (
+                <p className="text-[10px] text-zinc-500 text-center py-4">No ideas ranked yet</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {leaderboard.map((idea: any, i: number) => {
+                    const rank = i + 1
+                    const isTop3 = rank <= 3
+                    const colors = ['text-yellow-400', 'text-zinc-300', 'text-amber-700']
+                    const bgColors = ['bg-yellow-500/10 border-yellow-500/30', 'bg-zinc-300/10 border-zinc-300/20', 'bg-amber-700/10 border-amber-700/30']
+                    const rankColors = ['text-yellow-400', 'text-zinc-300', 'text-amber-700']
+                    return (
+                      <div
+                        key={idea.id}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                          isTop3
+                            ? `${bgColors[i]} border`
+                            : 'bg-zinc-800/30'
+                        }`}
+                      >
+                        <span className={`w-5 text-center text-xs font-black ${isTop3 ? rankColors[i] : 'text-zinc-600'}`}>
+                          {rank <= 3 ? ['🥇', '🥈', '🥉'][i] : `#${rank}`}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-[11px] font-bold truncate ${isTop3 ? 'text-white' : 'text-zinc-300'}`}>
+                            {idea.title}
+                          </p>
+                          <p className="text-[9px] text-zinc-500 truncate">{idea.contestant_name}</p>
+                        </div>
+                        <span className={`text-xs font-black ${isTop3 ? 'text-amber-400' : 'text-zinc-400'}`}>
+                          {idea.vote_count}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>

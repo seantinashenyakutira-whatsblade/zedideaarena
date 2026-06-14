@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { usePageChannel } from '@/hooks/usePageChannel'
 import { Users, FileText, Trophy, Vote, DollarSign, AlertCircle, Loader2, ArrowRight, ShieldCheck, Medal, Crown, Award, Bell, FileWarning, UserX, FileCheck } from 'lucide-react'
 import api from '@/lib/api'
 import { adminService } from '@/services/core'
@@ -12,6 +13,13 @@ export default function AdminOverview() {
   const [stats, setStats] = useState<any>(null)
   const [auditLog, setAuditLog] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  const refreshStats = useCallback(async () => {
+    try {
+      const statsRes = await adminService.getStats()
+      setStats(statsRes.data)
+    } catch {}
+  }, [])
 
   useEffect(() => {
     if (!profile?.is_admin && profile?.role !== 'admin') return
@@ -32,6 +40,14 @@ export default function AdminOverview() {
     }
     fetchData()
   }, [profile])
+
+  usePageChannel('admin-dashboard', [
+    { type: 'pg', event: 'INSERT', table: 'notifications', handler: () => { refreshStats() }},
+    { type: 'pg', event: 'UPDATE', table: 'users', handler: () => { refreshStats() }},
+    { type: 'pg', event: 'UPDATE', table: 'ideas', handler: () => { refreshStats() }},
+    { type: 'pg', event: 'UPDATE', table: 'competitions', handler: () => { refreshStats() }},
+    { type: 'pg', event: 'INSERT', table: 'payments', handler: () => { refreshStats() }},
+  ], [refreshStats])
 
   if (!profile?.is_admin && profile?.role !== 'admin') {
     return (

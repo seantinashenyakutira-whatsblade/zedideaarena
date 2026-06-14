@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { 
   ArrowLeft, 
   ThumbsUp, 
@@ -17,7 +17,9 @@ import {
   Play,
   Calendar,
   Users,
-  Settings
+  Settings,
+  CheckCircle2,
+  DollarSign
 } from 'lucide-react'
 import { YouTubeEmbed, getYouTubeId } from '@/components/YouTubeEmbed'
 import { useAuth } from '@/hooks/useAuth'
@@ -96,9 +98,29 @@ export default function IdeaDetailPage() {
   if (loading) return <div>Loading...</div>
   if (!idea) return <div>Idea not found</div>
 
+  const isPaid = idea.payment_status === 'paid'
+
   return (
           <main className="py-8">
             <div className="max-w-6xl mx-auto">
+              {!isPaid && (
+                <div className="mb-8 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center gap-3">
+                  <DollarSign size={20} className="text-red-400" />
+                  <span className="text-sm font-bold text-red-400">Entry fee unpaid</span>
+                  <Link
+                    href={`/dashboard/payment?type=contestant&competitionId=${idea.competition_id}`}
+                    className="ml-auto btn-primary py-2 px-6 rounded-xl text-xs font-black"
+                  >
+                    Pay Entry Fee
+                  </Link>
+                </div>
+              )}
+              {isPaid && (
+                <div className="mb-8 p-4 rounded-2xl bg-zed-success/10 border border-zed-success/20 flex items-center gap-3">
+                  <CheckCircle2 size={20} className="text-zed-success" />
+                  <span className="text-sm font-bold text-zed-success">Entry fee paid</span>
+                </div>
+              )}
               {/* Back Button */}
               <button 
                 onClick={() => router.back()}

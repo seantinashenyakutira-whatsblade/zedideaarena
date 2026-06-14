@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Trophy, Calendar, Users, ArrowRight, Loader2, Star } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 import api from '@/lib/api'
 import Link from 'next/link'
 import { CompetitionCountdown } from '@/components/CompetitionCountdown'
@@ -22,6 +23,23 @@ export default function CompetitionsPage() {
       }
     }
     fetchCompetitions()
+  }, [])
+
+  // Real-time: live prize pool and competition status
+  useEffect(() => {
+    const channel = supabase.channel('dashboard-competitions')
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'competitions' },
+        (payload: any) => {
+          setCompetitions(prev => prev.map(c =>
+            c.id === payload.new.id
+              ? { ...c, prize_pool_cents: payload.new.prize_pool_cents, calculatedStatus: payload.new.calculatedStatus }
+              : c
+          ))
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   return (

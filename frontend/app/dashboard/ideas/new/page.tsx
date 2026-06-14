@@ -1,9 +1,9 @@
 'use client'
 
-import { ChevronRight, ChevronLeft, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy, CheckCircle } from 'lucide-react'
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { ChevronRight, ChevronLeft, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy, CheckCircle, Save, AlertCircle } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { ideaService } from '@/services/idea'
-import { authService } from '@/services/auth'
+import { authService, getToken } from '@/services/auth'
 import PitchVideoGuide from '@/components/pitch/PitchVideoGuide'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
@@ -27,6 +27,7 @@ const steps = [
 ]
 
 const FORM_KEY = 'idea_submission_form'
+const DRAFT_KEY = 'idea_draft_'
 
 function NewIdeaForm() {
   const router = useRouter()
@@ -34,10 +35,13 @@ function NewIdeaForm() {
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [isSavingDraft, setIsSavingDraft] = useState(false)
+  const [draftId, setDraftId] = useState<string | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
   const [hasMounted, setHasMounted] = useState(false)
+  const draftSaveTimeout = useRef<NodeJS.Timeout | null>(null)
 
   const getInitialForm = (): FormState => {
     if (typeof window !== 'undefined') {
@@ -58,11 +62,89 @@ function NewIdeaForm() {
 
   const [formData, setFormData] = useState<FormState>(getInitialForm)
 
+  // Debounced auto-save draft
+  const saveDraft = useCallback(async () => {
+    if (!profile?.id) return
+    if (!formData.title && !formData.problem && !formData.solution) return
+
+    setIsSavingDraft(true)
+    try {
+      const collaboratorsArray = formData.collaborators
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      const res: any = await ideaService.saveDraft({
+        ...formData,
+        collaborators: collaboratorsArray,
+        competition_id: formData.competition_id || undefined,
+      })
+      setDraftId(res.id)
+      toast.success('Draft saved', { duration: 1500 })
+    } catch (err: any) {
+      console.error('Draft save failed:', err)
+    } finally {
+      setIsSavingDraft(false)
+    }
+  }, [formData, profile?.id])
+
   useEffect(() => {
     sessionStorage.setItem(FORM_KEY, JSON.stringify(formData))
-  }, [formData])
+
+    // Debounced auto-save draft every 30 seconds while editing
+    if (draftSaveTimeout.current) clearTimeout(draftSaveTimeout.current)
+    const timeout = setTimeout(() => {
+      saveDraft()
+    }, 30000)
+    draftSaveTimeout.current = timeout
+
+    return () => {
+      if (draftSaveTimeout.current) clearTimeout(draftSaveTimeout.current)
+    }
+  }, [formData, saveDraft])
 
   const [competitions, setCompetitions] = useState<any[]>([])
+
+  // Load existing draft on mount
+  useEffect(() => {
+    const loadDraft = async () => {
+      if (!profile?.id) return
+      try {
+        const ideasRes = await ideaService.getUserIdeas()
+        const ideas = ideasRes.data || []
+        const specificDraftId = searchParams.get('draftId')
+        let targetDraft = null
+        if (specificDraftId) {
+          targetDraft = ideas.find((i: any) => i.id === specificDraftId && i.status === 'draft')
+        }
+        if (!targetDraft) {
+          const drafts = ideas.filter((i: any) => i.status === 'draft')
+          targetDraft = drafts[0]
+        }
+        if (targetDraft) {
+          setDraftId(targetDraft.id)
+          setFormData(prev => ({
+            ...prev,
+            title: targetDraft.title || '',
+            competition_id: targetDraft.competition_id || '',
+            problem: targetDraft.problem || targetDraft.problem_statement || '',
+            solution: targetDraft.solution || targetDraft.description || '',
+            industry: targetDraft.industry || targetDraft.category || '',
+            business_model: targetDraft.business_model || '',
+            pitch_video_url: targetDraft.pitch_video_url || targetDraft.video_url || '',
+            github_url: targetDraft.github_url || '',
+            linkedin_url: targetDraft.linkedin_url || '',
+            instagram_url: targetDraft.instagram_url || '',
+            collaborators: targetDraft.collaborators?.join?.('\n') || (Array.isArray(targetDraft.collaborators) ? targetDraft.collaborators.map((c: any) => typeof c === 'string' ? c : c.name || '').join('\n') : ''),
+          }))
+          if (targetDraft.competition_id) {
+            setCurrentStep(2)
+          }
+        }
+      } catch {}
+    }
+    loadDraft()
+  }, [profile?.id])
 
   useEffect(() => {
     const fetchInitial = async () => {
@@ -144,6 +226,8 @@ function NewIdeaForm() {
         toast.error('Problem and solution are required.')
         return
       }
+      // Save draft when moving past concept step
+      await saveDraft()
     }
 
     if (currentStep === 4 && !hasScrolledToEnd) {
@@ -158,10 +242,14 @@ function NewIdeaForm() {
     if (currentStep > 1) setCurrentStep(currentStep - 1)
   }
 
+  const handleSaveDraft = async () => {
+    await saveDraft()
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const token = getToken()
     if (!token) {
       router.push('/auth/login')
       return
@@ -174,14 +262,32 @@ function NewIdeaForm() {
         .map(s => s.trim())
         .filter(Boolean);
 
-      const res: any = await ideaService.createIdea({
-        ...formData,
-        collaborators: collaboratorsArray,
-        competition_id: formData.competition_id || undefined,
-      })
+      // First save as draft (or update existing draft)
+      let ideaId = draftId
+      if (!ideaId) {
+        const draftRes: any = await ideaService.saveDraft({
+          ...formData,
+          collaborators: collaboratorsArray,
+          competition_id: formData.competition_id || undefined,
+        })
+        ideaId = draftRes.id
+      } else {
+        await ideaService.saveDraft({
+          ...formData,
+          collaborators: collaboratorsArray,
+          competition_id: formData.competition_id || undefined,
+          id: ideaId,
+        })
+      }
+
+      // Then submit the idea
+      if (!ideaId) {
+        console.error('No idea ID available for submission');
+        return;
+      }
+      const submitRes: any = await ideaService.submitIdea(ideaId)
       sessionStorage.removeItem(FORM_KEY)
 
-      const ideaId = res.id
       const competitionName = competitions.find(c => c.id === formData.competition_id)?.title || ''
 
       if (!hasPaidEntry && formData.competition_id) {
@@ -193,7 +299,8 @@ function NewIdeaForm() {
       }
 
       setIsSuccess(true)
-      const params = new URLSearchParams({ title: formData.title, competition: competitionName, id: ideaId })
+      const params = new URLSearchParams({ title: formData.title, competition: competitionName })
+      if (ideaId) params.append('id', ideaId)
       router.replace(`/dashboard/ideas/success?${params}`)
     } catch (err: any) {
       toast.error(err.message || 'Submission failed')
@@ -439,10 +546,15 @@ function NewIdeaForm() {
               )}
             </div>
 
-            <div className="mt-8 flex justify-between gap-6">
+            <div className="mt-8 flex justify-between gap-4">
               <button type="button" onClick={handlePrev} disabled={currentStep === 1 || isSubmitting} className="btn-secondary px-10 h-16 flex items-center gap-3 text-xs font-black uppercase tracking-widest disabled:opacity-20">
                 <ChevronLeft size={20} /> Back
               </button>
+              {(currentStep >= 2 && currentStep < 5) && (
+                <button type="button" onClick={handleSaveDraft} disabled={isSavingDraft} className="btn-secondary px-8 h-16 flex items-center gap-2 text-xs font-black uppercase tracking-widest disabled:opacity-20">
+                  <Save size={16} /> {isSavingDraft ? 'Saving...' : 'Save Draft'}
+                </button>
+              )}
               {currentStep < 5 ? (
                 <button type="button" onClick={handleNext} className="btn-primary px-16 h-16 flex items-center gap-3 text-xs font-black uppercase tracking-widest">
                   Continue <ChevronRight size={20} />

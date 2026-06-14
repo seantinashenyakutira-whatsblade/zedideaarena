@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { AlertCircle, Loader2, Plus, Settings, Trash2, Trophy, Calendar, DollarSign } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 import { adminService } from '@/services/core'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -34,6 +35,26 @@ export default function AdminCompetitions() {
     if (!profile?.is_admin && profile?.role !== 'admin') return
     fetchCompetitions()
   }, [profile])
+
+  // Real-time: live updates to competition list (for multi-admin environments)
+  useEffect(() => {
+    if (!profile?.is_admin && profile?.role !== 'admin') return
+    const channel = supabase.channel('admin-competitions')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'competitions' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT') {
+            setCompetitions(prev => [payload.new, ...prev])
+          } else if (payload.eventType === 'UPDATE') {
+            setCompetitions(prev => prev.map(c => c.id === payload.new.id ? { ...c, ...payload.new } : c))
+          } else if (payload.eventType === 'DELETE') {
+            setCompetitions(prev => prev.filter(c => c.id !== payload.old.id))
+          }
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [profile?.is_admin, profile?.role])
 
   const handleSaveCompetition = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -64,12 +64,7 @@ const castVote = async (req, res) => {
 
     if (voteError) throw voteError;
 
-    const { error: countError } = await supabase
-      .from('ideas')
-      .update({ votes_count: ideaData.votes_count + 1 })
-      .eq('id', ideaId);
-
-    if (countError) throw countError;
+    // Count + broadcast handled by DB trigger trg_vote_inserted
 
     res.json({ status: 'success', message: 'Vote cast successfully!' });
   } catch (error) {
@@ -212,6 +207,8 @@ const castVoteV2 = async (req, res) => {
       p_voter_id: userId,
       p_competition_id: competition_id,
     }).catch(err => console.error('Vote bonus RPC error:', err));
+
+    // Count + broadcast handled by DB trigger trg_vote_inserted
 
     res.json({ status: 'success', message: 'Vote cast successfully!', vote });
   } catch (error) {

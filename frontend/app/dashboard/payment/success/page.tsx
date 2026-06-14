@@ -16,6 +16,7 @@ function PaymentSuccessContent() {
 
   const sessionId = searchParams.get('session_id')
   const competitionId = searchParams.get('competitionId')
+  const ideaId = searchParams.get('ideaId')
   const type = searchParams.get('type')
 
   useEffect(() => {
@@ -55,6 +56,8 @@ function PaymentSuccessContent() {
     if (countdown <= 0) {
       const target = type === 'voter'
         ? `/vote/${competitionId}`
+        : ideaId
+        ? `/dashboard/ideas/${ideaId}`
         : `/dashboard`
       window.location.replace(target)
       return
@@ -102,9 +105,11 @@ function PaymentSuccessContent() {
     )
   }
 
-  const targetLabel = type === 'voter' ? 'Voting Arena' : 'Dashboard'
+  const targetLabel = type === 'voter' ? 'Voting Arena' : ideaId ? 'Your Idea' : 'Dashboard'
   const targetHref = type === 'voter'
     ? `/vote/${competitionId}`
+    : ideaId
+    ? `/dashboard/ideas/${ideaId}`
     : `/dashboard`
 
   return (
