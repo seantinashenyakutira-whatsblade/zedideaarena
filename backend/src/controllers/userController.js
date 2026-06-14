@@ -191,38 +191,54 @@ const getUserProfileById = async (req, res) => {
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
-  if (!email) {
-    return res.status(400).json({ success: false, error: 'Email is required' });
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ success: false, error: 'A valid email address is required' });
   }
 
+  const normalizedEmail = email.toLowerCase().trim();
+
   try {
-    const { error } = await supabase.auth.admin.generateLink({
-      type: 'recovery',
-      email,
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id, email')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    if (!existingUser) {
+      return res.status(404).json({ success: false, error: 'No account found with this email address.' });
+    }
+
+    const redirectTo = process.env.NODE_ENV === 'production'
+      ? 'https://zedideaarena.com/auth/reset-password'
+      : 'http://localhost:3000/auth/reset-password';
+
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo,
     });
 
     if (error) {
-      console.error(`[FORGOT_PASSWORD_ERROR] ${email}:`, error);
-      return res.status(400).json({ success: false, error: error.message });
+      console.error(`[FORGOT_PASSWORD_ERROR] ${normalizedEmail}:`, error.message);
+      return res.status(500).json({ success: false, error: 'Failed to send password reset email. Please try again later.' });
     }
 
-    res.json({ status: 'success', message: 'Password reset email sent' });
+    console.log(`[FORGOT_PASSWORD] Reset email sent to ${normalizedEmail}`);
+    res.json({ status: 'success', message: 'Password reset email sent.' });
   } catch (error) {
-    console.error(`[FORGOT_PASSWORD_ERROR] ${email}:`, error);
-    res.status(500).json({ success: false, error: 'Failed to send reset email' });
+    console.error(`[FORGOT_PASSWORD_ERROR] ${normalizedEmail}:`, error);
+    res.status(500).json({ success: false, error: 'An unexpected error occurred. Please try again later.' });
   }
 };
 
 const resetPassword = async (req, res) => {
   const { password } = req.body;
 
-  if (!password || password.length < 6) {
-    return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
+  if (!password || typeof password !== 'string' || password.length < 6) {
+    return res.status(400).json({ success: false, error: 'Password must be at least 6 characters.' });
   }
 
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, error: 'Authorization token required' });
+    return res.status(401).json({ success: false, error: 'Authorization token is required.' });
   }
 
   const token = authHeader.slice('Bearer '.length).trim();
@@ -230,7 +246,7 @@ const resetPassword = async (req, res) => {
   try {
     const { data: user, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) {
-      return res.status(401).json({ success: false, error: 'Invalid or expired token' });
+      return res.status(401).json({ success: false, error: 'Invalid or expired reset link. Please request a new one.' });
     }
 
     const { error } = await supabase.auth.admin.updateUserById(user.user.id, {
@@ -238,14 +254,15 @@ const resetPassword = async (req, res) => {
     });
 
     if (error) {
-      console.error(`[RESET_PASSWORD_ERROR] UID: ${user.user.id}:`, error);
-      return res.status(400).json({ success: false, error: error.message });
+      console.error(`[RESET_PASSWORD_ERROR] UID: ${user.user.id}:`, error.message);
+      return res.status(400).json({ success: false, error: 'Failed to update password. Please try again.' });
     }
 
-    res.json({ status: 'success', message: 'Password updated successfully' });
+    console.log(`[RESET_PASSWORD] Password updated for UID: ${user.user.id}`);
+    res.json({ status: 'success', message: 'Password updated successfully.' });
   } catch (error) {
     console.error(`[RESET_PASSWORD_ERROR]:`, error);
-    res.status(500).json({ success: false, error: 'Failed to reset password' });
+    res.status(500).json({ success: false, error: 'An unexpected error occurred. Please try again later.' });
   }
 };
 

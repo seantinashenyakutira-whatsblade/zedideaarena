@@ -168,19 +168,11 @@ export const authService = {
   },
 
   forgotPassword: async (email) => {
-    const redirectTo = typeof window !== 'undefined'
-      ? `${getMainUrl('/auth/reset-password')}`
-      : undefined;
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo,
-    });
-    if (error) {
-      if (error.message.includes('Email not found')) {
-        throw new Error('No account found with this email address.');
-      }
-      throw new Error(error.message);
+    const res = await api.post('/user/forgot-password', { email });
+    if (res.status !== 'success') {
+      throw new Error(res.error || 'Failed to send reset email.');
     }
-    return { message: 'Check your email for a password reset link.' };
+    return res;
   },
 
   resetPassword: async (newPassword) => {
