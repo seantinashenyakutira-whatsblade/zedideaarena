@@ -798,11 +798,38 @@ const deleteChatMessage = async (req, res) => {
   }
 };
 
+const editChatMessage = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('is_admin')
+      .eq('id', userId)
+      .single();
+    const isAdmin = userRow?.is_admin || false;
+    const { id } = req.params;
+    const { message } = req.body;
+    if (!message?.trim()) return res.status(400).json({ status: 'error', message: 'Message is required' });
+
+    let query = supabase.from('arena_chat_messages').update({ message: message.trim() }).eq('id', id).select('*');
+    if (!isAdmin) query = query.eq('user_id', userId);
+
+    const { data, error } = await query.single();
+    if (error) throw error;
+
+    const enriched = await attachUserData(data);
+    res.json({ status: 'success', data: enriched });
+  } catch (err) {
+    console.error('Edit chat message error:', err);
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
 module.exports = {
   getPosts, createPost, updatePost, deletePost, createRepost,
   toggleLike, getComments, addComment, trackShare, trackAdImpression,
   getTrendingTopics, getPostsByTopic,
   getChatMessages, sendChatMessage, adminChatReply,
-  uploadChatFile, markConversationRead, deleteChatMessage,
+  uploadChatFile, markConversationRead, deleteChatMessage, editChatMessage,
   getRules, getUserProfile,
 };

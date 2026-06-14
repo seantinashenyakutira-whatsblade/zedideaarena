@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { MessageCircle, ArrowLeft, Send, Loader2, Image, FileText, Paperclip, ChevronDown, Search, Clock, Check, AlertCircle, Trash2 } from 'lucide-react'
+import { MessageCircle, ArrowLeft, Send, Loader2, Image, FileText, Paperclip, ChevronDown, Search, Clock, Check, AlertCircle, Trash2, Pencil } from 'lucide-react'
 import api from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
@@ -17,9 +17,13 @@ export default function AdminMessages() {
   const [sending, setSending] = useState(false)
   const [search, setSearch] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  const [editLoading, setEditLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const editRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { if (profile?.is_admin || profile?.role === 'admin') fetchConversations() }, [profile])
 
@@ -69,6 +73,25 @@ export default function AdminMessages() {
       setMessages(prev => prev.filter(m => m.id !== msgId))
     } catch {} 
   }
+
+  const startEdit = (msg: any) => {
+    setEditingId(msg.id)
+    setEditText(msg.message || '')
+    setTimeout(() => editRef.current?.focus(), 50)
+  }
+
+  const saveEdit = async (msgId: string) => {
+    if (!editText.trim() || editLoading) return
+    setEditLoading(true)
+    try {
+      await api.put(`/arena/chat/${msgId}`, { message: editText.trim() })
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, message: editText.trim() } : m))
+      setEditingId(null)
+    } catch {}
+    finally { setEditLoading(false) }
+  }
+
+  const cancelEdit = () => { setEditingId(null); setEditText('') }
 
   const sendReply = async () => {
     if (!input.trim() || sending || !selectedConv) return
@@ -225,16 +248,33 @@ export default function AdminMessages() {
                     {!msg.is_admin_reply && (
                       <p className="text-[10px] text-indigo-400 font-semibold mb-0.5">{selectedConv.user_name || 'User'}</p>
                     )}
-                    {msg.message && <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>}
-                    <FileMessage msg={msg} />
-                    <p className="text-[10px] text-white/30 mt-1">
-                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      {msg.is_admin_reply && <Check size={10} className="inline ml-1 text-blue-400" />}
-                    </p>
+                    {editingId === msg.id ? (
+                      <div className="flex flex-col gap-1.5">
+                        <input ref={editRef as any} value={editText} onChange={e => setEditText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') saveEdit(msg.id); if (e.key === 'Escape') cancelEdit() }} className="w-full bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-sm outline-none focus:border-indigo-500" />
+                        <div className="flex gap-1 justify-end">
+                          <button onClick={() => cancelEdit()} className="text-[10px] text-white/40 hover:text-white/70 px-2 py-0.5 rounded">Cancel</button>
+                          <button onClick={() => saveEdit(msg.id)} className="text-[10px] text-indigo-400 hover:text-indigo-300 px-2 py-0.5 rounded disabled:opacity-30" disabled={editLoading || !editText.trim()}>{editLoading ? 'Saving...' : 'Save'}</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {msg.message && <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>}
+                        <FileMessage msg={msg} />
+                        <p className="text-[10px] text-white/30 mt-1">
+                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {msg.is_admin_reply && <Check size={10} className="inline ml-1 text-blue-400" />}
+                        </p>
+                      </>
+                    )}
                   </div>
-                  <button onClick={() => deleteMessage(msg.id)} className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400 transition-all shrink-0 mt-1" title="Delete message">
-                    <Trash2 size={12} />
-                  </button>
+                  <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-all shrink-0 mt-1">
+                    <button onClick={() => startEdit(msg)} className="p-1.5 rounded-lg hover:bg-indigo-500/10 text-white/30 hover:text-indigo-400" title="Edit message">
+                      <Pencil size={12} />
+                    </button>
+                    <button onClick={() => deleteMessage(msg.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400" title="Delete message">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 </div>
               ))}
               <div ref={bottomRef} />
