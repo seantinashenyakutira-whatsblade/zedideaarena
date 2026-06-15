@@ -78,15 +78,19 @@ function NewIdeaForm() {
         ...formData,
         collaborators: collaboratorsArray,
         competition_id: formData.competition_id || undefined,
+        ...(draftId && { id: draftId }),
       })
-      setDraftId(res.id)
+      if (res?.id) {
+        setDraftId(res.id)
+        sessionStorage.setItem(DRAFT_KEY + profile.id, res.id)
+      }
       toast.success('Draft saved', { duration: 1500 })
     } catch (err: any) {
       console.error('Draft save failed:', err)
     } finally {
       setIsSavingDraft(false)
     }
-  }, [formData, profile?.id])
+  }, [formData, profile?.id, draftId])
 
   useEffect(() => {
     sessionStorage.setItem(FORM_KEY, JSON.stringify(formData))
@@ -112,10 +116,12 @@ function NewIdeaForm() {
       try {
         const ideasRes = await ideaService.getUserIdeas()
         const ideas = ideasRes.data || []
-        const specificDraftId = searchParams.get('draftId')
+        const urlDraftId = searchParams.get('draftId')
+        const storedDraftId = sessionStorage.getItem(DRAFT_KEY + profile.id)
+        const draftIdToLoad = urlDraftId || storedDraftId
         let targetDraft = null
-        if (specificDraftId) {
-          targetDraft = ideas.find((i: any) => i.id === specificDraftId && i.status === 'draft')
+        if (draftIdToLoad) {
+          targetDraft = ideas.find((i: any) => i.id === draftIdToLoad && i.status === 'draft')
         }
         if (!targetDraft) {
           const drafts = ideas.filter((i: any) => i.status === 'draft')
@@ -123,6 +129,7 @@ function NewIdeaForm() {
         }
         if (targetDraft) {
           setDraftId(targetDraft.id)
+          sessionStorage.setItem(DRAFT_KEY + profile.id, targetDraft.id)
           setFormData(prev => ({
             ...prev,
             title: targetDraft.title || '',

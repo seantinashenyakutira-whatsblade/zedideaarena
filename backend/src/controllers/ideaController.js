@@ -3,7 +3,7 @@ const { sendIdeaConfirmation } = require('../services/emailService');
 
 const saveIdeaDraft = async (req, res) => {
   const { uid } = req.user;
-  const {
+  let {
     id, title, category, competition_id,
     problem, problem_statement, solution, description,
     industry, business_model,
@@ -13,6 +13,33 @@ const saveIdeaDraft = async (req, res) => {
   } = req.body;
 
   try {
+    if (!id) {
+      const { data: existingDraft } = await supabase
+        .from('ideas')
+        .select('id')
+        .eq('user_id', uid)
+        .eq('competition_id', competition_id || null)
+        .eq('status', 'draft')
+        .limit(1);
+
+      if (existingDraft && existingDraft.length > 0) {
+        id = existingDraft[0].id;
+      }
+    }
+
+    if (title) {
+      const { data: sameTitle } = await supabase
+        .from('ideas')
+        .select('id, status')
+        .eq('user_id', uid)
+        .eq('title', title)
+        .limit(1);
+
+      if (sameTitle && sameTitle.length > 0 && sameTitle[0].id !== id) {
+        return res.status(409).json({ status: 'error', message: 'You already have an idea with this title. Please use a different title or edit your existing idea.' });
+      }
+    }
+
     if (id) {
       const { data: existing } = await supabase
         .from('ideas')
@@ -24,9 +51,11 @@ const saveIdeaDraft = async (req, res) => {
         if (existing.user_id !== uid) {
           return res.status(403).json({ status: 'error', message: 'Unauthorized: You do not own this idea' });
         }
-        if (existing.status === 'submitted') {
+        if (existing.status !== 'draft') {
           return res.status(400).json({ status: 'error', message: 'Cannot edit an idea that has already been submitted' });
         }
+      } else {
+        id = null;
       }
     }
 
