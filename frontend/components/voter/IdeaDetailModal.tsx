@@ -18,6 +18,7 @@ interface IdeaDetailModalProps {
 
 export function IdeaDetailModal({ idea, hasVoted, isOwn, guardErrors, onClose, onVoteClick }: IdeaDetailModalProps) {
   const [thumbFailed, setThumbFailed] = useState(false)
+  const [videoPlaying, setVideoPlaying] = useState(false)
 
   if (!idea) return null
 
@@ -93,16 +94,59 @@ export function IdeaDetailModal({ idea, hasVoted, isOwn, guardErrors, onClose, o
               <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <Play size={12} /> Pitch Video
               </h4>
-              <div className="aspect-video rounded-xl overflow-hidden bg-black">
+              <div className="relative aspect-video rounded-xl overflow-hidden bg-black group">
                 {vid.includes('youtube.com') || vid.includes('youtu.be') ? (
-                  <iframe
-                    src={vid.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/').split('&')[0]}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
+                  <div className="relative w-full h-full">
+                    {videoPlaying ? (
+                      <iframe
+                        src={vid.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/').split('&')[0]}
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <>
+                        <Image src={imgSrc || '/hero_3d_arena_bg_1777051043555.png'} alt={idea.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 800px" loading="lazy" />
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center" />
+                        <button
+                          onClick={() => setVideoPlaying(true)}
+                          className="absolute inset-0 flex items-center justify-center group-hover:scale-105 transition-transform"
+                        >
+                          <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 hover:bg-white/30 transition-colors">
+                            <Play size={32} className="text-white ml-1" />
+                          </div>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 ) : (
-                  <video src={vid} controls className="w-full h-full" />
+                  <div className="relative w-full h-full">
+                    <video
+                      src={vid}
+                      controls
+                      className={`w-full h-full ${videoPlaying ? 'block' : 'hidden'}`}
+                      onPlay={() => setVideoPlaying(true)}
+                      onEnded={() => setVideoPlaying(false)}
+                    />
+                    {!videoPlaying && (
+                      <>
+                        <Image src={imgSrc || '/hero_3d_arena_bg_1777051043555.png'} alt={idea.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 800px" loading="lazy" />
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center" />
+                        <button
+                          onClick={() => {
+                            const video = document.querySelector('video') as HTMLVideoElement | null
+                            video?.play()
+                            setVideoPlaying(true)
+                          }}
+                          className="absolute inset-0 flex items-center justify-center group-hover:scale-105 transition-transform"
+                        >
+                          <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 hover:bg-white/30 transition-colors">
+                            <Play size={32} className="text-white ml-1" />
+                          </div>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
