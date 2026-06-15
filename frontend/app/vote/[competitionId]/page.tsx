@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { usePageChannel } from '@/hooks/usePageChannel'
 import { MediaCard, IdeaCardSkeleton } from '@/components/ui/MediaCard'
 import { Vote, Search, ThumbsUp, ArrowLeft, AlertTriangle, CheckCircle2, Play } from 'lucide-react'
+import { getYouTubeThumbnail } from '@/components/YouTubeEmbed'
 import { motion } from 'framer-motion'
 import { voteService } from '@/services/core'
 import { RatingModal } from '@/components/voter/RatingModal'
@@ -254,6 +255,8 @@ function IdeasGrid({
         const items: React.ReactNode[] = []
         const hasVoted = votedIdeas.includes(idea.id)
         const isOwn = idea.user_id === profile?.id
+        const hasVideo = idea.pitch_video_url || idea.video_url
+        const mediaSrc = idea.image_url || (hasVideo ? getYouTubeThumbnail(hasVideo) : null)
 
         items.push(
           <motion.div
@@ -272,13 +275,13 @@ function IdeasGrid({
           >
             <div className="relative mb-6">
               <MediaCard
-                src={idea.image_url || idea.pitch_video_url || idea.video_url}
+                src={mediaSrc}
                 alt={idea.title}
                 containerClassName="group-hover:scale-105 transition-transform duration-700"
                 className="grayscale-0"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/5 to-transparent pointer-events-none" />
-              {(idea.pitch_video_url || idea.video_url) && (
+              {hasVideo && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-2xl">
                     <Play size={28} className="text-white ml-1" />
