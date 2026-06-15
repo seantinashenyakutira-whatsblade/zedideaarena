@@ -51,8 +51,8 @@ const saveIdeaDraft = async (req, res) => {
         if (existing.user_id !== uid) {
           return res.status(403).json({ status: 'error', message: 'Unauthorized: You do not own this idea' });
         }
-        if (existing.status !== 'draft') {
-          return res.status(400).json({ status: 'error', message: 'Cannot edit an idea that has already been submitted' });
+        if (existing.status === 'approved') {
+          return res.status(400).json({ status: 'error', message: 'Cannot edit an approved idea' });
         }
       } else {
         id = null;
@@ -77,9 +77,6 @@ const saveIdeaDraft = async (req, res) => {
       image_url: image_url || '',
       deck_url: deck_url || '',
       links: links || {},
-      status: 'draft',
-      payment_status: 'unpaid',
-      votes_count: 0,
       updated_at: new Date().toISOString(),
     };
 
@@ -87,6 +84,9 @@ const saveIdeaDraft = async (req, res) => {
     if (id) {
       result = await supabase.from('ideas').update(ideaData).eq('id', id).select('id').single();
     } else {
+      ideaData.status = 'draft';
+      ideaData.payment_status = 'unpaid';
+      ideaData.votes_count = 0;
       ideaData.created_at = new Date().toISOString();
       result = await supabase.from('ideas').insert(ideaData).select('id').single();
     }
@@ -126,20 +126,42 @@ const submitIdea = async (req, res) => {
       });
     }
 
-    if (doc.status === 'submitted') {
-      return res.status(400).json({ status: 'error', message: 'Idea already submitted' });
+    if (doc.status === 'submitted' || doc.status === 'pending') {
+      return res.json({ status: 'success', message: 'Idea already submitted' });
+    }
+
+    if (doc.status === 'approved') {
+      return res.json({ status: 'success', message: 'Idea is already approved' });
+    }
+
+    const appealCount = doc.appeal_count || 0;
+    if (doc.status === 'rejected' && appealCount >= 5) {
+      return res.status(400).json({ status: 'error', message: 'Maximum appeals reached (5/5). You can no longer appeal this idea.' });
+    }
+
+    const updateData = {
+      status: 'submitted',
+      updated_at: new Date().toISOString(),
+    };
+
+    if (doc.status === 'rejected') {
+      updateData.appeal_count = appealCount + 1;
     }
 
     const { error } = await supabase
       .from('ideas')
-      .update({ status: 'submitted', updated_at: new Date().toISOString() })
+      .update(updateData)
       .eq('id', id);
 
     if (error) throw error;
 
     sendIdeaConfirmation(req.user.email, doc.title);
 
-    res.json({ status: 'success', message: 'Idea submitted successfully and is now under review' });
+    const msg = doc.status === 'rejected'
+      ? `Appeal submitted (${appealCount + 1}/5). Your idea is back under review.`
+      : 'Idea submitted successfully and is now under review';
+
+    res.json({ status: 'success', message: msg });
   } catch (error) {
     console.error('Error submitting idea:', error);
     res.status(500).json({ status: 'error', message: 'Failed to submit idea' });

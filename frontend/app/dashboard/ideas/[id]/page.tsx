@@ -322,6 +322,25 @@ export default function IdeaDetailPage() {
                     ) : null
                   })()}
 
+                  {/* Edit Idea */}
+                  {profile?.uid === idea.user_id && idea.status !== 'approved' && (
+                    <Link
+                      href={`/dashboard/ideas/new?draftId=${id}`}
+                      className="card-zed p-6 border-white/5 bg-white/5 hover:bg-zed-primary/10 transition-all group flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-zed-primary/20 flex items-center justify-center text-zed-primary">
+                          <Settings size={24} />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-zed-foreground uppercase tracking-widest">Edit Idea</h4>
+                          <p className="text-[10px] text-zed-foreground-secondary font-bold">Edit title, video, problem, business model</p>
+                        </div>
+                      </div>
+                      <ExternalLink size={18} className="text-white/20 group-hover:text-zed-primary transition-colors" />
+                    </Link>
+                  )}
+
                   {/* Manage Idea */}
                   <Link
                     href={`/dashboard/ideas/${id}/manage`}

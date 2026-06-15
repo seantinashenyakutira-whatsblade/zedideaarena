@@ -48,7 +48,8 @@ export default function MyIdeasPage() {
                   </div>
                 ) : (
                   ideas.map((idea) => {
-                    const isDraft = idea.status === 'draft'
+                    const canEdit = idea.status !== 'approved'
+                    const editLabel = idea.status === 'draft' ? 'Continue Draft' : 'Edit'
                     return (
                       <div key={idea.id} className="card-zed group glass-premium hover:border-zed-primary/30 transition-all duration-500 flex flex-col md:flex-row gap-8 p-8 relative overflow-hidden">
                         {/* Background Decoration */}
@@ -57,7 +58,8 @@ export default function MyIdeasPage() {
                         {/* Idea Preview */}
                         <div className="w-full md:w-64 aspect-video rounded-2xl overflow-hidden border border-white/5 bg-white/5 flex-shrink-0 relative">
                           {(() => {
-                            const thumb = idea.image_url || getYouTubeThumbnail(idea.pitch_video_url || idea.video_url)
+                            const rawImage = idea.image_url && !idea.image_url.includes('youtube.com') && !idea.image_url.includes('youtu.be') ? idea.image_url : null
+                            const thumb = rawImage || getYouTubeThumbnail(idea.pitch_video_url || idea.video_url)
                             if (thumb) {
                               return (
                                 <>
@@ -116,22 +118,23 @@ export default function MyIdeasPage() {
                              </div>
                              <div className="flex-1" />
                              
-                             <div className="flex items-center gap-3">
-                                {isDraft ? (
-                                  <Link 
-                                    href={`/dashboard/ideas/new?draftId=${idea.id}`}
-                                    className="btn-primary py-2 px-6 rounded-xl text-xs font-black shadow-lg flex items-center gap-2"
-                                  >
-                                    <Save size={14} /> Continue Draft
-                                  </Link>
-                                ) : idea.payment_status !== 'paid' && (idea.status === 'submitted' || idea.status === 'pending') && (
-                                  <Link 
-                                    href={`/dashboard/payment?type=contestant&competitionId=${idea.competition_id}&ideaId=${idea.id}`}
-                                    className="btn-primary py-2 px-6 rounded-xl text-xs font-black shadow-lg"
+                              <div className="flex items-center gap-3">
+                                 {canEdit && (
+                                   <Link 
+                                     href={`/dashboard/ideas/new?draftId=${idea.id}`}
+                                     className="btn-primary py-2 px-6 rounded-xl text-xs font-black shadow-lg flex items-center gap-2"
                                    >
-                                     Pay Entry Fee
+                                     <Save size={14} /> {editLabel}
                                    </Link>
                                  )}
+                                 {idea.payment_status !== 'paid' && (idea.status === 'submitted' || idea.status === 'pending') && (
+                                   <Link 
+                                     href={`/dashboard/payment?type=contestant&competitionId=${idea.competition_id}&ideaId=${idea.id}`}
+                                     className="btn-primary py-2 px-6 rounded-xl text-xs font-black shadow-lg"
+                                    >
+                                      Pay Entry Fee
+                                    </Link>
+                                  )}
                                <Link 
                                  href={`/dashboard/ideas/${idea.id}`}
                                  className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white/10 hover:bg-zed-primary text-white hover:text-white border border-white/10 hover:border-zed-primary transition-all"

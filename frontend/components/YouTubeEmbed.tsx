@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { Play } from 'lucide-react'
 
-export function getYouTubeId(url: string): string | null {
+export function getYouTubeId(url: string | null | undefined): string | null {
+  if (!url) return null
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
     /^([a-zA-Z0-9_-]{11})$/,

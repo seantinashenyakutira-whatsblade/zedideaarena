@@ -1,18 +1,21 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { CheckCircle2, Loader2, Trophy, Vote, ArrowRight, XCircle } from 'lucide-react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { CheckCircle2, Loader2, Trophy, Vote, ArrowRight, XCircle, ShieldCheck, Database, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
+import { toast } from 'sonner'
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const { refreshProfile } = useAuth()
   const [status, setStatus] = useState<'verifying' | 'verified' | 'error'>('verifying')
   const [countdown, setCountdown] = useState(5)
   const [payment, setPayment] = useState<any>(null)
+  const [syncStatus, setSyncStatus] = useState({ stripe: false, database: false })
 
   const sessionId = searchParams.get('session_id')
   const competitionId = searchParams.get('competitionId')
@@ -35,9 +38,14 @@ function PaymentSuccessContent() {
           const res: any = await api.get(`/payments/verify?${params}`)
           if (res.verified) {
             setPayment(res.payment)
+            setSyncStatus({ stripe: true, database: true })
             setStatus('verified')
             await refreshProfile()
+            toast.success(type === 'voter' ? 'Voter registration confirmed!' : 'Entry fee payment confirmed!', { duration: 5000 })
             return
+          }
+          if (res.stripe_status === 'paid') {
+            setSyncStatus(prev => ({ ...prev, stripe: true }))
           }
         } catch { /* retry */ }
 
@@ -46,6 +54,7 @@ function PaymentSuccessContent() {
         }
       }
       setStatus('error')
+      toast.error('Payment verification timed out. Please check your payment history.')
     }
     verifyWithRetry()
   }, [sessionId, competitionId, type])
@@ -75,34 +84,24 @@ function PaymentSuccessContent() {
             <Loader2 size={64} className="text-zed-primary animate-spin" />
           </div>
           <h1 className="text-4xl font-black text-zed-foreground mb-4">Verifying Payment...</h1>
-          <p className="text-zed-foreground-secondary text-lg">Please wait while we confirm your transaction.</p>
+          <p className="text-zed-foreground-secondary text-lg mb-8">Please wait while we confirm your transaction.</p>
+          <div className="flex flex-col gap-3 max-w-xs mx-auto">
+            <div className="flex items-center gap-3 text-sm">
+              <div className="w-5 h-5 rounded-full border-2 border-zed-primary border-t-transparent animate-spin" />
+              <span className="text-zed-foreground-secondary">Confirming with Stripe...</span>
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
   if (status === 'error') {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center max-w-lg mx-auto p-12">
-          <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-8">
-            <XCircle size={64} className="text-red-500" />
-          </div>
-          <h1 className="text-4xl font-black text-zed-foreground mb-4">Payment Not Found</h1>
-          <p className="text-zed-foreground-secondary text-lg mb-8">
-            We couldn&apos;t verify your payment. It may still be processing. Please check your payment history or contact support.
-          </p>
-          <div className="flex items-center justify-center gap-4">
-            <Link href="/dashboard/payment" className="btn-secondary px-8 py-4 rounded-xl text-xs font-black">
-              Try Again
-            </Link>
-            <Link href="/dashboard/voter" className="btn-primary px-8 py-4 rounded-xl text-xs font-black flex items-center gap-2">
-              Go to Dashboard <ArrowRight size={16} />
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
+    const errorHref = competitionId
+      ? `/dashboard/payment/error?type=${type}&competitionId=${competitionId}&reason=failed`
+      : '/dashboard/payment/error?reason=failed'
+    router.replace(errorHref)
+    return null
   }
 
   const targetLabel = type === 'voter' ? 'Voting Arena' : ideaId ? 'Your Idea' : 'Dashboard'
@@ -133,6 +132,22 @@ function PaymentSuccessContent() {
             ${(payment.amount_cents / 100).toFixed(2)}
           </p>
         )}
+
+        <div className="flex flex-col gap-3 mb-8 max-w-xs mx-auto">
+          <div className="flex items-center gap-3 text-sm bg-white/5 rounded-xl px-4 py-3">
+            <ShieldCheck size={18} className={syncStatus.stripe ? 'text-zed-success' : 'text-zed-foreground-secondary'} />
+            <span className={syncStatus.stripe ? 'text-zed-success font-bold' : 'text-zed-foreground-secondary'}>
+              {syncStatus.stripe ? 'Confirmed by Stripe' : 'Waiting for Stripe...'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 text-sm bg-white/5 rounded-xl px-4 py-3">
+            <Database size={18} className={syncStatus.database ? 'text-zed-success' : 'text-zed-foreground-secondary'} />
+            <span className={syncStatus.database ? 'text-zed-success font-bold' : 'text-zed-foreground-secondary'}>
+              {syncStatus.database ? 'Saved to Database' : 'Saving...'}
+            </span>
+          </div>
+        </div>
+
         <p className="text-zed-foreground-secondary text-sm mb-8">
           Redirecting to {targetLabel} in {countdown}s...
         </p>

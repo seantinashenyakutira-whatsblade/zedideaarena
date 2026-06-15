@@ -6,6 +6,7 @@ import { paymentService } from '@/services/payment'
 import { Loader2, ShieldCheck, CreditCard, ArrowLeft, ArrowRight, Trophy, Calendar, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
+import { toast } from 'sonner'
 
 function PaymentContent() {
   const searchParams = useSearchParams()
@@ -56,12 +57,15 @@ function PaymentContent() {
       } else {
         res = await paymentService.registerVoter(competitionId!)
       }
+      toast.success('Redirecting to secure checkout...')
       window.location.href = res.checkoutUrl
     } catch (err: any) {
       if (err.message?.includes('create an idea')) {
         setNeedsIdea(true)
       } else {
-        setError(err.message || 'Failed to initiate payment')
+        const errMsg = err.message || 'Failed to initiate payment'
+        setError(errMsg)
+        toast.error(errMsg)
       }
       setProcessing(false)
     }

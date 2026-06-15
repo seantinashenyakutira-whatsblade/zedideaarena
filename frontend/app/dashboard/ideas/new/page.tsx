@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronRight, ChevronLeft, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy, CheckCircle, Save, AlertCircle } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy, CheckCircle, Save, AlertCircle, Github, Linkedin, Instagram } from 'lucide-react'
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { ideaService } from '@/services/idea'
 import { authService, getToken } from '@/services/auth'
@@ -37,6 +37,7 @@ function NewIdeaForm() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [draftId, setDraftId] = useState<string | null>(null)
+  const [isEditMode, setIsEditMode] = useState(false)
   const [profile, setProfile] = useState<any>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
@@ -121,7 +122,7 @@ function NewIdeaForm() {
         const draftIdToLoad = urlDraftId || storedDraftId
         let targetDraft = null
         if (draftIdToLoad) {
-          targetDraft = ideas.find((i: any) => i.id === draftIdToLoad && i.status === 'draft')
+          targetDraft = ideas.find((i: any) => i.id === draftIdToLoad && i.status !== 'approved')
         }
         if (!targetDraft) {
           const drafts = ideas.filter((i: any) => i.status === 'draft')
@@ -129,6 +130,7 @@ function NewIdeaForm() {
         }
         if (targetDraft) {
           setDraftId(targetDraft.id)
+          setIsEditMode(targetDraft.status !== 'draft' && targetDraft.status !== 'approved')
           sessionStorage.setItem(DRAFT_KEY + profile.id, targetDraft.id)
           setFormData(prev => ({
             ...prev,
@@ -287,12 +289,19 @@ function NewIdeaForm() {
         })
       }
 
-      // Then submit the idea
       if (!ideaId) {
         console.error('No idea ID available for submission');
         return;
       }
-      const submitRes: any = await ideaService.submitIdea(ideaId)
+
+      if (isEditMode) {
+        toast.success('Changes saved')
+        router.push(`/dashboard/ideas/${ideaId}`)
+        return
+      }
+
+      // Submit the idea
+      await ideaService.submitIdea(ideaId)
       sessionStorage.removeItem(FORM_KEY)
 
       const competitionName = competitions.find(c => c.id === formData.competition_id)?.title || ''
@@ -337,8 +346,8 @@ function NewIdeaForm() {
       ) : (
         <>
           <div className="mb-12">
-            <h1 className="text-4xl font-black text-zed-foreground mb-2">Competition Entry</h1>
-            <p className="text-zed-foreground-secondary uppercase tracking-widest text-[10px] font-bold">Step {currentStep} of 5: {steps[currentStep-1].title}</p>
+                          <h1 className="text-4xl font-black text-zed-foreground mb-2">{isEditMode ? 'Edit Idea' : 'Competition Entry'}</h1>
+                            <p className="text-zed-foreground-secondary uppercase tracking-widest text-[10px] font-bold">Step {currentStep} of 5: {steps[currentStep-1].title}</p>
           </div>
 
           <div className="flex items-center justify-between mb-12 max-w-3xl mx-auto px-4">
@@ -465,12 +474,27 @@ function NewIdeaForm() {
                       />
                     </div>
                        <div className="space-y-6">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary">Links</label>
-                          <div className="space-y-4">
-                            <input name="linkedin_url" value={formData.linkedin_url} onChange={handleInputChange} placeholder="LinkedIn URL" className="input-zed h-12 text-sm" />
-                            <input name="github_url" value={formData.github_url} onChange={handleInputChange} placeholder="GitHub Repo" className="input-zed h-12 text-sm" />
-                            <input name="instagram_url" value={formData.instagram_url} onChange={handleInputChange} placeholder="Instagram URL" className="input-zed h-12 text-sm" />
-                          </div>
+                           <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary">Links</label>
+                           <div className="space-y-4">
+                             <div className="relative">
+                               <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center">
+                                 <Linkedin size={18} className="text-[#0A66C2]" />
+                               </div>
+                               <input name="linkedin_url" value={formData.linkedin_url} onChange={handleInputChange} placeholder="LinkedIn URL" className="input-zed h-12 text-sm pl-11" />
+                             </div>
+                             <div className="relative">
+                               <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center">
+                                 <Github size={18} className="text-white" />
+                               </div>
+                               <input name="github_url" value={formData.github_url} onChange={handleInputChange} placeholder="GitHub Repo" className="input-zed h-12 text-sm pl-11" />
+                             </div>
+                             <div className="relative">
+                               <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center">
+                                 <Instagram size={18} className="text-[#E4405F]" />
+                               </div>
+                               <input name="instagram_url" value={formData.instagram_url} onChange={handleInputChange} placeholder="Instagram URL" className="input-zed h-12 text-sm pl-11" />
+                             </div>
+                           </div>
                         </div>
                         <div className="space-y-6">
                           <label className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary">Collaborators</label>
@@ -604,7 +628,7 @@ function NewIdeaForm() {
                         .map(s => s.trim())
                         .filter(Boolean)
 
-                      // First save as draft
+                      // Save draft
                       let ideaId = draftId
                       if (!ideaId) {
                         const draftRes: any = await ideaService.saveDraft({
@@ -622,12 +646,19 @@ function NewIdeaForm() {
                         })
                       }
 
-                      // Then submit the idea
                       if (!ideaId) {
-                        console.error('No idea ID available for submission')
+                        console.error('No idea ID available')
                         return
                       }
-                      const submitRes: any = await ideaService.submitIdea(ideaId)
+
+                      if (isEditMode) {
+                        toast.success('Changes saved')
+                        router.push(`/dashboard/ideas/${ideaId}`)
+                        return
+                      }
+
+                      // Submit the idea
+                      await ideaService.submitIdea(ideaId)
 
                       // Check if payment is needed
                       if (!hasPaidEntry && formData.competition_id) {
@@ -650,10 +681,10 @@ function NewIdeaForm() {
                       setIsSubmitting(false)
                     }
                   }}
-                  disabled={isSubmitting || !formData.termsAccepted}
+                  disabled={isSubmitting || (!isEditMode && !formData.termsAccepted)}
                   className="btn-primary px-16 h-16 flex items-center gap-3 text-xs font-black uppercase tracking-widest shadow-2xl shadow-zed-primary/40"
                 >
-                  {isSubmitting ? 'Processing...' : 'Submit & Pay Now'} <CreditCard size={20} />
+                  {isSubmitting ? 'Processing...' : isEditMode ? 'Save Changes' : 'Submit & Pay Now'} <CreditCard size={20} />
                 </button>
               )}
               {currentStep < 5 ? (
@@ -661,8 +692,8 @@ function NewIdeaForm() {
                   Continue <ChevronRight size={20} />
                 </button>
               ) : (
-                <button type="submit" disabled={isSubmitting || !formData.termsAccepted} className="btn-primary px-16 h-16 flex items-center gap-3 text-xs font-black uppercase tracking-widest shadow-2xl shadow-zed-primary/40">
-                  {isSubmitting ? 'Processing...' : 'Submit Entry'} <CreditCard size={20} />
+                <button type="submit" disabled={isSubmitting || (!isEditMode && !formData.termsAccepted)} className="btn-primary px-16 h-16 flex items-center gap-3 text-xs font-black uppercase tracking-widest shadow-2xl shadow-zed-primary/40">
+                  {isSubmitting ? 'Processing...' : isEditMode ? 'Save Changes' : 'Submit Entry'} <CreditCard size={20} />
                 </button>
               )}
             </div>

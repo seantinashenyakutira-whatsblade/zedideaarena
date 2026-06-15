@@ -83,7 +83,7 @@ const enterCompetition = async (req, res) => {
         },
       ],
       success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/success?type=contestant&competitionId=${competitionId}&ideaId=${userIdea.id}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/competitions/${competitionId}`,
+      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/error?type=contestant&competitionId=${competitionId}&reason=cancelled`,
       metadata: {
         user_id: uid,
         competition_id: competitionId,
@@ -162,7 +162,7 @@ const registerVoter = async (req, res) => {
         },
       ],
       success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/success?type=voter&competitionId=${competitionId}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/voter`,
+      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/error?type=voter&competitionId=${competitionId}&reason=cancelled`,
       metadata: {
         user_id: uid,
         competition_id: competitionId,
