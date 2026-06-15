@@ -9,6 +9,7 @@ interface MediaCardProps {
   src?: string | null
   alt: string
   fallback?: string
+  fallbackSrcs?: string[]
   className?: string
   containerClassName?: string
   fill?: boolean
@@ -21,6 +22,7 @@ export function MediaCard({
   src,
   alt,
   fallback,
+  fallbackSrcs,
   className,
   containerClassName,
   fill = true,
@@ -31,15 +33,28 @@ export function MediaCard({
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
   const [grayscale, setGrayscale] = useState(true)
+  const [currentSrc, setCurrentSrc] = useState(src || '')
+  const [fallbackIndex, setFallbackIndex] = useState(1)
+
+  const handleImageError = () => {
+    const nextFallback = fallbackSrcs?.[fallbackIndex]
+    if (nextFallback) {
+      setLoaded(false)
+      setCurrentSrc(nextFallback)
+      setFallbackIndex(prev => prev + 1)
+      return
+    }
+    setError(true)
+  }
 
   return (
     <div className={cn(`relative ${aspectRatio} rounded-xl overflow-hidden bg-white/5`, containerClassName)}>
       {!loaded && !error && (
         <Skeleton className="absolute inset-0 rounded-xl" />
       )}
-      {src && !error ? (
+      {currentSrc && !error ? (
         <Image
-          src={src}
+          src={currentSrc}
           alt={alt}
           fill={fill}
           width={fill ? undefined : width}
@@ -56,7 +71,7 @@ export function MediaCard({
             setLoaded(true)
             setTimeout(() => setGrayscale(false), 100)
           }}
-          onError={() => setError(true)}
+          onError={handleImageError}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center">

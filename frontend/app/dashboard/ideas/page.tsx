@@ -4,7 +4,7 @@ import { FileText, Plus, ArrowRight, Clock, CheckCircle2, ShieldCheck, DollarSig
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { ideaService } from '@/services/idea'
-import { getYouTubeThumbnail } from '@/components/YouTubeEmbed'
+import { getYouTubeThumbnail, getYouTubeThumbnailFallbacks } from '@/components/YouTubeEmbed'
 
 export default function MyIdeasPage() {
   const [loading, setLoading] = useState(true)
@@ -59,11 +59,28 @@ export default function MyIdeasPage() {
                         <div className="w-full md:w-64 aspect-video rounded-2xl overflow-hidden border border-white/5 bg-white/5 flex-shrink-0 relative">
                           {(() => {
                             const rawImage = idea.image_url && !idea.image_url.includes('youtube.com') && !idea.image_url.includes('youtu.be') ? idea.image_url : null
-                            const thumb = rawImage || getYouTubeThumbnail(idea.pitch_video_url || idea.video_url)
+                            const hasVideo = idea.pitch_video_url || idea.video_url
+                            const thumb = rawImage || (hasVideo ? getYouTubeThumbnail(hasVideo) : null)
+                            const fallbacks = hasVideo ? getYouTubeThumbnailFallbacks(hasVideo) : []
                             if (thumb) {
                               return (
                                 <>
-                                  <img src={thumb} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                  <img
+                                    src={thumb}
+                                    alt=""
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                    onError={(e) => {
+                                      const img = e.currentTarget
+                                      if (!img.dataset.fi) img.dataset.fi = '1'
+                                      const fi = parseInt(img.dataset.fi || '1')
+                                      if (fallbacks[fi]) {
+                                        img.src = fallbacks[fi]
+                                        img.dataset.fi = String(fi + 1)
+                                      } else {
+                                        img.style.display = 'none'
+                                      }
+                                    }}
+                                  />
                                   {(idea.pitch_video_url || idea.video_url) && (
                                     <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                       <Play size={32} className="text-white drop-shadow-lg" />

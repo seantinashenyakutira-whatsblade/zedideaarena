@@ -3,7 +3,7 @@
 import { X, Play, ThumbsUp, Users, ExternalLink, Loader2, CheckCircle2, ImageOff } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
-import { getYouTubeThumbnail } from '@/components/YouTubeEmbed'
+import { getYouTubeThumbnail, getYouTubeThumbnailFallbacks } from '@/components/YouTubeEmbed'
 import { ContestantProfileCard } from '@/components/ContestantProfileCard'
 
 interface IdeaDetailModalProps {
@@ -19,11 +19,24 @@ interface IdeaDetailModalProps {
 export function IdeaDetailModal({ idea, hasVoted, isOwn, guardErrors, onClose, onVoteClick }: IdeaDetailModalProps) {
   const [thumbFailed, setThumbFailed] = useState(false)
   const [videoPlaying, setVideoPlaying] = useState(false)
+  const [fallbackIndex, setFallbackIndex] = useState(0)
+  const [currentImgSrc, setCurrentImgSrc] = useState('')
 
   if (!idea) return null
 
   const vid = idea.pitch_video_url || idea.video_url
-  const imgSrc = idea.image_url || (thumbFailed ? getYouTubeThumbnail(vid, 'hq') : getYouTubeThumbnail(vid))
+  const imgFallbacks = vid ? getYouTubeThumbnailFallbacks(vid) : []
+  const imgSrc = currentImgSrc || idea.image_url || (thumbFailed ? imgFallbacks[fallbackIndex] || getYouTubeThumbnail(vid, 'hq') : getYouTubeThumbnail(vid))
+
+  const handleThumbError = () => {
+    const nextFallback = imgFallbacks[fallbackIndex + 1]
+    if (nextFallback) {
+      setCurrentImgSrc(nextFallback)
+      setFallbackIndex(prev => prev + 1)
+    } else {
+      setThumbFailed(true)
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto" onClick={onClose}>
@@ -59,7 +72,7 @@ export function IdeaDetailModal({ idea, hasVoted, isOwn, guardErrors, onClose, o
                   )
                 ) : (
                   <>
-                    <Image src={imgSrc || '/hero_3d_arena_bg_1777051043555.png'} alt={idea.title} fill className="object-cover grayscale-0" sizes="(max-width: 768px) 100vw, 800px" loading="lazy" onError={() => setThumbFailed(true)} />
+                    <Image src={imgSrc || '/hero_3d_arena_bg_1777051043555.png'} alt={idea.title} fill className="object-cover grayscale-0" sizes="(max-width: 768px) 100vw, 800px" loading="lazy" onError={handleThumbError} />
                     <div className="absolute inset-0 bg-black/20 flex items-center justify-center" />
                     <button
                       onClick={() => setVideoPlaying(true)}
@@ -73,7 +86,7 @@ export function IdeaDetailModal({ idea, hasVoted, isOwn, guardErrors, onClose, o
                 )}
               </div>
             ) : (
-              <Image src={imgSrc || '/hero_3d_arena_bg_1777051043555.png'} alt={idea.title} fill className="object-cover grayscale-0" sizes="(max-width: 768px) 100vw, 800px" loading="lazy" onError={() => setThumbFailed(true)} />
+              <Image src={imgSrc || '/hero_3d_arena_bg_1777051043555.png'} alt={idea.title} fill className="object-cover grayscale-0" sizes="(max-width: 768px) 100vw, 800px" loading="lazy" onError={handleThumbError} />
             )}
           </div>
         ) : (

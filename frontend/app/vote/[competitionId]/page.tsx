@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { usePageChannel } from '@/hooks/usePageChannel'
 import { MediaCard, IdeaCardSkeleton } from '@/components/ui/MediaCard'
 import { Vote, Search, ThumbsUp, ArrowLeft, AlertTriangle, CheckCircle2, Play } from 'lucide-react'
-import { getYouTubeThumbnail } from '@/components/YouTubeEmbed'
+import { getYouTubeThumbnail, getYouTubeThumbnailFallbacks } from '@/components/YouTubeEmbed'
 import { motion } from 'framer-motion'
 import { voteService } from '@/services/core'
 import { RatingModal } from '@/components/voter/RatingModal'
@@ -257,6 +257,7 @@ function IdeasGrid({
         const isOwn = idea.user_id === profile?.id
         const hasVideo = idea.pitch_video_url || idea.video_url
         const mediaSrc = idea.image_url || (hasVideo ? getYouTubeThumbnail(hasVideo) : null)
+        const mediaFallbacks = hasVideo ? getYouTubeThumbnailFallbacks(hasVideo) : []
 
         items.push(
           <motion.div
@@ -276,6 +277,7 @@ function IdeasGrid({
             <div className="relative mb-6">
               <MediaCard
                 src={mediaSrc}
+                fallbackSrcs={mediaFallbacks}
                 alt={idea.title}
                 containerClassName="group-hover:scale-105 transition-transform duration-700"
                 className="grayscale-0"

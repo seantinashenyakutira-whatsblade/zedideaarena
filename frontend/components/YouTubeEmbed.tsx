@@ -24,6 +24,18 @@ export function getYouTubeThumbnail(url: string, quality: 'hq' | 'max' = 'max'):
     : `https://img.youtube.com/vi/${id}/hqdefault.jpg`
 }
 
+export function getYouTubeThumbnailFallbacks(url: string): string[] {
+  const id = getYouTubeId(url)
+  if (!id) return []
+  return [
+    `https://img.youtube.com/vi/${id}/maxresdefault.jpg`,
+    `https://img.youtube.com/vi/${id}/sddefault.jpg`,
+    `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+    `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
+    `https://img.youtube.com/vi/${id}/default.jpg`,
+  ]
+}
+
 export function YouTubeEmbed({ url, className = '' }: { url: string; className?: string }) {
   const videoId = getYouTubeId(url)
   const [play, setPlay] = useState(false)

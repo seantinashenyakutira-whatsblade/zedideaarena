@@ -7,7 +7,7 @@ import { Trophy, Calendar, Clock, DollarSign, ArrowRight, Loader2, Users, Play }
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { CompetitionCountdown } from '@/components/CompetitionCountdown'
-import { getYouTubeThumbnail } from '@/components/YouTubeEmbed'
+import { getYouTubeThumbnail, getYouTubeThumbnailFallbacks } from '@/components/YouTubeEmbed'
 
 interface Competition {
   id: string
@@ -209,12 +209,29 @@ export default function CompetitionDetailPage() {
                 </h2>
                 <div className="grid gap-4">
                   {ideas.map((idea) => {
-                    const thumbUrl = idea.image_url || getYouTubeThumbnail(idea.pitch_video_url || idea.video_url) || ''
+                    const vid = idea.pitch_video_url || idea.video_url
+                    const thumbUrl = idea.image_url || (vid ? getYouTubeThumbnail(vid) : null) || ''
+                    const fallbacks = vid ? getYouTubeThumbnailFallbacks(vid) : []
                     return (
                       <div key={idea.id} className="card-zed p-4 sm:p-6 flex items-center gap-4 sm:gap-6 hover:border-zed-primary/30 transition-all">
                         <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-zed-primary/10 flex-shrink-0 relative">
                           {thumbUrl ? (
-                            <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
+                            <img
+                              src={thumbUrl}
+                              alt=""
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const img = e.currentTarget
+                                if (!img.dataset.fi) img.dataset.fi = '1'
+                                const fi = parseInt(img.dataset.fi || '1')
+                                if (fallbacks[fi]) {
+                                  img.src = fallbacks[fi]
+                                  img.dataset.fi = String(fi + 1)
+                                } else {
+                                  img.style.display = 'none'
+                                }
+                              }}
+                            />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-zed-primary font-black text-lg">
                               {idea.votes_count || 0}
