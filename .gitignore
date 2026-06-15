@@ -36,6 +36,10 @@ Thumbs.db
 supabase/.branches/
 supabase/.temp/
 
+# TypeScript build info
+tsconfig.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+
 # Cursor
 .cursor/
 .vercel
