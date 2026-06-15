@@ -129,9 +129,11 @@ export function VoteModal({ idea, isOpen, onClose, onVoteComplete }: VoteModalPr
               )}
             </div>
             <div>
+              {(idea.industry || idea.category) && (
               <span className="text-[10px] font-black text-zed-primary uppercase tracking-widest">
                 {idea.industry || idea.category}
               </span>
+              )}
               <h3 className="text-2xl font-black text-zed-foreground mt-2">{idea.title}</h3>
               <p className="text-sm text-zed-foreground-secondary mt-3 leading-relaxed">
                 {idea.problem || idea.problem_statement || idea.description}

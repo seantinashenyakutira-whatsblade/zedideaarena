@@ -156,9 +156,11 @@ export default function IdeaDetailPage() {
                     <div className="space-y-8 animate-zed-fade-up">
                     <div>
                       <div className="flex items-center gap-3 mb-4">
+                        {(idea.industry || idea.category) && (
                         <span className="bg-zed-primary/10 text-zed-primary text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border border-zed-primary/20">
                           {idea.industry || idea.category}
                         </span>
+                        )}
                         <span className="text-zed-foreground-secondary text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                           <Calendar size={12} /> {new Date(idea.createdAt || idea.created_at).toLocaleDateString()}
                         </span>

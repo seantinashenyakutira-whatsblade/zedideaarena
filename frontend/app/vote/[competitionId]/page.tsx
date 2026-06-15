@@ -278,9 +278,11 @@ function IdeasGrid({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
               <div className="absolute bottom-4 left-4 flex items-center gap-2">
+                {(idea.industry || idea.category) && (
                 <span className="bg-black/60 backdrop-blur-md text-[10px] text-white px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-white/10">
                   {idea.industry || idea.category}
                 </span>
+                )}
                 <span className="bg-black/60 backdrop-blur-md text-[10px] text-white px-2.5 py-1 rounded-full font-bold border border-white/10">
                   #{idea.votes_count || 0} votes
                 </span>
