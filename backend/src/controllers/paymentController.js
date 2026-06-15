@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const enterCompetition = async (req, res) => {
   const { uid } = req.user;
   const { id: competitionId } = req.params;
+  const { ideaId } = req.body;
 
   if (!stripe) {
     return res.status(503).json({ status: 'error', message: 'Payment service unavailable' });
@@ -41,12 +42,25 @@ const enterCompetition = async (req, res) => {
       return res.status(409).json({ status: 'error', message: 'You have already paid the entry fee for this competition' });
     }
 
-    const { data: userIdea } = await supabase
-      .from('ideas')
-      .select('id')
-      .eq('user_id', uid)
-      .eq('competition_id', competitionId)
-      .maybeSingle();
+    let userIdea;
+    if (ideaId) {
+      const { data } = await supabase
+        .from('ideas')
+        .select('id')
+        .eq('id', ideaId)
+        .eq('user_id', uid)
+        .maybeSingle();
+      userIdea = data;
+    } else {
+      const { data } = await supabase
+        .from('ideas')
+        .select('id')
+        .eq('user_id', uid)
+        .eq('competition_id', competitionId)
+        .in('status', ['draft', 'submitted', 'pending'])
+        .maybeSingle();
+      userIdea = data;
+    }
 
     if (!userIdea) {
       return res.status(400).json({ status: 'error', message: 'You must create an idea before paying the entry fee' });

@@ -1,8 +1,10 @@
 import api from '../lib/api';
 
 export const paymentService = {
-  enterCompetition: async (competitionId) => {
-    return api.post(`/competitions/${competitionId}/enter`).then((res) => res);
+  enterCompetition: async (competitionId, ideaId) => {
+    const payload = {};
+    if (ideaId) payload.ideaId = ideaId;
+    return api.post(`/competitions/${competitionId}/enter`, payload).then((res) => res);
   },
   registerVoter: async (competitionId) => {
     return api.post('/voter/register', { competitionId }).then((res) => res);

@@ -52,7 +52,7 @@ function PaymentContent() {
     try {
       let res: any
       if (type === 'contestant') {
-        res = await paymentService.enterCompetition(competitionId!)
+        res = await paymentService.enterCompetition(competitionId!, ideaId || undefined)
       } else {
         res = await paymentService.registerVoter(competitionId!)
       }

@@ -291,7 +291,7 @@ function NewIdeaForm() {
       const competitionName = competitions.find(c => c.id === formData.competition_id)?.title || ''
 
       if (!hasPaidEntry && formData.competition_id) {
-        const payRes: any = await api.post(`/competitions/${formData.competition_id}/enter`)
+        const payRes: any = await api.post(`/competitions/${formData.competition_id}/enter`, { ideaId: ideaId })
         if (payRes.checkoutUrl) {
           window.location.href = payRes.checkoutUrl
           return
@@ -624,7 +624,7 @@ function NewIdeaForm() {
 
                       // Check if payment is needed
                       if (!hasPaidEntry && formData.competition_id) {
-                        const payRes: any = await api.post(`/competitions/${formData.competition_id}/enter`)
+                        const payRes: any = await api.post(`/competitions/${formData.competition_id}/enter`, { ideaId: ideaId })
                         if (payRes.checkoutUrl) {
                           window.location.href = payRes.checkoutUrl
                           return
