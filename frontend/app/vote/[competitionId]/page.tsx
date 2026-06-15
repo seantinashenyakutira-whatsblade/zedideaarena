@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { usePageChannel } from '@/hooks/usePageChannel'
 import { MediaCard, IdeaCardSkeleton } from '@/components/ui/MediaCard'
-import { Vote, Search, ThumbsUp, ArrowLeft, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { Vote, Search, ThumbsUp, ArrowLeft, AlertTriangle, CheckCircle2, Play } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { voteService } from '@/services/core'
 import { RatingModal } from '@/components/voter/RatingModal'
@@ -275,8 +275,16 @@ function IdeasGrid({
                 src={idea.image_url || idea.pitch_video_url || idea.video_url}
                 alt={idea.title}
                 containerClassName="group-hover:scale-105 transition-transform duration-700"
+                className="grayscale-0"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/5 to-transparent pointer-events-none" />
+              {(idea.pitch_video_url || idea.video_url) && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-2xl">
+                    <Play size={28} className="text-white ml-1" />
+                  </div>
+                </div>
+              )}
               <div className="absolute bottom-4 left-4 flex items-center gap-2">
                 {(idea.industry || idea.category) && (
                 <span className="bg-black/60 backdrop-blur-md text-[10px] text-white px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-white/10">

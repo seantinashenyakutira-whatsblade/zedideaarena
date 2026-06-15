@@ -35,11 +35,46 @@ export function IdeaDetailModal({ idea, hasVoted, isOwn, guardErrors, onClose, o
           </button>
         </div>
 
-        {/* Image / Video thumbnail */}
-        {imgSrc ? (
-          <div className="relative aspect-video mx-6 rounded-xl overflow-hidden bg-white/5">
-            <Image src={imgSrc} alt={idea.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 800px" loading="lazy" onError={() => setThumbFailed(true)} />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        {/* Video thumbnail / player */}
+        {(imgSrc || vid) ? (
+          <div className="relative aspect-video mx-6 rounded-xl overflow-hidden bg-white/5 group">
+            {vid ? (
+              <div className="relative w-full h-full">
+                {videoPlaying ? (
+                  vid.includes('youtube.com') || vid.includes('youtu.be') ? (
+                    <iframe
+                      src={vid.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/').split('&')[0]}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video
+                      src={vid}
+                      controls
+                      className="w-full h-full"
+                      onPlay={() => setVideoPlaying(true)}
+                      onEnded={() => setVideoPlaying(false)}
+                    />
+                  )
+                ) : (
+                  <>
+                    <Image src={imgSrc || '/hero_3d_arena_bg_1777051043555.png'} alt={idea.title} fill className="object-cover grayscale-0" sizes="(max-width: 768px) 100vw, 800px" loading="lazy" onError={() => setThumbFailed(true)} />
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center" />
+                    <button
+                      onClick={() => setVideoPlaying(true)}
+                      className="absolute inset-0 flex items-center justify-center group-hover:scale-105 transition-transform"
+                    >
+                      <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 hover:bg-white/30 transition-colors shadow-2xl">
+                        <Play size={36} className="text-white ml-1" />
+                      </div>
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              <Image src={imgSrc || '/hero_3d_arena_bg_1777051043555.png'} alt={idea.title} fill className="object-cover grayscale-0" sizes="(max-width: 768px) 100vw, 800px" loading="lazy" onError={() => setThumbFailed(true)} />
+            )}
           </div>
         ) : (
           <div className="mx-6 aspect-video rounded-xl bg-white/5 flex flex-col items-center justify-center">
@@ -75,80 +110,26 @@ export function IdeaDetailModal({ idea, hasVoted, isOwn, guardErrors, onClose, o
           {/* Problem */}
           {(idea.problem || idea.problem_statement) && (
             <div>
-              <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1.5">Problem</h4>
-              <p className="text-sm text-white/80 leading-relaxed">{idea.problem || idea.problem_statement}</p>
+              <h4 className="text-xs font-black text-rose-400 uppercase tracking-[0.2em] mb-1.5 drop-shadow-[0_0_8px_rgba(251,113,133,0.6)]">Problem</h4>
+              <p className="text-sm text-white/80 leading-relaxed break-words">{idea.problem || idea.problem_statement}</p>
             </div>
           )}
 
           {/* Solution */}
           {(idea.solution || idea.description) && (
             <div>
-              <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1.5">Solution</h4>
-              <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">{idea.solution || idea.description}</p>
+              <h4 className="text-xs font-black text-emerald-400 uppercase tracking-[0.2em] mb-1.5 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]">Solution</h4>
+              <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap break-words">{idea.solution || idea.description}</p>
             </div>
           )}
 
           {/* Pitch Video */}
           {vid && (
             <div>
-              <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <h4 className="text-xs font-black text-zed-primary uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <Play size={12} /> Pitch Video
               </h4>
-              <div className="relative aspect-video rounded-xl overflow-hidden bg-black group">
-                {vid.includes('youtube.com') || vid.includes('youtu.be') ? (
-                  <div className="relative w-full h-full">
-                    {videoPlaying ? (
-                      <iframe
-                        src={vid.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/').split('&')[0]}
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    ) : (
-                      <>
-                        <Image src={imgSrc || '/hero_3d_arena_bg_1777051043555.png'} alt={idea.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 800px" loading="lazy" />
-                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center" />
-                        <button
-                          onClick={() => setVideoPlaying(true)}
-                          className="absolute inset-0 flex items-center justify-center group-hover:scale-105 transition-transform"
-                        >
-                          <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 hover:bg-white/30 transition-colors">
-                            <Play size={32} className="text-white ml-1" />
-                          </div>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="relative w-full h-full">
-                    <video
-                      src={vid}
-                      controls
-                      className={`w-full h-full ${videoPlaying ? 'block' : 'hidden'}`}
-                      onPlay={() => setVideoPlaying(true)}
-                      onEnded={() => setVideoPlaying(false)}
-                    />
-                    {!videoPlaying && (
-                      <>
-                        <Image src={imgSrc || '/hero_3d_arena_bg_1777051043555.png'} alt={idea.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 800px" loading="lazy" />
-                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center" />
-                        <button
-                          onClick={() => {
-                            const video = document.querySelector('video') as HTMLVideoElement | null
-                            video?.play()
-                            setVideoPlaying(true)
-                          }}
-                          className="absolute inset-0 flex items-center justify-center group-hover:scale-105 transition-transform"
-                        >
-                          <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 hover:bg-white/30 transition-colors">
-                            <Play size={32} className="text-white ml-1" />
-                          </div>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              <p className="text-xs text-white/40 mb-2">Click the thumbnail above to play the pitch video</p>
             </div>
           )}
 
