@@ -131,7 +131,7 @@ export default function IdeaDetailPage() {
 
               <div className="grid lg:grid-cols-3 gap-12">
                 {/* Left Column: Content */}
-                <div className="lg:col-span-2 space-y-12">
+                <div className="lg:col-span-2 space-y-12 min-w-0 overflow-hidden">
                   {/* Hero / Video */}
                   <div className="relative aspect-video rounded-3xl overflow-hidden bg-black shadow-2xl border border-white/5 group">
                     {(idea.pitch_video_url || idea.video_url) ? (
@@ -165,7 +165,7 @@ export default function IdeaDetailPage() {
                           <Calendar size={12} /> {new Date(idea.createdAt || idea.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <h1 className="text-5xl font-black text-zed-foreground mb-6 leading-tight">
+                      <h1 className="text-5xl font-black text-zed-foreground mb-6 leading-tight break-words">
                         {idea.title}
                       </h1>
                     </div>
@@ -173,14 +173,14 @@ export default function IdeaDetailPage() {
                     <div className="space-y-6">
                       <section>
                         <h4 className="text-xs font-black text-zed-primary uppercase tracking-[0.2em] mb-3">The Problem</h4>
-                        <p className="text-lg text-zed-foreground-secondary font-medium leading-relaxed">
+                        <p className="text-lg text-zed-foreground-secondary font-medium leading-relaxed break-words">
                           {idea.problem || idea.problem_statement}
                         </p>
                       </section>
 
                       <section>
                         <h4 className="text-xs font-black text-zed-primary uppercase tracking-[0.2em] mb-3">Our Solution</h4>
-                        <p className="text-lg text-zed-foreground font-medium leading-relaxed">
+                        <p className="text-lg text-zed-foreground font-medium leading-relaxed break-words">
                           {idea.solution || idea.description}
                         </p>
                       </section>
@@ -190,7 +190,7 @@ export default function IdeaDetailPage() {
                           <h4 className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
                             <Users size={14} /> Business Model
                           </h4>
-                          <p className="font-bold text-zed-foreground">{idea.business_model || 'Not specified'}</p>
+                          <p className="font-bold text-zed-foreground break-words">{idea.business_model || 'Not specified'}</p>
                         </div>
                         <div className="p-6 bg-white/5 rounded-3xl border border-white/5">
                           <h4 className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
@@ -204,7 +204,7 @@ export default function IdeaDetailPage() {
                 </div>
 
                 {/* Right Column: Stats & Creator */}
-                <div className="space-y-8">
+                <div className="space-y-8 min-w-0">
                   {/* Voting Card */}
                   <div className="card-zed p-8 glass-premium border-white/10 relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                     <div className="absolute top-0 right-0 p-4 opacity-10">

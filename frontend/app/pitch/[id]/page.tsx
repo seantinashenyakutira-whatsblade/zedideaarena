@@ -112,7 +112,7 @@ export default function PublicPitchPage() {
 
         {/* Content Grid */}
         <div className="grid lg:grid-cols-3 gap-12">
-          <div className="lg:col-span-2 space-y-10">
+          <div className="lg:col-span-2 space-y-10 min-w-0 overflow-hidden">
             <div>
               <div className="flex items-center gap-3 mb-4">
                 {(idea.industry || idea.category) && (
@@ -124,21 +124,21 @@ export default function PublicPitchPage() {
                   <Calendar size={12} /> {new Date(idea.created_at).toLocaleDateString()}
                 </span>
               </div>
-              <h1 className="text-4xl md:text-5xl font-black text-zed-foreground leading-tight mb-6">
+              <h1 className="text-4xl md:text-5xl font-black text-zed-foreground leading-tight mb-6 break-words">
                 {idea.title}
               </h1>
             </div>
 
             <section>
               <h4 className="text-xs font-black text-zed-primary uppercase tracking-[0.2em] mb-3">The Problem</h4>
-              <p className="text-lg text-zed-foreground-secondary font-medium leading-relaxed">
+              <p className="text-lg text-zed-foreground-secondary font-medium leading-relaxed break-words">
                 {idea.problem || idea.problem_statement}
               </p>
             </section>
 
             <section>
               <h4 className="text-xs font-black text-zed-primary uppercase tracking-[0.2em] mb-3">The Solution</h4>
-              <p className="text-lg text-zed-foreground font-medium leading-relaxed">
+              <p className="text-lg text-zed-foreground font-medium leading-relaxed break-words">
                 {idea.solution || idea.description}
               </p>
             </section>
@@ -165,7 +165,7 @@ export default function PublicPitchPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-8">
+          <div className="space-y-8 min-w-0">
             <div className="card-zed p-8 border-white/10 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-5">
                 <ThumbsUp size={100} />
