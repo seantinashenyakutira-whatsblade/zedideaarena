@@ -562,4 +562,84 @@ const verifyPayment = async (req, res) => {
   }
 };
 
-module.exports = { enterCompetition, registerVoter, handleStripeWebhook, getPaymentHistory, checkEntryPayment, checkPayment, verifyPayment };
+const getMyCompetitions = async (req, res) => {
+  const { uid } = req.user;
+
+  try {
+    const { data: payments, error: payError } = await supabase
+      .from('payments')
+      .select('competition_id, type')
+      .eq('user_id', uid)
+      .eq('status', 'completed');
+
+    if (payError) throw payError;
+
+    const competitionIds = new Set();
+    const joinedRoles = {};
+
+    if (payments) {
+      for (const p of payments) {
+        if (p.competition_id) {
+          competitionIds.add(p.competition_id);
+          if (!joinedRoles[p.competition_id]) joinedRoles[p.competition_id] = [];
+          if (!joinedRoles[p.competition_id].includes(p.type)) {
+            joinedRoles[p.competition_id].push(p.type);
+          }
+        }
+      }
+    }
+
+    const { data: ideas, error: ideaError } = await supabase
+      .from('ideas')
+      .select('competition_id')
+      .eq('user_id', uid)
+      .eq('payment_status', 'paid')
+      .not('competition_id', 'is', null);
+
+    if (!ideaError && ideas) {
+      for (const idea of ideas) {
+        if (idea.competition_id) {
+          competitionIds.add(idea.competition_id);
+          if (!joinedRoles[idea.competition_id]) joinedRoles[idea.competition_id] = [];
+          if (!joinedRoles[idea.competition_id].includes('contestant')) {
+            joinedRoles[idea.competition_id].push('contestant');
+          }
+        }
+      }
+    }
+
+    if (competitionIds.size === 0) {
+      return res.json({ status: 'success', data: [] });
+    }
+
+    const { data: competitions, error: compError } = await supabase
+      .from('competitions')
+      .select('*')
+      .in('id', Array.from(competitionIds))
+      .not('is_deleted', 'eq', true)
+      .order('created_at', { ascending: false });
+
+    if (compError) throw compError;
+
+    const now = new Date();
+    const enriched = (competitions || []).map(c => {
+      const startDate = new Date(c.start_date);
+      const deadline = new Date(c.submission_deadline);
+      let calculatedStatus = 'closed';
+      if (now < startDate) calculatedStatus = 'upcoming';
+      else if (now <= deadline) calculatedStatus = 'active';
+      return {
+        ...c,
+        calculatedStatus,
+        joined_as: joinedRoles[c.id] || [],
+      };
+    });
+
+    res.json({ status: 'success', data: enriched });
+  } catch (error) {
+    console.error('Error fetching my competitions:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to fetch your competitions' });
+  }
+};
+
+module.exports = { enterCompetition, registerVoter, handleStripeWebhook, getPaymentHistory, checkEntryPayment, checkPayment, verifyPayment, getMyCompetitions };

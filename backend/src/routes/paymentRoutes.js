@@ -7,5 +7,6 @@ router.get('/', verifyToken, paymentController.getPaymentHistory);
 router.get('/check-entry/:competitionId', verifyToken, paymentController.checkEntryPayment);
 router.get('/check', verifyToken, paymentController.checkPayment);
 router.get('/verify', verifyToken, paymentController.verifyPayment);
+router.get('/my-competitions', verifyToken, paymentController.getMyCompetitions);
 
 module.exports = router;
