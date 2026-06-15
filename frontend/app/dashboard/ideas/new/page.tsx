@@ -38,6 +38,8 @@ function NewIdeaForm() {
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [draftId, setDraftId] = useState<string | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [isPaidIdea, setIsPaidIdea] = useState(false)
   const [profile, setProfile] = useState<any>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
@@ -131,6 +133,7 @@ function NewIdeaForm() {
         if (targetDraft) {
           setDraftId(targetDraft.id)
           setIsEditMode(targetDraft.status !== 'draft' && targetDraft.status !== 'approved')
+          setIsPaidIdea(targetDraft.payment_status === 'paid')
           sessionStorage.setItem(DRAFT_KEY + profile.id, targetDraft.id)
           setFormData(prev => ({
             ...prev,
@@ -295,6 +298,9 @@ function NewIdeaForm() {
       }
 
       if (isEditMode) {
+        setIsSyncing(true)
+        await new Promise(r => setTimeout(r, 800))
+        setIsSyncing(false)
         toast.success('Changes saved')
         router.push(`/dashboard/ideas/${ideaId}`)
         return
@@ -550,7 +556,7 @@ function NewIdeaForm() {
                         <div className="space-y-6">
                           <div className="p-8 bg-black/20 rounded-2xl">
                             <p className="text-[10px] font-black uppercase tracking-widest text-zed-foreground-secondary mb-4">Entry Fee</p>
-                            {hasPaidEntry ? (
+                            {(hasPaidEntry || isPaidIdea) ? (
                               <div className="flex items-center gap-2 text-zed-success"><CheckCircle size={24} /><span className="text-lg font-black">Fee Paid</span></div>
                             ) : (
                               <><p className="text-5xl font-black text-white">${(() => { const c = competitions.find(x => x.id === formData.competition_id); return c ? (c.entry_fee_cents / 100).toFixed(2) : (500 / 100).toFixed(2) })()}</p><p className="text-[10px] text-zed-foreground-secondary mt-2">Non-refundable competition fee</p></>
@@ -567,6 +573,20 @@ function NewIdeaForm() {
                 </div>
               )}
 
+              {isSyncing && (
+                <div className="absolute inset-0 bg-zed-background z-50 flex flex-col items-center justify-center p-12 text-center">
+                  <div className="w-24 h-24 bg-zed-primary/20 rounded-full flex items-center justify-center mb-8">
+                    <Loader2 size={64} className="text-zed-primary animate-spin" />
+                  </div>
+                  <h2 className="text-4xl font-black mb-4">Saving Changes...</h2>
+                  <p className="text-zed-foreground-secondary max-w-sm">Syncing data to Supabase</p>
+                  <div className="mt-8 flex gap-1.5">
+                    <span className="w-2 h-2 bg-zed-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-zed-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-zed-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              )}
               {isSuccess && (
                 <div className="absolute inset-0 bg-zed-background z-50 flex flex-col items-center justify-center p-12 text-center">
                   <div className="w-24 h-24 bg-zed-success/20 rounded-full flex items-center justify-center mb-8"><ShieldCheck size={64} className="text-zed-success" /></div>
@@ -652,6 +672,9 @@ function NewIdeaForm() {
                       }
 
                       if (isEditMode) {
+                        setIsSyncing(true)
+                        await new Promise(r => setTimeout(r, 800))
+                        setIsSyncing(false)
                         toast.success('Changes saved')
                         router.push(`/dashboard/ideas/${ideaId}`)
                         return
