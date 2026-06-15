@@ -186,6 +186,13 @@ function NewIdeaForm() {
             setHasPaidEntry(paid === true)
           } catch { /* silent */ }
         }
+        const editDraftId = searchParams.get('draftId')
+        if (editDraftId) {
+          try {
+            const { paid } = await api.get(`/payments/check-entry/${compId || ''}?ideaId=${editDraftId}`) as any
+            if (paid) setIsPaidIdea(true)
+          } catch { /* silent */ }
+        }
       } catch (err) {
         console.error('Failed to fetch initial data:', err)
       }

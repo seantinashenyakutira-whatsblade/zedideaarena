@@ -29,24 +29,22 @@ const enterCompetition = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Competition is not currently accepting entries' });
     }
 
-    const { data: existingPayment } = await supabase
-      .from('payments')
+    const { data: paidIdeas } = await supabase
+      .from('ideas')
       .select('id')
       .eq('user_id', uid)
       .eq('competition_id', competitionId)
-      .eq('type', 'contestant')
-      .eq('status', 'completed')
-      .maybeSingle();
+      .eq('payment_status', 'paid');
 
-    if (existingPayment) {
-      return res.status(409).json({ status: 'error', message: 'You have already paid the entry fee for this competition' });
+    if (paidIdeas && paidIdeas.length >= 5) {
+      return res.status(409).json({ status: 'error', message: 'Maximum of 5 entries reached for this competition' });
     }
 
     let userIdea;
     if (ideaId) {
       const { data } = await supabase
         .from('ideas')
-        .select('id')
+        .select('id, payment_status')
         .eq('id', ideaId)
         .eq('user_id', uid)
         .maybeSingle();
@@ -54,7 +52,7 @@ const enterCompetition = async (req, res) => {
     } else {
       const { data } = await supabase
         .from('ideas')
-        .select('id')
+        .select('id, payment_status')
         .eq('user_id', uid)
         .eq('competition_id', competitionId)
         .in('status', ['draft', 'submitted', 'pending'])
@@ -64,6 +62,10 @@ const enterCompetition = async (req, res) => {
 
     if (!userIdea) {
       return res.status(400).json({ status: 'error', message: 'You must create an idea before paying the entry fee' });
+    }
+
+    if (userIdea.payment_status === 'paid') {
+      return res.status(409).json({ status: 'error', message: 'This idea has already been paid for' });
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -88,6 +90,7 @@ const enterCompetition = async (req, res) => {
         user_id: uid,
         competition_id: competitionId,
         type: 'contestant',
+        idea_id: userIdea.id,
       },
     });
 
@@ -194,7 +197,7 @@ const handleStripeWebhook = async (req, res) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const { user_id, competition_id, type } = session.metadata;
+    const { user_id, competition_id, type, idea_id } = session.metadata;
     const amount_cents = session.amount_total;
 
     if (!user_id || !competition_id || !type) {
@@ -209,14 +212,6 @@ const handleStripeWebhook = async (req, res) => {
 
     const amount = (amount_cents / 100).toFixed(2);
 
-    const { data: userIdeaArr } = type === 'contestant' ? await supabase
-      .from('ideas')
-      .select('id')
-      .eq('user_id', user_id)
-      .eq('competition_id', competition_id)
-      .limit(1) : { data: null };
-    const userIdea = userIdeaArr && userIdeaArr.length > 0 ? userIdeaArr[0] : null;
-
     const { error: insertError } = await supabase
       .from('payments')
       .insert({
@@ -228,7 +223,7 @@ const handleStripeWebhook = async (req, res) => {
         amount_cents,
         amount,
         status: 'completed',
-        ...(type === 'contestant' && userIdea ? { idea_id: userIdea.id } : {}),
+        ...(type === 'contestant' && idea_id ? { idea_id } : {}),
       });
 
     if (insertError) {
@@ -240,25 +235,45 @@ const handleStripeWebhook = async (req, res) => {
 
     try {
       if (type === 'contestant') {
-        // Check if idea is already approved — if so, make it public
-        const { data: ideasArr } = await supabase
-          .from('ideas')
-          .select('status')
-          .eq('user_id', user_id)
-          .eq('competition_id', competition_id)
-          .limit(1);
-        const ideaToCheck = ideasArr && ideasArr.length > 0 ? ideasArr[0] : null;
+        const ideaIdToUpdate = idea_id;
 
-        const paymentUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
-        if (ideaToCheck && ideaToCheck.status === 'approved') {
-          paymentUpdate.is_public = true;
+        if (ideaIdToUpdate) {
+          const { data: ideaToCheck } = await supabase
+            .from('ideas')
+            .select('status')
+            .eq('id', ideaIdToUpdate)
+            .single();
+
+          const paymentUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
+          if (ideaToCheck && ideaToCheck.status === 'approved') {
+            paymentUpdate.is_public = true;
+          }
+
+          await supabase
+            .from('ideas')
+            .update(paymentUpdate)
+            .eq('id', ideaIdToUpdate);
+        } else {
+          const { data: ideasArr } = await supabase
+            .from('ideas')
+            .select('id, status')
+            .eq('user_id', user_id)
+            .eq('competition_id', competition_id)
+            .eq('payment_status', 'unpaid')
+            .limit(1);
+          const fallbackIdea = ideasArr && ideasArr.length > 0 ? ideasArr[0] : null;
+
+          if (fallbackIdea) {
+            const paymentUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
+            if (fallbackIdea.status === 'approved') {
+              paymentUpdate.is_public = true;
+            }
+            await supabase
+              .from('ideas')
+              .update(paymentUpdate)
+              .eq('id', fallbackIdea.id);
+          }
         }
-
-        await supabase
-          .from('ideas')
-          .update(paymentUpdate)
-          .eq('user_id', user_id)
-          .eq('competition_id', competition_id);
 
         await supabase.rpc('increment_prize_pool', {
           comp_id: competition_id,
@@ -320,8 +335,20 @@ const getPaymentHistory = async (req, res) => {
 const checkEntryPayment = async (req, res) => {
   const { uid } = req.user;
   const { competitionId } = req.params;
+  const { ideaId } = req.query;
 
   try {
+    if (ideaId) {
+      const { data: idea } = await supabase
+        .from('ideas')
+        .select('payment_status')
+        .eq('id', ideaId)
+        .eq('user_id', uid)
+        .maybeSingle();
+
+      return res.json({ status: 'success', paid: idea?.payment_status === 'paid' });
+    }
+
     const { data, error } = await supabase
       .from('payments')
       .select('id')
@@ -384,15 +411,31 @@ const checkPayment = async (req, res) => {
 
     // Fallback: check ideas.payment_status for contestant payments
     if (type === 'contestant') {
-      const { data: ideaData } = await supabase
-        .from('ideas')
-        .select('payment_status')
-        .eq('user_id', uid)
-        .eq('competition_id', competition_id)
-        .maybeSingle();
+      const ideaId = req.query.ideaId;
 
-      if (ideaData?.payment_status === 'paid') {
-        return res.json({ alreadyPaid: true });
+      if (ideaId) {
+        const { data: ideaData } = await supabase
+          .from('ideas')
+          .select('payment_status')
+          .eq('id', ideaId)
+          .eq('user_id', uid)
+          .maybeSingle();
+
+        if (ideaData?.payment_status === 'paid') {
+          return res.json({ alreadyPaid: true });
+        }
+      } else {
+        const { data: ideasArr } = await supabase
+          .from('ideas')
+          .select('payment_status')
+          .eq('user_id', uid)
+          .eq('competition_id', competition_id)
+          .eq('payment_status', 'paid')
+          .limit(1);
+
+        if (ideasArr && ideasArr.length > 0) {
+          return res.json({ alreadyPaid: true });
+        }
       }
     }
 
@@ -458,19 +501,11 @@ const verifyPayment = async (req, res) => {
       try {
       const session = await stripe.checkout.sessions.retrieve(session_id);
       if (session.payment_status === 'paid') {
-        // Webhook hasn't processed yet — create payment record inline
         const metaCompetitionId = competition_id || session.metadata?.competition_id;
         const metaType = type || session.metadata?.type || 'contestant';
+        const metaIdeaId = session.metadata?.idea_id;
         const amount_cents = session.amount_total;
         const amount = (amount_cents / 100).toFixed(2);
-
-        const { data: userIdeaArr } = metaType === 'contestant' ? await supabase
-          .from('ideas')
-          .select('id')
-          .eq('user_id', uid)
-          .eq('competition_id', metaCompetitionId)
-          .limit(1) : { data: null };
-        const userIdeaFallback = userIdeaArr && userIdeaArr.length > 0 ? userIdeaArr[0] : null;
 
         const { data: newPayment, error: insertError } = await supabase
           .from('payments')
@@ -484,7 +519,7 @@ const verifyPayment = async (req, res) => {
             amount,
             status: 'completed',
             created_at: new Date().toISOString(),
-            ...(metaType === 'contestant' && userIdeaFallback ? { idea_id: userIdeaFallback.id } : {}),
+            ...(metaType === 'contestant' && metaIdeaId ? { idea_id: metaIdeaId } : {}),
           }, { onConflict: 'stripe_session_id' })
           .select()
           .single();
@@ -493,27 +528,47 @@ const verifyPayment = async (req, res) => {
           console.error('Error inserting fallback payment (side effects will still run):', insertError);
         }
 
-        // Apply side effects regardless of upsert result (webhook may have raced or upsert failed on unrelated column)
         try {
           if (metaType === 'contestant') {
-            const { data: ideasToCheck } = await supabase
-              .from('ideas')
-              .select('status')
-              .eq('user_id', uid)
-              .eq('competition_id', metaCompetitionId)
-              .limit(1);
-            const ideaToCheck = ideasToCheck && ideasToCheck.length > 0 ? ideasToCheck[0] : null;
+            const ideaToUpdate = metaIdeaId;
 
-            const fallbackUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
-            if (ideaToCheck && ideaToCheck.status === 'approved') {
-              fallbackUpdate.is_public = true;
+            if (ideaToUpdate) {
+              const { data: ideaToCheck } = await supabase
+                .from('ideas')
+                .select('status')
+                .eq('id', ideaToUpdate)
+                .single();
+
+              const fallbackUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
+              if (ideaToCheck && ideaToCheck.status === 'approved') {
+                fallbackUpdate.is_public = true;
+              }
+
+              await supabase
+                .from('ideas')
+                .update(fallbackUpdate)
+                .eq('id', ideaToUpdate);
+            } else {
+              const { data: ideasArr } = await supabase
+                .from('ideas')
+                .select('id, status')
+                .eq('user_id', uid)
+                .eq('competition_id', metaCompetitionId)
+                .eq('payment_status', 'unpaid')
+                .limit(1);
+              const fallbackIdea = ideasArr && ideasArr.length > 0 ? ideasArr[0] : null;
+
+              if (fallbackIdea) {
+                const fbUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
+                if (fallbackIdea.status === 'approved') {
+                  fbUpdate.is_public = true;
+                }
+                await supabase
+                  .from('ideas')
+                  .update(fbUpdate)
+                  .eq('id', fallbackIdea.id);
+              }
             }
-
-            await supabase
-              .from('ideas')
-              .update(fallbackUpdate)
-              .eq('user_id', uid)
-              .eq('competition_id', metaCompetitionId);
 
             await supabase.rpc('increment_prize_pool', {
               comp_id: metaCompetitionId,
