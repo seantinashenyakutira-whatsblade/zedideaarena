@@ -58,8 +58,8 @@ const enterCompetition = async (req, res) => {
         .eq('user_id', uid)
         .eq('competition_id', competitionId)
         .in('status', ['draft', 'submitted', 'pending'])
-        .maybeSingle();
-      userIdea = data;
+        .limit(1);
+      userIdea = data && data.length > 0 ? data[0] : null;
     }
 
     if (!userIdea) {
@@ -209,12 +209,13 @@ const handleStripeWebhook = async (req, res) => {
 
     const amount = (amount_cents / 100).toFixed(2);
 
-    const { data: userIdea } = type === 'contestant' ? await supabase
+    const { data: userIdeaArr } = type === 'contestant' ? await supabase
       .from('ideas')
       .select('id')
       .eq('user_id', user_id)
       .eq('competition_id', competition_id)
-      .maybeSingle() : { data: null };
+      .limit(1) : { data: null };
+    const userIdea = userIdeaArr && userIdeaArr.length > 0 ? userIdeaArr[0] : null;
 
     const { error: insertError } = await supabase
       .from('payments')
@@ -240,12 +241,13 @@ const handleStripeWebhook = async (req, res) => {
     try {
       if (type === 'contestant') {
         // Check if idea is already approved — if so, make it public
-        const { data: ideaToCheck } = await supabase
+        const { data: ideasArr } = await supabase
           .from('ideas')
           .select('status')
           .eq('user_id', user_id)
           .eq('competition_id', competition_id)
-          .single();
+          .limit(1);
+        const ideaToCheck = ideasArr && ideasArr.length > 0 ? ideasArr[0] : null;
 
         const paymentUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
         if (ideaToCheck && ideaToCheck.status === 'approved') {
@@ -462,12 +464,13 @@ const verifyPayment = async (req, res) => {
         const amount_cents = session.amount_total;
         const amount = (amount_cents / 100).toFixed(2);
 
-        const { data: userIdea } = metaType === 'contestant' ? await supabase
+        const { data: userIdeaArr } = metaType === 'contestant' ? await supabase
           .from('ideas')
           .select('id')
           .eq('user_id', uid)
           .eq('competition_id', metaCompetitionId)
-          .maybeSingle() : { data: null };
+          .limit(1) : { data: null };
+        const userIdeaFallback = userIdeaArr && userIdeaArr.length > 0 ? userIdeaArr[0] : null;
 
         const { data: newPayment, error: insertError } = await supabase
           .from('payments')
@@ -481,7 +484,7 @@ const verifyPayment = async (req, res) => {
             amount,
             status: 'completed',
             created_at: new Date().toISOString(),
-            ...(metaType === 'contestant' && userIdea ? { idea_id: userIdea.id } : {}),
+            ...(metaType === 'contestant' && userIdeaFallback ? { idea_id: userIdeaFallback.id } : {}),
           }, { onConflict: 'stripe_session_id' })
           .select()
           .single();
@@ -493,12 +496,13 @@ const verifyPayment = async (req, res) => {
         // Apply side effects regardless of upsert result (webhook may have raced or upsert failed on unrelated column)
         try {
           if (metaType === 'contestant') {
-            const { data: ideaToCheck } = await supabase
+            const { data: ideasToCheck } = await supabase
               .from('ideas')
               .select('status')
               .eq('user_id', uid)
               .eq('competition_id', metaCompetitionId)
-              .single();
+              .limit(1);
+            const ideaToCheck = ideasToCheck && ideasToCheck.length > 0 ? ideasToCheck[0] : null;
 
             const fallbackUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
             if (ideaToCheck && ideaToCheck.status === 'approved') {
