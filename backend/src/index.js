@@ -67,15 +67,12 @@ app.use('/api/arena', require('./routes/arenaRoutes'));
 app.use('/api/ads', require('./routes/adsRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 
+const { error: sendError } = require('./utils/response');
+
 app.use((err, req, res, next) => {
   console.error('[UNHANDLED_ERROR]', err);
   if (res.headersSent) return next(err);
-  const isDev = process.env.NODE_ENV === 'development';
-  res.status(500).json({
-    success: false,
-    error: 'Internal server error',
-    ...(isDev && { detail: err.message }),
-  });
+  sendError(res, 'Internal server error', 500, process.env.NODE_ENV === 'development' ? err.message : null);
 });
 
 app.listen(PORT, () => {

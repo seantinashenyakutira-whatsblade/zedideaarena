@@ -2,6 +2,9 @@ const { supabase } = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
 const { sendIdeaApproved, sendIdeaRejected, sendVoterVerified } = require('../services/emailService');
 
+const DEFAULT_ENTRY_FEE_CENTS = parseInt(process.env.DEFAULT_ENTRY_FEE_CENTS || '500', 10);
+const DEFAULT_VOTER_FEE_CENTS = parseInt(process.env.DEFAULT_VOTER_FEE_CENTS || '0', 10);
+
 const logAdminAction = async (admin_id, action_type, target_id, target_type, note = '') => {
   try {
     await supabase.from('admin_actions').insert({
@@ -35,8 +38,8 @@ const createCompetition = async (req, res) => {
       start_date,
       end_date,
       submission_deadline,
-      entry_fee_cents: entry_fee_cents || 500,
-      voter_fee_cents: voter_fee_cents || 0,
+      entry_fee_cents: entry_fee_cents || DEFAULT_ENTRY_FEE_CENTS,
+      voter_fee_cents: voter_fee_cents || DEFAULT_VOTER_FEE_CENTS,
       prize_pool_cents: prize_pool_cents || 0,
       created_by: req.user.uid,
       is_deleted: false,
@@ -77,7 +80,7 @@ const getCompetitions = async (req, res) => {
 
       return {
         ...rest,
-        entry_fee_cents: comp.entry_fee_cents || (entry_fee ? Math.round(Number(entry_fee) * 100) : 500),
+        entry_fee_cents: comp.entry_fee_cents || (entry_fee ? Math.round(Number(entry_fee) * 100) : DEFAULT_ENTRY_FEE_CENTS),
         calculatedStatus,
       };
     });
@@ -108,8 +111,8 @@ const getAdminStats = async (req, res) => {
       .select('*', { count: 'exact', head: true })
       .neq('is_deleted', true);
 
-    // Prize pool = $5 per paid idea (500 cents each)
-    const prizePoolCents = (paidIdeasCount || 0) * 500;
+    // Prize pool = entry fee per paid idea
+    const prizePoolCents = (paidIdeasCount || 0) * parseInt(process.env.DEFAULT_ENTRY_FEE_CENTS || '500', 10);
 
     const { count: votesCount } = await supabase
       .from('votes')

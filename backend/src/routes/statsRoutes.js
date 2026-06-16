@@ -13,7 +13,8 @@ router.get('/global', async (req, res) => {
       .from('users')
       .select('*', { count: 'exact', head: true });
 
-    const fundingDistributed = 50000;
+    const fundingDistributed = parseInt(process.env.STATS_FUNDING_DISTRIBUTED || '50000', 10);
+    const countries = parseInt(process.env.STATS_COUNTRIES || '12', 10);
 
     res.json({
       status: 'success',
@@ -21,7 +22,7 @@ router.get('/global', async (req, res) => {
         activeIdeas: ideasCount || 0,
         communityMembers: usersCount || 0,
         fundingDistributed,
-        countries: 12,
+        countries,
       },
     });
   } catch (error) {

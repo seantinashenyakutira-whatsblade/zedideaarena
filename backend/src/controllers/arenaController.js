@@ -320,7 +320,7 @@ const trackAdImpression = async (req, res) => {
       .insert({ user_id, ad_unit, duration_seconds });
 
     if (duration_seconds >= 3) {
-      const credit_cents = 1;
+      const credit_cents = parseInt(process.env.AD_CREDIT_CENTS || '1', 10);
       const { data: existing } = await supabase
         .from('voter_earnings')
         .select('ad_amount_cents')
