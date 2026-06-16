@@ -601,6 +601,113 @@ const updateWithdrawalStatus = async (req, res) => {
   }
 };
 
+const exportIdeasCSV = async (req, res) => {
+  try {
+    const { competition_id } = req.query;
+    let query = supabase
+      .from('ideas')
+      .select('*, users(full_name, email), competitions(title)')
+      .neq('status', 'draft')
+      .order('created_at', { ascending: false });
+
+    if (competition_id) query = query.eq('competition_id', competition_id);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const headers = ['Title', 'Status', 'Industry', 'Votes', 'Payment', 'Contestant', 'Email', 'Competition', 'Created'];
+    const rows = (data || []).map(i => [
+      escapeCSV(i.title),
+      i.status,
+      i.industry || '',
+      i.votes_count || 0,
+      i.payment_status,
+      escapeCSV(i.users?.full_name || ''),
+      i.users?.email || '',
+      escapeCSV(i.competitions?.title || ''),
+      new Date(i.created_at).toISOString().split('T')[0],
+    ]);
+
+    sendCSV(res, 'ideas-export.csv', headers, rows);
+  } catch (error) {
+    console.error('Export ideas error:', error);
+    res.status(500).json({ status: 'error', message: 'Export failed' });
+  }
+};
+
+const exportUsersCSV = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, email, full_name, role, is_verified, is_admin, current_mode, onboarding_complete, country, created_at')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const headers = ['Name', 'Email', 'Role', 'Mode', 'Verified', 'Admin', 'Onboarding', 'Country', 'Joined'];
+    const rows = (data || []).map(u => [
+      escapeCSV(u.full_name || ''),
+      u.email || '',
+      u.role || '',
+      u.current_mode || '',
+      u.is_verified ? 'Yes' : 'No',
+      u.is_admin ? 'Yes' : 'No',
+      u.onboarding_complete ? 'Yes' : 'No',
+      u.country || '',
+      new Date(u.created_at).toISOString().split('T')[0],
+    ]);
+
+    sendCSV(res, 'users-export.csv', headers, rows);
+  } catch (error) {
+    console.error('Export users error:', error);
+    res.status(500).json({ status: 'error', message: 'Export failed' });
+  }
+};
+
+const exportCompetitionResultsCSV = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: competition } = await supabase.from('competitions').select('title').eq('id', id).single();
+
+    const { data: results } = await supabase.rpc('get_competition_results', { comp_id: id });
+
+    const headers = ['Rank', 'Title', 'Contestant', 'Total Score', 'Innovation', 'Feasibility', 'Impact', 'Presentation', 'Votes'];
+    const rows = (results || []).map((r, i) => [
+      i + 1,
+      escapeCSV(r.title || ''),
+      escapeCSV(r.full_name || ''),
+      r.total_score?.toFixed(1) || '0',
+      r.innovation_score || '0',
+      r.feasibility_score || '0',
+      r.impact_score || '0',
+      r.presentation_score || '0',
+      r.votes_count || 0,
+    ]);
+
+    sendCSV(res, `${(competition?.title || 'competition').replace(/\s+/g, '_')}-results.csv`, headers, rows);
+  } catch (error) {
+    console.error('Export competition results error:', error);
+    res.status(500).json({ status: 'error', message: 'Export failed' });
+  }
+};
+
+function escapeCSV(val) {
+  if (val == null) return '';
+  const str = String(val);
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function sendCSV(res, filename, headers, rows) {
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(csv);
+}
+
 module.exports = {
   createCompetition,
   getCompetitions,
@@ -619,4 +726,7 @@ module.exports = {
   getUserDetail,
   getAllWithdrawals,
   updateWithdrawalStatus,
+  exportIdeasCSV,
+  exportUsersCSV,
+  exportCompetitionResultsCSV,
 };

@@ -22,4 +22,8 @@ router.patch('/reports/:id/status', verifyToken, isAdmin, reportController.updat
 router.get('/withdrawals', verifyToken, isAdmin, adminController.getAllWithdrawals);
 router.patch('/withdrawals/:id/status', verifyToken, isAdmin, adminController.updateWithdrawalStatus);
 
+router.get('/export/ideas', verifyToken, isAdmin, adminController.exportIdeasCSV);
+router.get('/export/users', verifyToken, isAdmin, adminController.exportUsersCSV);
+router.get('/export/competitions/:id', verifyToken, isAdmin, adminController.exportCompetitionResultsCSV);
+
 module.exports = router;

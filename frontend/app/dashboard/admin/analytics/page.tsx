@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { AlertCircle, Loader2, Trophy, Vote, DollarSign, Globe, TrendingUp, Users } from 'lucide-react'
+import { AlertCircle, Loader2, Trophy, Vote, DollarSign, Globe, TrendingUp, Users, Download } from 'lucide-react'
 import { adminService } from '@/services/core'
 import Link from 'next/link'
+import api from '@/lib/api'
 
 export default function AdminAnalytics() {
   const { profile } = useAuth()
@@ -47,6 +48,33 @@ export default function AdminAnalytics() {
               <div className="mb-12">
                 <h1 className="text-4xl font-black text-zed-foreground">Analytics</h1>
                 <p className="text-zed-foreground-secondary text-xs font-bold uppercase tracking-widest mt-1">System-wide metrics and breakdowns</p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap mb-6">
+                <a
+                  href={`${process.env.NEXT_PUBLIC_API_URL}/admin/export/ideas`}
+                  onClick={(e) => { e.preventDefault(); window.open(`${api.defaults.baseURL}/admin/export/ideas`, '_blank'); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <Download size={12} /> Export Ideas CSV
+                </a>
+                <a
+                  href={`${process.env.NEXT_PUBLIC_API_URL}/admin/export/users`}
+                  onClick={(e) => { e.preventDefault(); window.open(`${api.defaults.baseURL}/admin/export/users`, '_blank'); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <Download size={12} /> Export Users CSV
+                </a>
+                {analytics?.competitions?.map((comp: any) => (
+                  <a
+                    key={comp.id}
+                    href={`${api.defaults.baseURL}/admin/export/competitions/${comp.id}`}
+                    onClick={(e) => { e.preventDefault(); window.open(`${api.defaults.baseURL}/admin/export/competitions/${comp.id}`, '_blank'); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-all"
+                  >
+                    <Download size={12} /> {comp.title?.slice(0, 20)} Results
+                  </a>
+                ))}
               </div>
 
               {loading ? (
