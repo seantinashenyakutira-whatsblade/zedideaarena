@@ -714,7 +714,7 @@ const markConversationRead = async (req, res) => {
       .from('arena_chat_messages')
       .update({ read_at: new Date().toISOString() })
       .eq('conversation_id', conversationId)
-      .eq('is_admin_reply', false)
+      .neq('user_id', userId)
       .is('read_at', null);
 
     if (error) throw error;
