@@ -36,8 +36,12 @@
       "command": ["npx", "@testsprite/testsprite-mcp@latest"],
       "enabled": true,
       "env": {
-        "API_KEY": "sk-user-1bgCHPPMSYd6ei9EGYO1TAmDmUSEJpOKaDZkbl7jSep3gMWwRGT_f958oZ00wQ7KZMSL-_Hs8LO7XFBlf-wJeokeDU98QrZHRgBlgS_vpQLNSF_rcTg-bXCgr4Okmfkdyw4"
+        "API_KEY": "sk-user-1bgCHPPMSYd6ei9EGYO1TAmDmUSEJpOKaDZkbl7jSep3gMWwRGT_f958oZ00wQ7KZMSL-_Hs8LO7XFBlf-wJeokeDU98QrZHRgBlgS_vpNSF_rcTg-bXCgr4Okmfkdyw4"
       }
     }
+  },
+
+  "skills": {
+    "paths": [".opencode/skills"]
   }
 }
