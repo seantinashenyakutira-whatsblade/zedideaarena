@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
+const { cacheMiddleware } = require('../middleware/cache');
 
-router.get('/global', async (req, res) => {
+router.get('/global', cacheMiddleware(120), async (req, res) => {
   try {
     const { count: ideasCount } = await supabase
       .from('ideas')
