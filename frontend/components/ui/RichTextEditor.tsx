@@ -12,7 +12,49 @@ import Placeholder from '@tiptap/extension-placeholder'
 import {
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered,
   Heading1, Heading2, Heading3, Table2, Minus, Pilcrow,
+  Mic, MicOff,
 } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+
+// Web Speech API types
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number
+  results: SpeechRecognitionResultList
+}
+
+interface SpeechRecognitionResultList {
+  length: number
+  item(index: number): SpeechRecognitionResult
+  [index: number]: SpeechRecognitionResult
+}
+
+interface SpeechRecognitionResult {
+  length: number
+  item(index: number): SpeechRecognitionAlternative
+  [index: number]: SpeechRecognitionAlternative
+  isFinal: boolean
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string
+  confidence: number
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  start(): void
+  stop(): void
+  onresult: (event: SpeechRecognitionEvent) => void
+  onerror: (event: { error: string }) => void
+  onend: () => void
+}
+
+interface WindowWithSpeechRecognition extends Window {
+  SpeechRecognition: new () => SpeechRecognition
+  webkitSpeechRecognition: new () => SpeechRecognition
+}
 
 interface RichTextEditorProps {
   value: string
@@ -71,6 +113,85 @@ export default function RichTextEditor({ value, onChange, placeholder, maxLength
   })
 
   const charCount = editor?.storage.characterCount?.characters?.() || value.replace(/<[^>]*>/g, '').length
+
+  // Speech recognition state
+  const [isListening, setIsListening] = useState(false)
+  const [speechSupported, setSpeechSupported] = useState(false)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const finalTranscriptRef = useRef<string>('')
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const win = window as unknown as WindowWithSpeechRecognition
+      const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition
+      if (SpeechRecognition) {
+        setSpeechSupported(true)
+        const recognition = new SpeechRecognition()
+        recognition.continuous = true
+        recognition.interimResults = true
+        recognition.lang = 'en-US'
+
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          let interimTranscript = ''
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript
+            if (event.results[i].isFinal) {
+              finalTranscriptRef.current += transcript + ' '
+            } else {
+              interimTranscript += transcript
+            }
+          }
+        }
+
+        recognition.onerror = (event: { error: string }) => {
+          console.warn('Speech recognition error:', event.error)
+          if (event.error !== 'no-speech') {
+            setIsListening(false)
+          }
+        }
+
+        recognition.onend = () => {
+          if (isListening) {
+            try { recognition.start() } catch {}
+          }
+        }
+
+        recognitionRef.current = recognition
+      }
+    }
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [isListening])
+
+  const toggleListening = useCallback(() => {
+    if (!recognitionRef.current || !speechSupported) return
+
+    if (isListening) {
+      recognitionRef.current.stop()
+      setIsListening(false)
+    } else {
+      finalTranscriptRef.current = ''
+      try {
+        recognitionRef.current.start()
+        setIsListening(true)
+      } catch (e) {
+        console.warn('Could not start speech recognition:', e)
+      }
+    }
+  }, [isListening, speechSupported])
+
+  // Insert final transcript into editor
+  useEffect(() => {
+    if (!isListening && finalTranscriptRef.current.trim() && editor) {
+      const text = finalTranscriptRef.current.trim()
+      editor.chain().focus().insertContent(text + ' ').run()
+      finalTranscriptRef.current = ''
+    }
+  }, [isListening, editor])
 
   if (!editor) return null
 
@@ -154,6 +275,23 @@ export default function RichTextEditor({ value, onChange, placeholder, maxLength
             icon={<Table2 size={16} />}
           />
         </div>
+
+        {speechSupported && (
+          <>
+            <Divider />
+            <div className="flex items-center gap-0.5">
+              <ToolbarButton
+                onClick={toggleListening}
+                active={isListening}
+                label={isListening ? 'Stop dictation' : 'Start dictation'}
+                icon={isListening ? <Mic size={16} className="text-red-400 animate-pulse" /> : <MicOff size={16} />}
+              />
+              {isListening && (
+                <span className="text-[10px] text-red-400 font-medium animate-pulse ml-1">Listening...</span>
+              )}
+            </div>
+          </>
+        )}
 
         <div className="ml-auto flex items-center gap-1">
           {editor.isActive('table') && (
