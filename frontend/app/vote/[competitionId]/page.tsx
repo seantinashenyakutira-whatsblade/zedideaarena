@@ -313,7 +313,7 @@ function IdeasGrid({
               </h3>
               <ContestantProfileCard userId={idea.user_id} className="mb-3 -mx-0" />
               <p className="text-sm text-zed-foreground-secondary mb-6 line-clamp-3 font-medium leading-relaxed">
-                {idea.problem || idea.problem_statement}
+                {(idea.problem || idea.problem_statement || '').replace(/<[^>]*>/g, '')}
               </p>
 
               <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between">

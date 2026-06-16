@@ -131,16 +131,22 @@ export default function PublicPitchPage() {
 
             <section>
               <h4 className="text-xs font-black text-rose-400 uppercase tracking-[0.2em] mb-3 drop-shadow-[0_0_8px_rgba(251,113,133,0.6)]">The Problem</h4>
-              <p className="text-lg text-zed-foreground-secondary font-medium leading-relaxed break-words">
-                {idea.problem || idea.problem_statement}
-              </p>
+              <div
+                className="text-lg text-zed-foreground-secondary font-medium leading-relaxed break-words prose-content"
+                dangerouslySetInnerHTML={{
+                  __html: idea.problem || idea.problem_statement || '',
+                }}
+              />
             </section>
 
             <section>
               <h4 className="text-xs font-black text-emerald-400 uppercase tracking-[0.2em] mb-3 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]">The Solution</h4>
-              <p className="text-lg text-zed-foreground font-medium leading-relaxed break-words">
-                {idea.solution || idea.description}
-              </p>
+              <div
+                className="text-lg text-zed-foreground font-medium leading-relaxed break-words prose-content"
+                dangerouslySetInnerHTML={{
+                  __html: idea.solution || idea.description || '',
+                }}
+              />
             </section>
 
             {idea.business_model && (

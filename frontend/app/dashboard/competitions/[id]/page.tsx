@@ -301,7 +301,7 @@ export default function CompetitionDetailPage() {
                            <p className="text-[10px] text-white/40 font-semibold">by {idea.users?.full_name || 'Unknown'}</p>
                          </div>
                        </div>
-                       <p className="text-xs text-white/40 leading-relaxed line-clamp-2 mb-4">{idea.problem || idea.problem_statement}</p>
+                        <p className="text-xs text-white/40 leading-relaxed line-clamp-2 mb-4">{(idea.problem || idea.problem_statement || '').replace(/<[^>]*>/g, '')}</p>
                        <div className="flex items-center justify-between pt-3 border-t border-white/5">
                          <span className="text-[10px] font-bold uppercase tracking-widest text-white/30">
                            {idea.industry || idea.category || 'General'}

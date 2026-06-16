@@ -348,7 +348,7 @@ export default function ArenaProfilePage() {
                   <h3 className="text-sm font-bold group-hover:text-zed-primary transition-colors">{idea.title}</h3>
                   {idea.industry && <p className="text-xs text-zed-primary/70 mt-0.5">{idea.industry}</p>}
                   {idea.description && (
-                    <p className="text-xs text-white/40 mt-1 line-clamp-2">{idea.description}</p>
+                    <p className="text-xs text-white/40 mt-1 line-clamp-2">{idea.description.replace(/<[^>]*>/g, '')}</p>
                   )}
                   <div className="flex items-center gap-3 mt-2 text-[10px] text-white/30">
                     <span>{new Date(idea.created_at).toLocaleDateString()}</span>

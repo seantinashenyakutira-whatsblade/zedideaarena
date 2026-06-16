@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronRight, ChevronLeft, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy, CheckCircle, Save, AlertCircle, Github, Linkedin, Instagram } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Loader2, User, Lightbulb, Video, ShieldCheck, CreditCard, Trophy, CheckCircle, Save, AlertCircle, Github, Linkedin, Instagram, DollarSign } from 'lucide-react'
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { ideaService } from '@/services/idea'
 import { authService, getToken } from '@/services/auth'
@@ -8,6 +8,7 @@ import PitchVideoGuide from '@/components/pitch/PitchVideoGuide'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import RichTextEditor from '@/components/ui/RichTextEditor'
 
 interface FormState {
   fullName: string; dob: string; nationality: string; bio: string; profession: string;
@@ -241,8 +242,14 @@ function NewIdeaForm() {
         toast.error('Idea title and competition are required.')
         return
       }
-      if (!formData.problem || !formData.solution) {
-        toast.error('Problem and solution are required.')
+      const plainProblem = formData.problem.replace(/<[^>]*>/g, '').trim()
+      const plainSolution = formData.solution.replace(/<[^>]*>/g, '').trim()
+      if (plainProblem.length < 20) {
+        toast.error('Problem must be at least 20 characters (after removing formatting).')
+        return
+      }
+      if (plainSolution.length < 20) {
+        toast.error('Solution must be at least 20 characters (after removing formatting).')
         return
       }
       // Save draft when moving past concept step
@@ -436,11 +443,11 @@ function NewIdeaForm() {
 
               {currentStep === 2 && (
                 <div className="space-y-8 animate-zed-fade-up">
-                  <div>
-                    <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Idea Title</label>
-                    <input name="title" value={formData.title} onChange={handleInputChange} className="input-zed text-lg font-bold" placeholder="Vision name" />
-                  </div>
                   <div className="grid md:grid-cols-2 gap-8">
+                    <div>
+                      <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Idea Title</label>
+                      <input name="title" value={formData.title} onChange={handleInputChange} className="input-zed text-lg font-bold" placeholder="Vision name" />
+                    </div>
                     <div>
                       <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Competition Arena</label>
                       <select name="competition_id" value={formData.competition_id} onChange={handleInputChange} className="input-zed">
@@ -448,6 +455,8 @@ function NewIdeaForm() {
                         {competitions.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                       </select>
                     </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-8">
                     <div>
                       <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Target Industry</label>
                       <select name="industry" value={formData.industry} onChange={handleInputChange} className="input-zed">
@@ -461,18 +470,56 @@ function NewIdeaForm() {
                         <option value="Other">Other</option>
                       </select>
                     </div>
+                    <div>
+                      <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Business Model</label>
+                      <div className="relative">
+                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 z-10">
+                          <DollarSign size={16} />
+                        </div>
+                        <select name="business_model" value={formData.business_model} onChange={handleInputChange} className="input-zed pl-10">
+                          <option value="">Select Business Model</option>
+                          <option value="Subscription">Subscription — Recurring revenue (monthly/yearly)</option>
+                          <option value="One-Time Payment">One-Time Payment — Single purchase, lifetime access</option>
+                          <option value="Selling Products">Selling Products — Physical or digital goods</option>
+                          <option value="Freemium">Freemium — Free tier + paid premium features</option>
+                          <option value="Marketplace">Marketplace — Commission on transactions</option>
+                          <option value="Advertising">Advertising — Ad-based revenue model</option>
+                          <option value="Affiliate">Affiliate — Commission on referrals</option>
+                          <option value="Licensing">Licensing — IP/technology licensing fees</option>
+                          <option value="Donations">Donations / Crowdfunding — Community-funded</option>
+                          <option value="Pay-per-Use">Pay-per-Use — Usage-based billing</option>
+                          <option value="Other">Other — Hybrid / custom model</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
+
                   <div>
-                    <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">The Problem</label>
-                    <textarea name="problem" value={formData.problem} onChange={handleInputChange} rows={3} className="input-zed" placeholder="What pain point are you solving?" />
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest">The Problem</label>
+                      <span className="text-[9px] text-amber-400/60 font-medium">Use the toolbar to format your pitch</span>
+                    </div>
+                    <RichTextEditor
+                      value={formData.problem}
+                      onChange={(html) => setFormData(prev => ({ ...prev, problem: html }))}
+                      placeholder="What pain point are you solving? Be specific — judges love real-world data..."
+                      maxLength={5000}
+                      minLength={20}
+                    />
                   </div>
+
                   <div>
-                    <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">The Solution</label>
-                    <textarea name="solution" value={formData.solution} onChange={handleInputChange} rows={4} className="input-zed" placeholder="Describe your vision clearly..." />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Business Model</label>
-                    <textarea name="business_model" value={formData.business_model} onChange={handleInputChange} rows={2} className="input-zed" placeholder="How will this create value?" />
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest">Our Solution</label>
+                      <span className="text-[9px] text-amber-400/60 font-medium">Explain your vision clearly</span>
+                    </div>
+                    <RichTextEditor
+                      value={formData.solution}
+                      onChange={(html) => setFormData(prev => ({ ...prev, solution: html }))}
+                      placeholder="Describe your vision clearly — how does it solve the problem? What makes it unique?..."
+                      maxLength={5000}
+                      minLength={20}
+                    />
                   </div>
                 </div>
               )}

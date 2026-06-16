@@ -419,4 +419,217 @@
   .animate-carousel:hover {
     animation-play-state: paused;
   }
+
+  /* ── Rich Text Editor (Tiptap) ── */
+  .rich-text-editor {
+    .ProseMirror {
+      min-height: 160px;
+      padding: 1rem 1.125rem;
+      outline: none;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.9375rem;
+      line-height: 1.75;
+
+      > * + * {
+        margin-top: 0.75em;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 900;
+        line-height: 1.3;
+        color: #fff;
+      }
+
+      h2 {
+        font-size: 1.25rem;
+        font-weight: 800;
+        line-height: 1.35;
+        color: #fff;
+      }
+
+      h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        line-height: 1.4;
+        color: #fff;
+      }
+
+      p.is-editor-empty:first-child::before {
+        content: attr(data-placeholder);
+        float: left;
+        height: 0;
+        pointer-events: none;
+        color: rgba(255, 255, 255, 0.2);
+        font-weight: 400;
+      }
+
+      ul {
+        list-style-type: disc;
+        padding-left: 1.5rem;
+      }
+
+      ol {
+        list-style-type: decimal;
+        padding-left: 1.5rem;
+      }
+
+      li {
+        margin-bottom: 0.25em;
+      }
+
+      strong {
+        font-weight: 700;
+      }
+
+      em {
+        font-style: italic;
+      }
+
+      u {
+        text-decoration: underline;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0.75em 0;
+        overflow: hidden;
+        font-size: 0.8125rem;
+      }
+
+      th, td {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 0.5rem 0.75rem;
+        text-align: left;
+        min-width: 80px;
+      }
+
+      th {
+        background: rgba(99, 102, 241, 0.12);
+        font-weight: 700;
+        color: #fff;
+      }
+
+      td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      th:first-child, td:first-child {
+        border-left: none;
+      }
+
+      th:last-child, td:last-child {
+        border-right: none;
+      }
+
+      .selectedCell {
+        background: rgba(99, 102, 241, 0.08);
+      }
+
+      p {
+        margin: 0;
+      }
+
+      p + p {
+        margin-top: 0.5em;
+      }
+
+      blockquote {
+        border-left: 3px solid rgba(99, 102, 241, 0.4);
+        padding-left: 1rem;
+        color: rgba(255, 255, 255, 0.6);
+        font-style: italic;
+      }
+
+      code {
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 4px;
+        padding: 0.15em 0.4em;
+        font-size: 0.85em;
+        font-family: monospace;
+      }
+    }
+
+    .ProseMirror-focused {
+      outline: none;
+    }
+
+    .ProseMirror p.is-editor-empty:first-child::before {
+      color: rgba(255, 255, 255, 0.15);
+    }
+  }
+
+  /* ── Rendered Rich Text (Detail Views) ── */
+  .prose-content {
+    h1, h2, h3, h4 {
+      margin-top: 1.25em;
+      margin-bottom: 0.5em;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 900;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+
+    h3 {
+      font-size: 1.125rem;
+      font-weight: 700;
+    }
+
+    ul {
+      list-style-type: disc;
+      padding-left: 1.5rem;
+      margin: 0.5em 0;
+    }
+
+    ol {
+      list-style-type: decimal;
+      padding-left: 1.5rem;
+      margin: 0.5em 0;
+    }
+
+    li {
+      margin-bottom: 0.25em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1em 0;
+      font-size: 0.875rem;
+    }
+
+    th, td {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+    }
+
+    th {
+      background: rgba(99, 102, 241, 0.1);
+      font-weight: 700;
+    }
+
+    p {
+      margin-bottom: 0.75em;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+
+    blockquote {
+      border-left: 3px solid rgba(99, 102, 241, 0.3);
+      padding-left: 1rem;
+      color: rgba(255, 255, 255, 0.5);
+      font-style: italic;
+      margin: 0.75em 0;
+    }
+  }
 }

@@ -121,7 +121,7 @@ export default function MyIdeasPage() {
                           </div>
 
                           <h3 className="text-2xl font-black text-zed-foreground mb-2 group-hover:text-zed-primary transition-colors break-words">{idea.title}</h3>
-                          <p className="text-sm text-zed-foreground-secondary line-clamp-2 font-medium mb-6 break-words overflow-hidden">{idea.problem || idea.problem_statement}</p>
+                          <p className="text-sm text-zed-foreground-secondary line-clamp-2 font-medium mb-6 break-words overflow-hidden">{(idea.problem || idea.problem_statement || '').replace(/<[^>]*>/g, '')}</p>
 
                           <div className="flex flex-wrap items-center gap-6 pt-6 border-t border-white/5">
                              <div className="flex flex-col">
