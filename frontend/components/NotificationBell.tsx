@@ -38,6 +38,7 @@ export function NotificationBell() {
   const [unread, setUnread] = useState(0)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [shakeKey, setShakeKey] = useState(0)
   const ref = useRef<HTMLDivElement>(null)
   const prefsRef = useRef<any>(null)
   const lastNotifIdRef = useRef<string | null>(null)
@@ -84,6 +85,7 @@ export function NotificationBell() {
           lastNotifIdRef.current = notif.id
           setNotifications(prev => [notif, ...prev].slice(0, 50))
           setUnread(prev => prev + 1)
+          setShakeKey(k => k + 1)
           playNotificationSound(notif)
         }
       })
@@ -130,7 +132,13 @@ export function NotificationBell() {
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(!open)} className="btn-icon relative">
-        <Bell size={20} />
+        <motion.div
+          key={shakeKey}
+          animate={{ rotate: [0, 8, -8, 8, -8, 0] }}
+          transition={{ duration: 0.5, ease: 'easeInOut' }}
+        >
+          <Bell size={20} />
+        </motion.div>
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-[8px] font-black flex items-center justify-center text-white shadow-lg">
             {unread > 9 ? '9+' : unread}

@@ -52,7 +52,7 @@ class NotificationSoundManager {
     return this.buffers.has(name)
   }
 
-  play(name: SoundName = 'chime') {
+  async play(name: SoundName = 'chime') {
     if (!this.enabled || typeof window === 'undefined') return
 
     const buffer = this.buffers.get(name)
@@ -60,7 +60,7 @@ class NotificationSoundManager {
 
     try {
       const ctx = this.getContext()
-      if (ctx.state === 'suspended') ctx.resume()
+      if (ctx.state === 'suspended') await ctx.resume()
 
       const source = ctx.createBufferSource()
       const gain = ctx.createGain()

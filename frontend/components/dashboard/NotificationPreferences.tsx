@@ -174,7 +174,10 @@ export function NotificationPreferences() {
                     {SOUND_NAMES.map(name => (
                       <button
                         key={name}
-                        onClick={() => savePrefs({ sound_name: name })}
+                        onClick={() => {
+                          savePrefs({ sound_name: name })
+                          notificationSounds.play(name)
+                        }}
                         className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 ${
                           prefs.sound_name === name
                             ? 'bg-zed-primary/20 border-zed-primary/40 text-zed-primary'
