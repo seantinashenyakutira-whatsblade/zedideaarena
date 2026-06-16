@@ -548,6 +548,59 @@ const getCompetitionById = async (req, res) => {
   }
 };
 
+const getAllWithdrawals = async (req, res) => {
+  try {
+    const { status, limit = 50, offset = 0 } = req.query;
+    let query = supabase
+      .from('withdrawal_requests')
+      .select('*, users(full_name, email)')
+      .order('created_at', { ascending: false })
+      .range(Number(offset), Number(offset) + Number(limit) - 1);
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const { count } = await supabase
+      .from('withdrawal_requests')
+      .select('*', { count: 'exact', head: true });
+
+    res.json({ status: 'success', data: data || [], total: count || 0 });
+  } catch (error) {
+    console.error('Get all withdrawals error:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to fetch withdrawals' });
+  }
+};
+
+const updateWithdrawalStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, notes } = req.body;
+
+    if (!['pending', 'approved', 'rejected', 'paid'].includes(status)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid status' });
+    }
+
+    const { data, error } = await supabase
+      .from('withdrawal_requests')
+      .update({ status, notes: notes || '', updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ status: 'error', message: 'Withdrawal request not found' });
+
+    res.json({ status: 'success', data });
+  } catch (error) {
+    console.error('Update withdrawal status error:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to update withdrawal' });
+  }
+};
+
 module.exports = {
   createCompetition,
   getCompetitions,
@@ -564,4 +617,6 @@ module.exports = {
   getAnalytics,
   getAuditLog,
   getUserDetail,
+  getAllWithdrawals,
+  updateWithdrawalStatus,
 };

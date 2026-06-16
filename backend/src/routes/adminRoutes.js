@@ -19,4 +19,7 @@ router.delete('/ideas/:id', verifyToken, isAdmin, adminController.deleteIdea);
 router.get('/reports', verifyToken, isAdmin, reportController.getReports);
 router.patch('/reports/:id/status', verifyToken, isAdmin, reportController.updateReportStatus);
 
+router.get('/withdrawals', verifyToken, isAdmin, adminController.getAllWithdrawals);
+router.patch('/withdrawals/:id/status', verifyToken, isAdmin, adminController.updateWithdrawalStatus);
+
 module.exports = router;
