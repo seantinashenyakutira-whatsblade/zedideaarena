@@ -1,10 +1,22 @@
 import axios from 'axios';
 import { getToken } from '@/services/auth';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000/api' : 'https://zedideaarena.onrender.com/api');
+const PRODUCTION_API = 'https://zedideaarena.onrender.com/api';
+
+function resolveApiUrl() {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl && envUrl.trim()) return envUrl.trim();
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host.includes('127.0.0.1')) {
+      return 'http://localhost:5000/api';
+    }
+  }
+  return PRODUCTION_API;
+}
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: resolveApiUrl(),
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
 });

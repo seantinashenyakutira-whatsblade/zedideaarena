@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { persistToken, getHubUrl } from '@/services/auth'
+import api from '@/lib/api'
 import { Loader2 } from 'lucide-react'
 
 export default function AuthCallbackPage() {
@@ -25,14 +26,7 @@ export default function AuthCallbackPage() {
         const payload = user?.user_metadata?.full_name
           ? { fullName: user.user_metadata.full_name }
           : {}
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify(payload),
-        })
+        await api.post('/user/login', payload)
       } catch {
         // backend sync failure is non-blocking for OAuth
       }

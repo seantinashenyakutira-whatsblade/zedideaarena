@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 const PRODUCTION_DOMAIN = 'zedideaarena.com';
 const HUB_HOST = `hub.${PRODUCTION_DOMAIN}`;
 const MAIN_HOST = PRODUCTION_DOMAIN;
+const PRODUCTION_ORIGIN = `https://${PRODUCTION_DOMAIN}`;
 
 function getCookie(name) {
   if (typeof document === 'undefined') return null;
@@ -61,17 +62,21 @@ export const clearToken = () => {
   removeCookie(TOKEN_COOKIE);
 };
 
+function isDevHost() {
+  if (typeof window === 'undefined') return false;
+  const h = window.location.hostname;
+  return h === 'localhost' || h.includes('127.0.0.1');
+}
+
 function getHubUrl(path = '/') {
   if (typeof window === 'undefined') return path;
-  const isProd = window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1');
-  if (!isProd) return path;
+  if (isDevHost()) return path;
   return `https://${HUB_HOST}${path}`;
 }
 
 function getMainUrl(path = '/') {
   if (typeof window === 'undefined') return path;
-  const isProd = window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1');
-  if (!isProd) return path;
+  if (isDevHost()) return path;
   return `https://${MAIN_HOST}${path}`;
 }
 
@@ -98,14 +103,7 @@ export const authService = {
     const token = data.session.access_token;
     persistToken(token, credentials.rememberMe !== false);
 
-    try {
-      await syncUserWithBackend(token);
-    } catch (backendError) {
-      await supabase.auth.signOut();
-      clearToken();
-      const msg = backendError?.message || 'Failed to sync with server';
-      throw new Error(`Authenticated, but failed to sync: ${msg}`);
-    }
+    syncUserWithBackend(token).catch(() => {});
   },
 
   signup: async (userData) => {
@@ -129,15 +127,8 @@ export const authService = {
 
     if (data.session?.access_token) {
       persistToken(data.session.access_token, true);
-      try {
-        const syncResponse = await syncUserWithBackend(data.session.access_token);
-        await supabase.auth.signOut();
-        clearToken();
-        return syncResponse;
-      } catch (backendError) {
-        const msg = backendError?.message || 'Failed to sync';
-        throw new Error(`Account created, but failed to sync: ${msg}`);
-      }
+      syncUserWithBackend(data.session.access_token).catch(() => {});
+      return { message: 'Account created successfully.' };
     }
 
     return { message: 'Check your email to confirm your account.' };
@@ -145,7 +136,7 @@ export const authService = {
 
   signInWithGoogle: async () => {
     const redirectTo = typeof window !== 'undefined'
-      ? `${window.location.origin}/auth/callback`
+      ? `${PRODUCTION_ORIGIN}/auth/callback`
       : undefined;
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
