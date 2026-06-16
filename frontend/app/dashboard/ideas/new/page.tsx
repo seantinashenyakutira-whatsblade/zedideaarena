@@ -461,12 +461,40 @@ function NewIdeaForm() {
                       <label className="text-[10px] font-black text-zed-foreground-secondary uppercase tracking-widest block mb-3">Target Industry</label>
                       <select name="industry" value={formData.industry} onChange={handleInputChange} className="input-zed">
                         <option value="">Select Industry</option>
-                        <option value="Technology">Technology</option>
-                        <option value="Fintech">Fintech</option>
-                        <option value="Agritech">Agritech</option>
-                        <option value="Education">Education</option>
-                        <option value="Healthcare">Healthcare</option>
-                        <option value="Entertainment">Entertainment</option>
+                        <optgroup label="Financial &amp; Business Services">
+                          <option value="Fintech &amp; Financial Services">Fintech &amp; Financial Services</option>
+                          <option value="Insurtech">Insurtech</option>
+                          <option value="LegalTech &amp; Compliance">LegalTech &amp; Compliance</option>
+                        </optgroup>
+                        <optgroup label="Technology &amp; Data">
+                          <option value="Enterprise/SaaS">Enterprise / SaaS</option>
+                          <option value="AI, ML &amp; Data">AI, ML &amp; Data</option>
+                          <option value="Cybersecurity">Cybersecurity</option>
+                          <option value="Developer Tools &amp; Infrastructure">Developer Tools &amp; Infrastructure</option>
+                          <option value="Hardware &amp; IoT">Hardware &amp; IoT</option>
+                        </optgroup>
+                        <optgroup label="Climate, Energy &amp; Agriculture">
+                          <option value="Cleantech &amp; Renewable Energy">Cleantech &amp; Renewable Energy</option>
+                          <option value="Agritech &amp; Food Systems">Agritech &amp; Food Systems</option>
+                          <option value="Climate &amp; Sustainability">Climate &amp; Sustainability</option>
+                        </optgroup>
+                        <optgroup label="Health, Education &amp; Social">
+                          <option value="Healthtech &amp; MedTech">Healthtech &amp; MedTech</option>
+                          <option value="EdTech &amp; Workforce Development">EdTech &amp; Workforce Development</option>
+                          <option value="Social Impact &amp; Public Sector">Social Impact &amp; Public Sector</option>
+                        </optgroup>
+                        <optgroup label="Commerce, Media &amp; Lifestyle">
+                          <option value="E-commerce &amp; Retail">E-commerce &amp; Retail</option>
+                          <option value="Media, Content &amp; Creator Economy">Media, Content &amp; Creator Economy</option>
+                          <option value="Entertainment &amp; Gaming">Entertainment &amp; Gaming</option>
+                          <option value="Travel, Hospitality &amp; Tourism">Travel, Hospitality &amp; Tourism</option>
+                        </optgroup>
+                        <optgroup label="Infrastructure &amp; Industrial">
+                          <option value="Mobility, Logistics &amp; Transport">Mobility, Logistics &amp; Transport</option>
+                          <option value="Real Estate &amp; PropTech">Real Estate &amp; PropTech</option>
+                          <option value="Construction &amp; ConTech">Construction &amp; ConTech</option>
+                          <option value="Manufacturing &amp; Industrial">Manufacturing &amp; Industrial</option>
+                        </optgroup>
                         <option value="Other">Other</option>
                       </select>
                     </div>
