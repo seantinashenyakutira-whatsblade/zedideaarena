@@ -349,7 +349,12 @@ const verifyUser = async (req, res) => {
 
 const updateCompetition = async (req, res) => {
   const { id } = req.params;
-  const updates = { ...req.body, updated_at: new Date().toISOString() };
+  const allowedFields = ['title', 'description', 'thumbnail_url', 'start_date', 'end_date', 'submission_deadline', 'entry_fee_cents', 'voter_fee_cents', 'prize_pool_cents'];
+  const updates = {};
+  for (const field of allowedFields) {
+    if (req.body[field] !== undefined) updates[field] = req.body[field];
+  }
+  updates.updated_at = new Date().toISOString();
 
   try {
     const { error } = await supabase

@@ -61,23 +61,26 @@ const markAllRead = async (req, res) => {
 
 const sendLikeNotification = async (req, res) => {
   try {
-    const { postId, postOwnerId, likerName } = req.body;
-    if (!postOwnerId || !likerName) {
-      return res.status(400).json({ status: 'error', message: 'Missing required fields' });
+    const { postId } = req.body;
+    const likerName = req.user.name || 'Someone';
+    if (!postId) {
+      return res.status(400).json({ status: 'error', message: 'Missing postId' });
     }
 
-    const { data: post } = await supabase.from('arena_posts').select('content').eq('id', postId).single();
+    const { data: post } = await supabase.from('arena_posts').select('content, user_id').eq('id', postId).single();
+    if (!post) return res.status(404).json({ status: 'error', message: 'Post not found' });
+
     const snippet = post?.content ? (post.content.length > 80 ? post.content.slice(0, 80) + '...' : post.content) : 'your post';
 
     const result = await sendNotification({
       title: `${likerName} liked your post`,
       content: snippet,
       url: `${process.env.FRONTEND_URL}/arena`,
-      userIds: [postOwnerId],
+      userIds: [post.user_id],
     });
 
     await insertNotification({
-      user_id: postOwnerId,
+      user_id: post.user_id,
       type: 'like',
       title: `${likerName} liked your post`,
       message: snippet,
@@ -93,10 +96,14 @@ const sendLikeNotification = async (req, res) => {
 
 const sendCommentNotification = async (req, res) => {
   try {
-    const { postId, postOwnerId, commenterName, commentContent } = req.body;
-    if (!postOwnerId || !commenterName) {
-      return res.status(400).json({ status: 'error', message: 'Missing required fields' });
+    const { postId, commentContent } = req.body;
+    const commenterName = req.user.name || 'Someone';
+    if (!postId) {
+      return res.status(400).json({ status: 'error', message: 'Missing postId' });
     }
+
+    const { data: post } = await supabase.from('arena_posts').select('content, user_id').eq('id', postId).single();
+    if (!post) return res.status(404).json({ status: 'error', message: 'Post not found' });
 
     const snippet = commentContent ? (commentContent.length > 80 ? commentContent.slice(0, 80) + '...' : commentContent) : '';
 
@@ -104,11 +111,11 @@ const sendCommentNotification = async (req, res) => {
       title: `${commenterName} commented on your post`,
       content: snippet || 'view the comment',
       url: `${process.env.FRONTEND_URL}/arena`,
-      userIds: [postOwnerId],
+      userIds: [post.user_id],
     });
 
     await insertNotification({
-      user_id: postOwnerId,
+      user_id: post.user_id,
       type: 'comment',
       title: `${commenterName} commented on your post`,
       message: snippet || 'view the comment',
@@ -124,7 +131,8 @@ const sendCommentNotification = async (req, res) => {
 
 const sendChatNotification = async (req, res) => {
   try {
-    const { userId, message, senderName } = req.body;
+    const { userId, message } = req.body;
+    const senderName = req.user.name || 'Someone';
     if (!userId || !message) {
       return res.status(400).json({ status: 'error', message: 'Missing required fields' });
     }

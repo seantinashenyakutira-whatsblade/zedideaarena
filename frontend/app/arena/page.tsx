@@ -433,7 +433,7 @@ export default function ArenaPage() {
       if (res.liked) {
         const post = posts.find(p => p.id === postId)
         if (post && post.user_id !== profile.id) {
-          api.post('/notifications/like', { postId, postOwnerId: post.user_id, likerName: profile.full_name }).catch(() => {})
+          api.post('/notifications/like', { postId: post.user_id }).catch(() => {})
         }
       }
     } catch {}
@@ -554,7 +554,7 @@ export default function ArenaPage() {
 
       const post = posts.find(p => p.id === postId)
       if (post && post.user_id !== profile.id) {
-        api.post('/notifications/comment', { postId, postOwnerId: post.user_id, commenterName: profile.full_name, commentContent: text }).catch(() => {})
+        api.post('/notifications/comment', { postId, commentContent: text }).catch(() => {})
       }
     } catch (err: any) {
       toast.error(err?.message || 'Failed to add comment')

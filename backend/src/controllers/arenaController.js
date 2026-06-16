@@ -400,7 +400,14 @@ const deletePost = async (req, res) => {
       .single();
 
     if (!existing) return res.status(404).json({ status: 'error', message: 'Post not found' });
-    if (existing.user_id !== userId && !req.user.is_admin) {
+
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('is_admin')
+      .eq('id', userId)
+      .single();
+
+    if (existing.user_id !== userId && !(userRow && userRow.is_admin)) {
       return res.status(403).json({ status: 'error', message: 'Not authorized' });
     }
 

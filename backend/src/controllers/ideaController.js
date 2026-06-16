@@ -236,6 +236,11 @@ const getIdeaById = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Idea not found' });
     }
 
+    if (!req.user || req.user.uid !== data.user_id) {
+      const { user_id, ...rest } = data;
+      return res.json({ status: 'success', data: { id: data.id, ...rest } });
+    }
+
     res.json({ status: 'success', data: { id: data.id, ...data } });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
