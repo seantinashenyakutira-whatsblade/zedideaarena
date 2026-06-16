@@ -16,7 +16,6 @@ import {
 } from 'lucide-react'
 import { useState, useRef, useEffect, useCallback } from 'react'
 
-// Web Speech API types
 interface SpeechRecognitionEvent extends Event {
   resultIndex: number
   results: SpeechRecognitionResultList
@@ -114,77 +113,94 @@ export default function RichTextEditor({ value, onChange, placeholder, maxLength
 
   const charCount = editor?.storage.characterCount?.characters?.() || value.replace(/<[^>]*>/g, '').length
 
-  // Speech recognition state
   const [isListening, setIsListening] = useState(false)
   const [speechSupported, setSpeechSupported] = useState(false)
+  const [permissionDenied, setPermissionDenied] = useState(false)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const finalTranscriptRef = useRef<string>('')
+  const shouldRestartRef = useRef(false)
 
-  // Initialize speech recognition
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const win = window as unknown as WindowWithSpeechRecognition
       const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition
       if (SpeechRecognition) {
         setSpeechSupported(true)
-        const recognition = new SpeechRecognition()
-        recognition.continuous = true
-        recognition.interimResults = true
-        recognition.lang = 'en-US'
-
-        recognition.onresult = (event: SpeechRecognitionEvent) => {
-          let interimTranscript = ''
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript
-            if (event.results[i].isFinal) {
-              finalTranscriptRef.current += transcript + ' '
-            } else {
-              interimTranscript += transcript
-            }
-          }
-        }
-
-        recognition.onerror = (event: { error: string }) => {
-          console.warn('Speech recognition error:', event.error)
-          if (event.error !== 'no-speech') {
-            setIsListening(false)
-          }
-        }
-
-        recognition.onend = () => {
-          if (isListening) {
-            try { recognition.start() } catch {}
-          }
-        }
-
-        recognitionRef.current = recognition
       }
     }
-    return () => {
+  }, [])
+
+  const initRecognition = useCallback(() => {
+    if (typeof window === 'undefined') return null
+    const win = window as unknown as WindowWithSpeechRecognition
+    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition
+    if (!SpeechRecognition) return null
+
+    const recognition = new SpeechRecognition()
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.lang = 'en-US'
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript
+        if (event.results[i].isFinal) {
+          finalTranscriptRef.current += transcript + ' '
+        }
+      }
+    }
+
+    recognition.onerror = (event: { error: string }) => {
+      console.warn('Speech recognition error:', event.error)
+      if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+        setPermissionDenied(true)
+        setIsListening(false)
+        shouldRestartRef.current = false
+      } else if (event.error !== 'no-speech') {
+        setIsListening(false)
+        shouldRestartRef.current = false
+      }
+    }
+
+    recognition.onend = () => {
+      if (shouldRestartRef.current) {
+        try { recognition.start() } catch {}
+      } else {
+        setIsListening(false)
+      }
+    }
+
+    return recognition
+  }, [])
+
+  const toggleListening = useCallback(() => {
+    if (!speechSupported) return
+
+    if (isListening) {
+      shouldRestartRef.current = false
       if (recognitionRef.current) {
         recognitionRef.current.stop()
       }
-    }
-  }, [isListening])
-
-  const toggleListening = useCallback(() => {
-    if (!recognitionRef.current || !speechSupported) return
-
-    if (isListening) {
-      recognitionRef.current.stop()
       setIsListening(false)
     } else {
+      setPermissionDenied(false)
       finalTranscriptRef.current = ''
+      shouldRestartRef.current = true
+
+      const recognition = recognitionRef.current || initRecognition()
+      if (!recognition) return
+
+      recognitionRef.current = recognition
+
       try {
-        recognitionRef.current.start()
+        recognition.start()
         setIsListening(true)
       } catch (e) {
         console.warn('Could not start speech recognition:', e)
       }
     }
-  }, [isListening, speechSupported])
+  }, [isListening, speechSupported, initRecognition])
 
-  // Insert final transcript into editor
   useEffect(() => {
     if (!isListening && finalTranscriptRef.current.trim() && editor) {
       const text = finalTranscriptRef.current.trim()
@@ -192,6 +208,15 @@ export default function RichTextEditor({ value, onChange, placeholder, maxLength
       finalTranscriptRef.current = ''
     }
   }, [isListening, editor])
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        shouldRestartRef.current = false
+        recognitionRef.current.stop()
+      }
+    }
+  }, [])
 
   if (!editor) return null
 
@@ -276,23 +301,6 @@ export default function RichTextEditor({ value, onChange, placeholder, maxLength
           />
         </div>
 
-        {speechSupported && (
-          <>
-            <Divider />
-            <div className="flex items-center gap-0.5">
-              <ToolbarButton
-                onClick={toggleListening}
-                active={isListening}
-                label={isListening ? 'Stop dictation' : 'Start dictation'}
-                icon={isListening ? <Mic size={16} className="text-red-400 animate-pulse" /> : <MicOff size={16} />}
-              />
-              {isListening && (
-                <span className="text-[10px] text-red-400 font-medium animate-pulse ml-1">Listening...</span>
-              )}
-            </div>
-          </>
-        )}
-
         <div className="ml-auto flex items-center gap-1">
           {editor.isActive('table') && (
             <>
@@ -331,7 +339,43 @@ export default function RichTextEditor({ value, onChange, placeholder, maxLength
         </div>
       </div>
 
-      <EditorContent editor={editor} className="prose-editor" />
+      <div className="relative">
+        <EditorContent editor={editor} className="prose-editor" />
+
+        {speechSupported && (
+          <button
+            type="button"
+            onClick={toggleListening}
+            title={
+              permissionDenied
+                ? 'Microphone access denied — allow in browser settings'
+                : isListening
+                ? 'Stop dictation'
+                : 'Start dictation'
+            }
+            className={`absolute bottom-4 right-4 z-10 flex items-center justify-center rounded-full transition-all duration-300 ${
+              isListening
+                ? 'w-14 h-14 bg-gradient-to-br from-red-500 to-pink-600 shadow-lg shadow-red-500/40 scale-110'
+                : permissionDenied
+                ? 'w-14 h-14 bg-white/10 border border-red-500/30 opacity-60 cursor-not-allowed'
+                : 'w-12 h-12 bg-zed-gradient-primary shadow-zed-glow-primary hover:scale-110 hover:shadow-zed-glow-accent'
+            }`}
+          >
+            {isListening ? (
+              <Mic size={24} className="text-white animate-pulse" />
+            ) : (
+              <MicOff size={20} className="text-white" />
+            )}
+          </button>
+        )}
+
+        {isListening && (
+          <div className="absolute bottom-20 right-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/70 backdrop-blur-sm border border-red-500/30">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-[11px] font-medium text-red-300">Listening...</span>
+          </div>
+        )}
+      </div>
 
       <div className="flex items-center justify-between px-4 py-2 border-t border-white/5">
         <div className="flex items-center gap-3 text-[10px] font-medium">
