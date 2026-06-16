@@ -1,114 +1,18 @@
 const { supabase } = require('../config/supabase');
 
 const castVote = async (req, res) => {
-  const { ideaId, competitionId } = req.body;
-  const userId = req.user.uid;
-
-  if (!ideaId || !competitionId) {
-    return res.status(400).json({ status: 'error', message: 'ideaId and competitionId are required' });
-  }
-
-  try {
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('is_verified, voter_payment_status, role')
-      .eq('id', userId)
-      .single();
-
-    if (userError || !userData) {
-      return res.status(404).json({ status: 'error', message: 'User profile not found.' });
-    }
-
-    if (!userData.is_verified) {
-      return res.status(403).json({ status: 'error', message: 'You must be verified by an admin to vote.' });
-    }
-
-    if (userData.voter_payment_status !== 'paid' && userData.role !== 'admin') {
-      return res.status(403).json({ status: 'error', message: 'You must pay the voter entry fee to vote.' });
-    }
-
-    const { data: ideaData, error: ideaError } = await supabase
-      .from('ideas')
-      .select('*')
-      .eq('id', ideaId)
-      .single();
-
-    if (ideaError || !ideaData) {
-      return res.status(404).json({ status: 'error', message: 'Idea not found.' });
-    }
-
-    if (ideaData.payment_status !== 'paid') {
-      return res.status(403).json({ status: 'error', message: 'This idea is not eligible for voting yet.' });
-    }
-
-    if (ideaData.user_id === userId) {
-      return res.status(403).json({ status: 'error', message: 'You cannot vote for your own idea.' });
-    }
-
-    const { data: existingVote } = await supabase
-      .from('votes')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('competition_id', competitionId)
-      .single();
-
-    if (existingVote) {
-      return res.status(400).json({ status: 'error', message: 'You have already voted in this competition.' });
-    }
-
-    const { error: voteError } = await supabase.from('votes').insert({
-      user_id: userId,
-      idea_id: ideaId,
-      competition_id: competitionId,
-    });
-
-    if (voteError) throw voteError;
-
-    // Count + broadcast handled by DB trigger trg_vote_inserted
-
-    res.json({ status: 'success', message: 'Vote cast successfully!' });
-  } catch (error) {
-    console.error('Error casting vote:', error);
-    if (error.message && (error.message.includes('already voted') || error.message.includes('cannot vote') || error.message.includes('must be') || error.message.includes('must pay') || error.message.includes('not eligible') || error.message.includes('not found'))) {
-      return res.status(400).json({ status: 'error', message: error.message });
-    }
-    res.status(500).json({ status: 'error', message: 'Internal server error while voting.' });
-  }
-};
-
-const getUserVotes = async (req, res) => {
-  const userId = req.user.uid;
-
-  try {
-    const { data, error } = await supabase
-      .from('votes')
-      .select('idea_id, competition_id, innovation_score, feasibility_score, impact_score, presentation_score, total_score, comment, time_spent_seconds, created_at')
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    res.json({ status: 'success', data: data || [] });
-  } catch (error) {
-    res.status(500).json({ status: 'error', message: 'Failed to fetch votes' });
-  }
-};
-
-const castVoteV2 = async (req, res) => {
   const {
-    idea_id, competition_id,
+    idea_id, competition_id, ideaId, competitionId,
     innovation_score, feasibility_score,
     impact_score, presentation_score,
     comment, time_spent_seconds,
   } = req.body;
+  const ideaIdFinal = idea_id || ideaId;
+  const compIdFinal = competition_id || competitionId;
   const userId = req.user.uid;
 
-  if (!idea_id || !competition_id) {
+  if (!ideaIdFinal || !compIdFinal) {
     return res.status(400).json({ status: 'error', message: 'idea_id and competition_id are required' });
-  }
-
-  const scores = [innovation_score, feasibility_score, impact_score, presentation_score];
-  if (scores.some(s => !s || s < 1 || s > 10)) {
-    return res.status(400).json({ status: 'error', message: 'All four scores required (1-10)' });
   }
 
   try {
@@ -127,14 +31,14 @@ const castVoteV2 = async (req, res) => {
     }
 
     const paidComps = userData.voter_competitions_paid || [];
-    if (!paidComps.includes(competition_id)) {
+    if (!paidComps.includes(compIdFinal)) {
       return res.status(403).json({ status: 'error', message: 'You must pay the voter fee for this competition to vote.' });
     }
 
     const { data: compData, error: compError } = await supabase
       .from('competitions')
       .select('submission_deadline, end_date')
-      .eq('id', competition_id)
+      .eq('id', compIdFinal)
       .single();
 
     if (compError || !compData) {
@@ -150,7 +54,7 @@ const castVoteV2 = async (req, res) => {
     const { data: ideaData, error: ideaError } = await supabase
       .from('ideas')
       .select('id, user_id, status, is_public')
-      .eq('id', idea_id)
+      .eq('id', ideaIdFinal)
       .single();
 
     if (ideaError || !ideaData) {
@@ -173,7 +77,7 @@ const castVoteV2 = async (req, res) => {
       .from('votes')
       .select('id')
       .eq('user_id', userId)
-      .eq('idea_id', idea_id)
+      .eq('idea_id', ideaIdFinal)
       .maybeSingle();
 
     if (existingVote) {
@@ -184,12 +88,12 @@ const castVoteV2 = async (req, res) => {
       .from('votes')
       .insert({
         user_id: userId,
-        idea_id,
-        competition_id,
-        innovation_score,
-        feasibility_score,
-        impact_score,
-        presentation_score,
+        idea_id: ideaIdFinal,
+        competition_id: compIdFinal,
+        innovation_score: innovation_score || 1,
+        feasibility_score: feasibility_score || 1,
+        impact_score: impact_score || 1,
+        presentation_score: presentation_score || 1,
         comment: comment || null,
         time_spent_seconds: time_spent_seconds || 0,
       })
@@ -205,10 +109,8 @@ const castVoteV2 = async (req, res) => {
 
     await supabase.rpc('add_voter_vote_bonus', {
       p_voter_id: userId,
-      p_competition_id: competition_id,
+      p_competition_id: compIdFinal,
     }).catch(err => console.error('Vote bonus RPC error:', err));
-
-    // Count + broadcast handled by DB trigger trg_vote_inserted
 
     res.json({ status: 'success', message: 'Vote cast successfully!', vote });
   } catch (error) {
@@ -216,6 +118,25 @@ const castVoteV2 = async (req, res) => {
     res.status(500).json({ status: 'error', message: 'Internal server error while voting.' });
   }
 };
+
+const getUserVotes = async (req, res) => {
+  const userId = req.user.uid;
+
+  try {
+    const { data, error } = await supabase
+      .from('votes')
+      .select('idea_id, competition_id, innovation_score, feasibility_score, impact_score, presentation_score, total_score, comment, time_spent_seconds, created_at')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    res.json({ status: 'success', data: data || [] });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: 'Failed to fetch votes' });
+  }
+};
+
+const castVoteV2 = castVote;
 
 const getLeaderboard = async (req, res) => {
   const { competitionId } = req.params;

@@ -24,6 +24,7 @@ import {
 import { YouTubeEmbed, getYouTubeId } from '@/components/YouTubeEmbed'
 import { useAuth } from '@/hooks/useAuth'
 import api from '@/lib/api'
+import { voteService } from '@/services/core'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -69,10 +70,7 @@ export default function IdeaDetailPage() {
 
     setCastingVote(true)
     try {
-      await api.post('/votes/cast', { 
-        ideaId: idea.id, 
-        competitionId: idea.competition_id || 'idea-to-win-2024' 
-      })
+      await voteService.castVote(idea.id, idea.competition_id || 'idea-to-win-2024', { innovation_score: 5, feasibility_score: 5, impact_score: 5, presentation_score: 5 })
       toast.success('Your vote has been cast!')
       setHasVoted(true)
       setIdea((prev: any) => ({ ...prev, votes_count: (prev.votes_count || 0) + 1 }))

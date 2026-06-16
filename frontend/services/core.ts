@@ -1,7 +1,7 @@
 import api from '../lib/api';
 
 export const voteService = {
-  castVote: (ideaId: string, competitionId: string) => api.post('/votes/cast', { ideaId, competitionId }),
+  castVote: (idea_id: string, competition_id: string, ratings?: any) => api.post('/votes/cast', { idea_id, competition_id, ...ratings }),
   castVoteV2: (idea_id: string, competition_id: string, ratings?: any) => api.post('/voter/vote', { idea_id, competition_id, ...ratings }),
   getUserVotes: () => api.get('/votes/user'),
   getLeaderboard: (competitionId: string) => api.get(`/votes/${competitionId}/leaderboard`),
