@@ -66,6 +66,7 @@ app.use('/api/withdrawals', require('./routes/withdrawalRoutes'));
 app.use('/api/arena', require('./routes/arenaRoutes'));
 app.use('/api/ads', require('./routes/adsRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/notification-preferences', require('./routes/notificationPreferenceRoutes'));
 
 const { error: sendError } = require('./utils/response');
 

@@ -1,6 +1,7 @@
 const { supabase } = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
 const { sendIdeaApproved, sendIdeaRejected, sendVoterVerified } = require('../services/emailService');
+const { notifyIdeaStatusInline, notifyWithdrawalInline } = require('./notificationController');
 
 const DEFAULT_ENTRY_FEE_CENTS = parseInt(process.env.DEFAULT_ENTRY_FEE_CENTS || '500', 10);
 const DEFAULT_VOTER_FEE_CENTS = parseInt(process.env.DEFAULT_VOTER_FEE_CENTS || '0', 10);
@@ -253,6 +254,8 @@ const updateIdeaStatus = async (req, res) => {
         }
       }
     }
+
+    notifyIdeaStatusInline(ideaData.user_id, ideaData.title, status, note);
 
     res.json({ status: 'success', message: `Status updated to ${status}` });
   } catch (error) {
@@ -596,6 +599,11 @@ const updateWithdrawalStatus = async (req, res) => {
 
     if (error) throw error;
     if (!data) return res.status(404).json({ status: 'error', message: 'Withdrawal request not found' });
+
+    if (status === 'approved' || status === 'paid') {
+      const userName = req.user?.name || 'A user';
+      notifyWithdrawalInline(userName, data.amount_cents);
+    }
 
     res.json({ status: 'success', data });
   } catch (error) {

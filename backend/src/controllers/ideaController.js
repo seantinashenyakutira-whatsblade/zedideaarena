@@ -1,5 +1,6 @@
 const { supabase } = require('../config/supabase');
 const { sendIdeaConfirmation } = require('../services/emailService');
+const { notifyNewIdeaInline } = require('./notificationController');
 
 const saveIdeaDraft = async (req, res) => {
   const { uid } = req.user;
@@ -156,6 +157,8 @@ const submitIdea = async (req, res) => {
     if (error) throw error;
 
     sendIdeaConfirmation(req.user.email, doc.title);
+
+    notifyNewIdeaInline(doc.title, uid);
 
     const msg = doc.status === 'rejected'
       ? `Appeal submitted (${appealCount + 1}/5). Your idea is back under review.`

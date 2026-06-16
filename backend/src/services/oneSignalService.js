@@ -1,7 +1,7 @@
 const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
 const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
 
-async function sendNotification({ title, content, url, userIds, segments }) {
+async function sendNotification({ title, content, url, userIds, segments, priority = 'low', category }) {
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
     console.warn('[OneSignal] Missing credentials, skipping notification');
     return null;
@@ -11,12 +11,21 @@ async function sendNotification({ title, content, url, userIds, segments }) {
     app_id: ONESIGNAL_APP_ID,
     headings: { en: title },
     contents: { en: content },
+    priority: priority === 'high' ? 10 : 5,
+    priority_level: priority,
   };
 
+  if (category) body.tags = [{ key: 'category', relation: '=', value: category }];
   if (url) body.url = url;
   if (userIds?.length) body.include_external_user_ids = userIds;
   if (segments?.length) body.included_segments = segments;
   if (!userIds?.length && !segments?.length) body.included_segments = ['All'];
+
+  if (priority === 'high') {
+    body.android_channel_id = 'high-priority';
+    body.huawei_channel_id = 'high-priority';
+    body.data = { priority: 'high', category };
+  }
 
   try {
     const res = await fetch('https://onesignal.com/api/v1/notifications', {

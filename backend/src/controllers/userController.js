@@ -1,4 +1,5 @@
 const { supabase } = require('../config/supabase');
+const { notifyNewUserInline } = require('./notificationController');
 
 const getUserProfile = async (req, res) => {
   const uid = req.user?.uid;
@@ -56,6 +57,7 @@ const login = async (req, res) => {
 
       const { error } = await supabase.from('users').insert(userData);
       if (error) throw error;
+      notifyNewUserInline(userData.full_name || bodyName, userData.email);
     } else {
       userData = existingUser;
       const updates = { updated_at: new Date().toISOString() };

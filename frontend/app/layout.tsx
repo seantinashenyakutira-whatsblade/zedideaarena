@@ -7,6 +7,7 @@ import { CookieConsent } from '@/components/CookieConsent'
 import { ChatBot } from '@/components/ChatBot'
 import { InstallPWA } from '@/components/InstallPWA'
 import { OneSignalInit } from '@/components/OneSignalInit'
+import { NotificationPrompt } from '@/components/NotificationPrompt'
 import { RoutePrefetcher } from '@/components/RoutePrefetcher'
 import { AdScript } from '@/components/ads/AdScript'
 import { Toaster } from 'sonner'
@@ -81,6 +82,7 @@ export default function RootLayout({
           <CookieConsent />
           <ChatBot />
           <OneSignalInit />
+          <NotificationPrompt />
           <RoutePrefetcher />
         </AuthProvider>
         <AdScript />

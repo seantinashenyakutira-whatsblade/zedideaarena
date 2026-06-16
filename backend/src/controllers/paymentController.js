@@ -1,6 +1,7 @@
 const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
 const { supabase } = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
+const { notifyPaymentInline } = require('./notificationController');
 
 const enterCompetition = async (req, res) => {
   const { uid } = req.user;
@@ -309,6 +310,8 @@ const handleStripeWebhook = async (req, res) => {
       console.error('Error processing payment side effects:', err);
     }
   }
+
+  notifyPaymentInline(userId, amount_cents, type === 'contestant' ? 'competition entry' : 'voter verification');
 
   res.status(200).send('Webhook Received');
 };

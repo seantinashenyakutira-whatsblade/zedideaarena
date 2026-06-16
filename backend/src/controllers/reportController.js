@@ -1,4 +1,5 @@
 const { supabase } = require('../config/supabase');
+const { notifyReportInline } = require('./notificationController');
 
 const submitReport = async (req, res) => {
   try {
@@ -26,6 +27,7 @@ const submitReport = async (req, res) => {
       .single();
 
     if (error) throw error;
+    notifyReportInline(target_type, reason);
     res.json({ status: 'success', data, message: 'Report submitted. Our team will review it.' });
   } catch (err) {
     console.error('Submit report error:', err);

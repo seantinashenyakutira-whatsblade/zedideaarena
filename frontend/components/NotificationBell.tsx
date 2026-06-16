@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Bell, CheckCheck, Loader2, Heart, MessageCircle, MessageSquare, Trophy, User, Megaphone, AlertCircle, X } from 'lucide-react'
+import { Bell, CheckCheck, Loader2, Heart, MessageCircle, MessageSquare, Trophy, User, Megaphone, AlertCircle, X, ArrowUp } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import { notificationSounds } from '@/lib/notificationSounds'
+import api from '@/lib/api'
 
 const typeIcons: Record<string, any> = {
   like: Heart,
@@ -14,6 +16,19 @@ const typeIcons: Record<string, any> = {
   broadcast: Megaphone,
   competition: Trophy,
   system: AlertCircle,
+  new_idea: Megaphone,
+  new_user: User,
+  payment: Trophy,
+  report: AlertCircle,
+  withdrawal: Trophy,
+  idea_status: Trophy,
+  verification: User,
+  engagement: Heart,
+}
+
+const PRIORITY_COLORS: Record<string, string> = {
+  high: 'bg-red-500',
+  low: 'bg-amber-400',
 }
 
 export function NotificationBell() {
@@ -24,19 +39,31 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const prefsRef = useRef<any>(null)
+  const lastNotifIdRef = useRef<string | null>(null)
+
+  const loadPrefs = useCallback(async () => {
+    if (!profile?.id) return
+    try {
+      const res: any = await api.get('/notification-preferences')
+      prefsRef.current = res.data
+      notificationSounds.setEnabled(res.data?.sound_enabled !== false)
+      notificationSounds.setVolume(0.7)
+    } catch {}
+  }, [profile?.id])
+
+  useEffect(() => {
+    notificationSounds.preload()
+    loadPrefs()
+  }, [loadPrefs])
 
   const fetchNotifications = useCallback(async () => {
     if (!profile?.id) return
     setLoading(true)
     try {
-      const { data } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', profile.id)
-        .order('created_at', { ascending: false })
-        .limit(20)
-      setNotifications(data || [])
-      setUnread((data || []).filter((n: any) => !n.is_read).length)
+      const res: any = await api.get('/notifications')
+      setNotifications(res.data || [])
+      setUnread((res.data || []).filter((n: any) => !n.is_read).length)
     } catch {} finally { setLoading(false) }
   }, [profile?.id])
 
@@ -52,13 +79,30 @@ export function NotificationBell() {
         table: 'notifications',
         filter: `user_id=eq.${profile.id}`,
       }, (payload) => {
-        setNotifications(prev => [payload.new as any, ...prev].slice(0, 20))
-        setUnread(prev => prev + 1)
+        const notif = payload.new as any
+        if (lastNotifIdRef.current !== notif.id) {
+          lastNotifIdRef.current = notif.id
+          setNotifications(prev => [notif, ...prev].slice(0, 50))
+          setUnread(prev => prev + 1)
+          playNotificationSound(notif)
+        }
       })
       .subscribe()
 
     return () => { sub.unsubscribe() }
   }, [profile?.id, fetchNotifications])
+
+  const playNotificationSound = (notif: any) => {
+    const cat = notif.category
+    const prefs = prefsRef.current
+    const soundName = prefs?.sound_name || 'chime'
+    const catPrefs = cat && prefs?.categories?.[cat]
+
+    if (prefs?.sound_enabled === false) return
+    if (catPrefs?.sound === false) return
+
+    notificationSounds.play(soundName)
+  }
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -70,7 +114,7 @@ export function NotificationBell() {
 
   const markAllRead = async () => {
     try {
-      await supabase.from('notifications').update({ is_read: true }).eq('user_id', profile?.id).is('is_read', false)
+      await api.put('/notifications/read-all')
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
       setUnread(0)
     } catch {}
@@ -82,8 +126,6 @@ export function NotificationBell() {
   }
 
   if (!profile) return null
-
-  const Icon = Bell
 
   return (
     <div ref={ref} className="relative">
@@ -131,15 +173,23 @@ export function NotificationBell() {
                       onClick={() => handleClick(n)}
                       className={`w-full text-left px-4 py-3 flex gap-3 hover:bg-white/[0.04] transition-colors border-b border-white/[0.02] last:border-0 ${!n.is_read ? 'bg-indigo-500/[0.04]' : ''}`}
                     >
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${!n.is_read ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/5 text-white/40'}`}>
+                      <div className={`relative w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${!n.is_read ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/5 text-white/40'}`}>
                         <TypeIcon size={14} />
+                        {n.priority === 'high' && (
+                          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500" />
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className={`text-xs ${!n.is_read ? 'font-bold text-white' : 'text-white/70'}`}>{n.title}</p>
                         {n.message && <p className="text-[11px] text-white/40 truncate mt-0.5">{n.message}</p>}
-                        <p className="text-[9px] text-white/20 mt-1">
-                          {new Date(n.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-[9px] text-white/20">
+                            {new Date(n.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                          {n.priority === 'high' && (
+                            <span className="text-[8px] font-bold text-red-400 uppercase">High</span>
+                          )}
+                        </div>
                       </div>
                       {!n.is_read && <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0 mt-2" />}
                     </button>
