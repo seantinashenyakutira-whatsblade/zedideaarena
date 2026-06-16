@@ -1,0 +1,15 @@
+[Unit]
+Description=DiffusionGemma Local API Server
+After=network.target
+
+[Service]
+Type=simple
+User=mrseannyakutira
+Environment=NVIDIA_API_KEY=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
+WorkingDirectory=/home/mrseannyakutira/Downloads/Zedidearena
+ExecStart=/usr/bin/python3 /home/mrseannyakutira/Downloads/Zedidearena/diffusiongemma_server.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

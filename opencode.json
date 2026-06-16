@@ -1,0 +1,43 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "openai/diffusiongemma-26b-a4b-it",
+  "small_model": "openai/diffusiongemma-26b-a4b-it",
+
+  "provider": {
+    "openai": {
+      "models": {
+        "diffusiongemma-26b-a4b-it": {
+          "id": "google/diffusiongemma-26b-a4b-it",
+          "name": "DiffusionGemma 26B A4B-IT",
+          "family": "diffusiongemma",
+          "reasoning": true,
+          "tool_call": false,
+          "limit": {
+            "context": 4096,
+            "output": 4096
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          }
+        }
+      },
+      "options": {
+        "apiKey": "not-needed",
+        "baseURL": "http://localhost:8000/v1",
+        "timeout": 120000
+      }
+    }
+  },
+
+  "mcp": {
+    "TestSprite": {
+      "type": "local",
+      "command": ["npx", "@testsprite/testsprite-mcp@latest"],
+      "enabled": true,
+      "env": {
+        "API_KEY": "sk-user-1bgCHPPMSYd6ei9EGYO1TAmDmUSEJpOKaDZkbl7jSep3gMWwRGT_f958oZ00wQ7KZMSL-_Hs8LO7XFBlf-wJeokeDU98QrZHRgBlgS_vpQLNSF_rcTg-bXCgr4Okmfkdyw4"
+      }
+    }
+  }
+}

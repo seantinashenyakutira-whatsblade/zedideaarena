@@ -1,0 +1,37 @@
+[
+  {
+    "id": "TC001",
+    "title": "get root health check",
+    "description": "Verify that a GET request to the root endpoint returns a 200 status with server status and a message indicating the server is running."
+  },
+  {
+    "id": "TC002",
+    "title": "get available models list",
+    "description": "Verify that a GET request to /v1/models returns a 200 status with a list of available models in OpenAI-compatible format."
+  },
+  {
+    "id": "TC003",
+    "title": "post chat completions valid request",
+    "description": "Verify that a POST request to /v1/chat/completions with a valid model and messages returns a 200 status with a valid chat completion response."
+  },
+  {
+    "id": "TC004",
+    "title": "post chat completions invalid request",
+    "description": "Verify that a POST request to /v1/chat/completions with malformed body or missing required fields returns a 400 validation error, and that resubmitting a corrected request returns a 200 with a valid response."
+  },
+  {
+    "id": "TC005",
+    "title": "post chat completions streaming response",
+    "description": "Verify that a POST request to /v1/chat/completions with stream=true and valid messages returns a 200 status with streamed OpenAI-compatible chunks that can be assembled into a full assistant response."
+  },
+  {
+    "id": "TC006",
+    "title": "post chat completions streaming invalid request",
+    "description": "Verify that a POST request to /v1/chat/completions with stream=true but invalid payload returns a 400 validation error, and that resubmitting a corrected request with stream=true returns a 200 streamed response."
+  },
+  {
+    "id": "TC007",
+    "title": "post legacy completions endpoint",
+    "description": "Verify that a POST request to /v1/completions returns a 400 status instructing the client to use /v1/chat/completions instead."
+  }
+]
