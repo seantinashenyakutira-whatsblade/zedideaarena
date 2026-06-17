@@ -20,13 +20,11 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                var stored = localStorage.getItem('zedidea-theme');
-                var theme = stored || 'system';
-                if (theme === 'system') {
-                  theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-                }
-                document.documentElement.setAttribute('data-theme', theme);
-                if (theme === 'dark') document.documentElement.classList.add('dark');
+                var s = localStorage.getItem('zedidea-theme');
+                var t = s || 'system';
+                if (t === 'system') t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', t);
+                if (t === 'dark') document.documentElement.classList.add('dark');
               })();
             `,
           }}

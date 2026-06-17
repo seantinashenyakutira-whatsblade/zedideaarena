@@ -3,3 +3,4 @@ __pycache__/
 venv/
 server.log
 testsprite_tests/tmp/
+.vercel

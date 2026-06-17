@@ -6,7 +6,7 @@ import { useTheme, type ThemeMode } from "../context/ThemeProvider"
 
 export default function AppearanceSettings() {
   const [open, setOpen] = useState(false)
-  const { mode, setMode } = useTheme()
+  const { mode, setTheme } = useTheme()
 
   const options: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
     { value: "light", label: "Light", icon: Sun },
@@ -59,7 +59,7 @@ export default function AppearanceSettings() {
                 return (
                   <button
                     key={opt.value}
-                    onClick={() => { setMode(opt.value); setOpen(false) }}
+                    onClick={() => { setTheme(opt.value); setOpen(false) }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
                     style={{
                       backgroundColor: active ? "var(--surface-hover)" : "transparent",

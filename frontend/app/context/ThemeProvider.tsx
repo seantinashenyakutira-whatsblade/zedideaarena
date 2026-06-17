@@ -2,93 +2,63 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
 
-export type ThemeMode = "dark" | "light" | "system"
-export type Theme = "dark" | "light"
+export type ThemeMode = "system" | "light" | "dark"
 
-type ThemeContext = {
+type ThemeCtx = {
   mode: ThemeMode
-  resolved: Theme
-  setMode: (mode: ThemeMode) => void
-  toggle: () => void
+  setTheme: (m: ThemeMode) => void
+  resolved: "dark" | "light"
 }
 
-const ThemeCtx = createContext<ThemeContext>({
-  mode: "system",
-  resolved: "dark",
-  setMode: () => {},
-  toggle: () => {},
-})
+const Ctx = createContext<ThemeCtx>({ mode: "system", setTheme: () => {}, resolved: "dark" })
 
-export function useTheme() {
-  return useContext(ThemeCtx)
-}
+export function useTheme() { return useContext(Ctx) }
 
-function getSystemTheme(): Theme {
+function getSystemTheme(): "dark" | "light" {
   if (typeof window === "undefined") return "dark"
   return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"
 }
 
-function applyTheme(t: Theme) {
-  const root = document.documentElement
-  root.setAttribute("data-theme", t)
-  root.classList.remove("theme-transitioning")
-  root.classList.add("theme-transitioning")
-  void root.offsetHeight
-  setTimeout(() => root.classList.remove("theme-transitioning"), 400)
-  if (t === "dark") root.classList.add("dark")
-  else root.classList.remove("dark")
-}
-
-function resolveMode(mode: ThemeMode): Theme {
-  if (mode === "system") return getSystemTheme()
-  return mode
+function apply(t: "dark" | "light") {
+  const r = document.documentElement
+  r.setAttribute("data-theme", t)
+  if (t === "dark") r.classList.add("dark"); else r.classList.remove("dark")
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>("system")
-  const [resolved, setResolved] = useState<Theme>("dark")
+  const [mode, setMode] = useState<ThemeMode>("system")
+  const [resolved, setResolved] = useState<"dark" | "light">("dark")
 
-  const setMode = useCallback((m: ThemeMode) => {
-    setModeState(m)
+  const setTheme = useCallback((m: ThemeMode) => {
+    setMode(m)
     localStorage.setItem("zedidea-theme", m)
-    const r = resolveMode(m)
+    const r = m === "system" ? getSystemTheme() : m
     setResolved(r)
-    applyTheme(r)
+    apply(r)
   }, [])
 
-  // Init on mount
   useEffect(() => {
     const stored = localStorage.getItem("zedidea-theme") as ThemeMode | null
-    const initial = stored || "system"
-    setModeState(initial)
-    const r = resolveMode(initial)
+    const m = stored || "system"
+    setMode(m)
+    const r = m === "system" ? getSystemTheme() : m
     setResolved(r)
-    applyTheme(r)
+    apply(r)
   }, [])
 
-  // Listen for system preference changes
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: light)")
-    const handler = (e: MediaQueryListEvent) => {
+    const handler = () => {
       const stored = localStorage.getItem("zedidea-theme") as ThemeMode | null
       if (!stored || stored === "system") {
-        const sys: Theme = e.matches ? "light" : "dark"
-        setResolved(sys)
-        applyTheme(sys)
+        const r = getSystemTheme()
+        setResolved(r)
+        apply(r)
       }
     }
     mq.addEventListener("change", handler)
     return () => mq.removeEventListener("change", handler)
   }, [])
 
-  const toggle = useCallback(() => {
-    const next = resolved === "dark" ? "light" : "dark"
-    setMode(next)
-  }, [resolved, setMode])
-
-  return (
-    <ThemeCtx.Provider value={{ mode, resolved, setMode, toggle }}>
-      {children}
-    </ThemeCtx.Provider>
-  )
+  return <Ctx.Provider value={{ mode, setTheme, resolved }}>{children}</Ctx.Provider>
 }
