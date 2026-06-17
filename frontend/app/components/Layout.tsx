@@ -1,13 +1,13 @@
-import Navbar from "./components/Navbar"
-import Footer from "./components/Footer"
+"use client"
+
+import Navbar from "./Navbar"
+import Footer from "./Footer"
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#0f0f1a]">
+    <div className="min-h-screen" style={{ backgroundColor: "var(--bg-body)" }}>
       <Navbar />
-      <main className="pt-16"> {/* Offset for fixed navbar */}
-        {children}
-      </main>
+      <main className="pt-16">{children}</main>
       <Footer />
     </div>
   )
