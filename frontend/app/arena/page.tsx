@@ -250,7 +250,7 @@ export default function ArenaPage() {
         </section>
 
         {/* Trending Section */}
-        <section className="py-12 px-4 sm:px零售-6 lg:px-8">
+        <section className="py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-2 mb-8">
               <TrendingUp className="w-6 h-6 text-[#22d3ee]" />

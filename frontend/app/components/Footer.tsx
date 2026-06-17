@@ -62,7 +62,7 @@ export default function Footer() {
 
           {/* Links */}
           <div>
-            <h3 className="text-[var(--text-primary)] font-semibold mb-4">Product</pins>
+            <h3 className="text-[var(--text-primary)] font-semibold mb-4">Product</h3>
             <ul className="space-y-2">
               {footerLinks.product.map((link) => (
                 <li key={link.label}>
