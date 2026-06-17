@@ -451,7 +451,6 @@ const handleDpoWebhook = async (req, res) => {
     const { data: payment, error: insertError } = await supabase
       .from('payments')
       .insert({
-        user_id: req.body?.user_id || null,
         competition_id: competitionId,
         type,
         transaction_ref: TransactionToken,
@@ -465,55 +464,6 @@ const handleDpoWebhook = async (req, res) => {
     if (insertError) {
       console.error('DPO webhook insert error:', insertError);
       return res.status(200).send('Insert error');
-    }
-
-    if (type === 'contestant') {
-      const { data: ideasArr } = await supabase
-        .from('ideas')
-        .select('id, status')
-        .eq('user_id', payment.user_id)
-        .eq('competition_id', competitionId)
-        .eq('payment_status', 'unpaid')
-        .limit(1);
-      const idea = ideasArr && ideasArr.length > 0 ? ideasArr[0] : null;
-
-      if (idea) {
-        const update = { payment_status: 'paid', updated_at: new Date().toISOString() };
-        if (idea.status === 'approved') {
-          update.is_public = true;
-        }
-        await supabase.from('ideas').update(update).eq('id', idea.id);
-      }
-
-      await supabase.rpc('increment_prize_pool', {
-        comp_id: competitionId,
-        amount: payment.amount_cents,
-      });
-    } else if (type === 'voter') {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('voter_competitions_paid')
-        .eq('id', payment.user_id)
-        .single();
-
-      const currentPaid = userData?.voter_competitions_paid || [];
-      if (!currentPaid.includes(competitionId)) {
-        currentPaid.push(competitionId);
-      }
-
-      await supabase
-        .from('users')
-        .update({
-          voter_payment_status: 'paid',
-          voter_competitions_paid: currentPaid,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', payment.user_id);
-
-      await supabase.rpc('increment_prize_pool', {
-        comp_id: competitionId,
-        amount: payment.amount_cents,
-      });
     }
 
     res.status(200).send('OK');
@@ -685,7 +635,70 @@ const verifyPayment = async (req, res) => {
 
       const verification = await dpoService.verifyPayment(transaction_ref);
       if (verification.success && verification.status === 'Completed') {
-        return res.json({ verified: true, pendingDb: true, provider: 'dpo' });
+        const { data: newPayment, error: insertError } = await supabase
+          .from('payments')
+          .upsert({
+            user_id: uid,
+            competition_id,
+            type: type || 'contestant',
+            transaction_ref,
+            amount_cents: Math.round(parseFloat(verification.amount || '0') * 100),
+            status: 'completed',
+            network_id: 'dpo',
+          }, { onConflict: 'transaction_ref' })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('DPO payment insert error:', insertError);
+        }
+
+        try {
+          const payType = type || 'contestant';
+          const amtCents = (newPayment?.amount_cents || Math.round(parseFloat(verification.amount || '0') * 100));
+
+          if (payType === 'contestant' && uid) {
+            const { data: ideasArr } = await supabase
+              .from('ideas')
+              .select('id, status')
+              .eq('user_id', uid)
+              .eq('competition_id', competition_id)
+              .eq('payment_status', 'unpaid')
+              .limit(1);
+            const idea = ideasArr && ideasArr.length > 0 ? ideasArr[0] : null;
+            if (idea) {
+              const update = { payment_status: 'paid', updated_at: new Date().toISOString() };
+              if (idea.status === 'approved') update.is_public = true;
+              await supabase.from('ideas').update(update).eq('id', idea.id);
+            }
+            await supabase.rpc('increment_prize_pool', { comp_id: competition_id, amount: amtCents });
+          } else if (payType === 'voter' && uid) {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('voter_competitions_paid')
+              .eq('id', uid)
+              .single();
+            const currentPaid = userData?.voter_competitions_paid || [];
+            if (!currentPaid.includes(competition_id)) currentPaid.push(competition_id);
+            await supabase
+              .from('users')
+              .update({ voter_payment_status: 'paid', voter_competitions_paid: currentPaid, updated_at: new Date().toISOString() })
+              .eq('id', uid);
+            await supabase.rpc('increment_prize_pool', { comp_id: competition_id, amount: amtCents });
+          }
+        } catch (sideErr) {
+          console.error('DPO verify side effects error:', sideErr);
+        }
+
+        return res.json({
+          verified: true,
+          payment: newPayment || {
+            id: transaction_ref,
+            type: type || 'contestant',
+            competition_id,
+            amount_cents: Math.round(parseFloat(verification.amount || '0') * 100),
+          },
+        });
       }
 
       return res.json({ verified: false });
