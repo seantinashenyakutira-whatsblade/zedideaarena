@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { paymentService } from '@/services/payment'
-import { Loader2, ShieldCheck, CreditCard, ArrowLeft, ArrowRight, Trophy, Calendar, AlertCircle } from 'lucide-react'
+import { Loader2, ShieldCheck, CreditCard, Smartphone, ArrowLeft, ArrowRight, Trophy, Calendar, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
 import { toast } from 'sonner'
@@ -16,6 +16,9 @@ function PaymentContent() {
   const [competition, setCompetition] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
   const [needsIdea, setNeedsIdea] = useState(false)
+  const [methodGroups, setMethodGroups] = useState<any[]>([])
+  const [selectedNetwork, setSelectedNetwork] = useState('card')
+  const [expandedGroup, setExpandedGroup] = useState<string>('cards')
 
   const competitionId = searchParams.get('competition') || searchParams.get('competitionId')
   const type = searchParams.get('type')
@@ -34,17 +37,21 @@ function PaymentContent() {
       return
     }
 
-    const fetchCompetition = async () => {
+    const fetchData = async () => {
       try {
-        const res: any = await api.get(`/competitions/${competitionId}`)
-        setCompetition(res.data || res)
+        const [compRes, methodsRes] = await Promise.all([
+          api.get(`/competitions/${competitionId}`),
+          api.get('/payments/methods'),
+        ])
+        setCompetition(compRes.data || compRes)
+        setMethodGroups(methodsRes.data || [])
       } catch {
-        setError('Competition not found. Please go back and try again.')
+        setError('Failed to load payment information. Please go back and try again.')
       } finally {
         setLoading(false)
       }
     }
-    fetchCompetition()
+    fetchData()
   }, [competitionId, type])
 
   const handlePayment = async () => {
@@ -53,12 +60,17 @@ function PaymentContent() {
     try {
       let res: any
       if (type === 'contestant') {
-        res = await paymentService.enterCompetition(competitionId!, ideaId || undefined)
+        res = await paymentService.enterCompetition(competitionId!, ideaId || undefined, selectedNetwork)
       } else {
-        res = await paymentService.registerVoter(competitionId!)
+        res = await paymentService.registerVoter(competitionId!, selectedNetwork)
       }
       toast.success('Redirecting to secure checkout...')
-      window.location.href = res.checkoutUrl
+      if (res.checkoutUrl) {
+        window.location.href = res.checkoutUrl
+      } else {
+        setError('No checkout URL returned')
+        setProcessing(false)
+      }
     } catch (err: any) {
       if (err.message?.includes('create an idea')) {
         setNeedsIdea(true)
@@ -143,6 +155,64 @@ function PaymentContent() {
         </div>
       )}
 
+      {methodGroups.length > 0 && (
+        <div className="card-zed p-6 mb-6">
+          <h3 className="font-black text-sm text-zed-foreground mb-4 uppercase tracking-widest">
+            Select Payment Method
+          </h3>
+          <div className="space-y-3">
+            {methodGroups.map((group) => (
+              <div key={group.id}>
+                <button
+                  type="button"
+                  onClick={() => setExpandedGroup(expandedGroup === group.id ? '' : group.id)}
+                  className="w-full flex items-center justify-between py-2 text-xs font-bold text-zed-foreground-secondary uppercase tracking-widest"
+                >
+                  {group.name}
+                  {expandedGroup === group.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+                {expandedGroup === group.id && (
+                  <div className="space-y-2 mt-1">
+                    {group.methods.map((method: any) => (
+                      <label
+                        key={method.id}
+                        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                          selectedNetwork === method.id
+                            ? 'bg-zed-primary/10 border border-zed-primary/30'
+                            : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value={method.id}
+                          checked={selectedNetwork === method.id}
+                          onChange={() => setSelectedNetwork(method.id)}
+                          className="accent-[#4F46E5]"
+                        />
+                        <div className="w-8 h-8 rounded-lg bg-zed-primary/20 flex items-center justify-center">
+                          {method.icon === 'CreditCard' ? (
+                            <CreditCard size={16} className="text-zed-primary" />
+                          ) : (
+                            <Smartphone size={16} className="text-zed-primary" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <span className="text-sm font-bold text-zed-foreground">{method.name}</span>
+                          <span className="text-[10px] text-zed-foreground-secondary ml-2 uppercase">
+                            via {method.provider === 'stripe' ? 'Stripe' : 'DPO Pay'}
+                          </span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="card-zed border-white/10 p-8 relative overflow-hidden text-center">
         {error && (
           <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-bold text-center mb-6">
@@ -167,17 +237,27 @@ function PaymentContent() {
             </Link>
           </div>
         ) : (
-        <button
-          onClick={handlePayment}
-          disabled={processing}
-          className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-sm font-black shadow-xl disabled:opacity-50"
-        >
-          {processing ? (
-            <><Loader2 size={20} className="animate-spin" /> Processing...</>
-          ) : (
-            <><CreditCard size={20} /> Pay ${((feeCents || 0) / 100).toFixed(2)} with Card</>
-          )}
-        </button>
+          <>
+            <button
+              onClick={handlePayment}
+              disabled={processing}
+              className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 text-sm font-black shadow-xl disabled:opacity-50"
+            >
+              {processing ? (
+                <><Loader2 size={20} className="animate-spin" /> Processing...</>
+              ) : (
+                <><CreditCard size={20} /> Pay ${((feeCents || 0) / 100).toFixed(2)} Now</>
+              )}
+            </button>
+
+            <div className="mt-4 text-[11px] text-zed-foreground-secondary">
+              {selectedNetwork === 'card' ? (
+                <span>Secured by <strong>Stripe</strong></span>
+              ) : (
+                <span>Processed by <strong>DPO Pay</strong></span>
+              )}
+            </div>
+          </>
         )}
 
         <div className="mt-8 flex items-center justify-center gap-4 text-[10px] text-zed-foreground-secondary font-bold uppercase tracking-widest opacity-50">

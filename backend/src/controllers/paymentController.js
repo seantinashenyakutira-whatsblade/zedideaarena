@@ -2,13 +2,39 @@ const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STR
 const { supabase } = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
 const { notifyPaymentInline } = require('./notificationController');
+const PAYMENT_METHODS = require('../config/paymentMethods');
+const dpoService = require('../services/dpoService');
+
+const CARD_NETWORKS = ['card'];
+
+function isCardNetwork(networkId) {
+  return CARD_NETWORKS.includes(networkId);
+}
+
+function calculateLocalAmount(amountCents, countryCode) {
+  if (countryCode === 'ZMW') return Math.round(amountCents * 0.26);
+  if (countryCode === 'MWK') return Math.round(amountCents * 1.7);
+  return amountCents;
+}
+
+function getCurrency(countryCode) {
+  if (countryCode === 'ZMW') return 'ZMW';
+  if (countryCode === 'MWK') return 'MWK';
+  return 'USD';
+}
+
+const getPaymentMethods = async (req, res) => {
+  res.json({ status: 'success', data: PAYMENT_METHODS.groups });
+};
 
 const enterCompetition = async (req, res) => {
   const { uid } = req.user;
   const { id: competitionId } = req.params;
-  const { ideaId } = req.body;
+  const { ideaId, network } = req.body;
 
-  if (!stripe) {
+  const selectedNetwork = network || 'card';
+
+  if (!stripe && isCardNetwork(selectedNetwork)) {
     return res.status(503).json({ status: 'error', message: 'Payment service unavailable' });
   }
 
@@ -69,33 +95,69 @@ const enterCompetition = async (req, res) => {
       return res.status(409).json({ status: 'error', message: 'This idea has already been paid for' });
     }
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `Entry Fee: ${competition.title}`,
-              description: 'Competition contestant entry fee',
+    const { data: profile } = await supabase
+      .from('users')
+      .select('email, full_name, phone, country')
+      .eq('id', uid)
+      .single();
+
+    const country = profile?.country || 'US';
+
+    if (isCardNetwork(selectedNetwork)) {
+      if (!stripe) {
+        return res.status(500).json({ status: 'error', message: 'Stripe is not configured' });
+      }
+
+      const localAmount = calculateLocalAmount(competition.entry_fee_cents, country);
+      const currency = getCurrency(country);
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: currency.toLowerCase(),
+              product_data: {
+                name: `Entry Fee: ${competition.title}`,
+                description: 'Competition contestant entry fee',
+              },
+              unit_amount: localAmount,
             },
-            unit_amount: competition.entry_fee_cents,
+            quantity: 1,
           },
-          quantity: 1,
+        ],
+        success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/success?type=contestant&competitionId=${competitionId}&ideaId=${userIdea.id}&session_id={CHECKOUT_SESSION_ID}&network=stripe`,
+        cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/error?type=contestant&competitionId=${competitionId}&reason=cancelled`,
+        metadata: {
+          user_id: uid,
+          competition_id: competitionId,
+          type: 'contestant',
+          idea_id: userIdea.id,
         },
-      ],
-      success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/success?type=contestant&competitionId=${competitionId}&ideaId=${userIdea.id}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/error?type=contestant&competitionId=${competitionId}&reason=cancelled`,
-      metadata: {
-        user_id: uid,
-        competition_id: competitionId,
-        type: 'contestant',
-        idea_id: userIdea.id,
-      },
+      });
+
+      return res.json({ status: 'success', checkoutUrl: session.url, provider: 'stripe' });
+    }
+
+    const localAmount = calculateLocalAmount(competition.entry_fee_cents, country);
+    const result = await dpoService.createPaymentSession({
+      amount: localAmount,
+      countryCode: country,
+      networkId: selectedNetwork,
+      customerEmail: profile?.email,
+      customerName: profile?.full_name,
+      customerPhone: profile?.phone || '',
+      orderId: uuidv4(),
+      paymentType: 'contestant',
+      competitionId,
     });
 
-    res.json({ status: 'success', checkoutUrl: session.url });
+    if (!result.success) {
+      return res.status(500).json({ status: 'error', message: result.error || 'Failed to create payment session' });
+    }
+
+    res.json({ status: 'success', checkoutUrl: result.checkoutUrl, transactionRef: result.transactionRef, provider: 'dpo' });
   } catch (error) {
     console.error('Enter Competition Error:', error);
     res.status(500).json({ status: 'error', message: 'Failed to create checkout session' });
@@ -104,9 +166,11 @@ const enterCompetition = async (req, res) => {
 
 const registerVoter = async (req, res) => {
   const { uid } = req.user;
-  const { competitionId } = req.body;
+  const { competitionId, network } = req.body;
 
-  if (!stripe) {
+  const selectedNetwork = network || 'card';
+
+  if (!stripe && isCardNetwork(selectedNetwork)) {
     return res.status(503).json({ status: 'error', message: 'Payment service unavailable' });
   }
 
@@ -127,7 +191,7 @@ const registerVoter = async (req, res) => {
 
     const { data: profile } = await supabase
       .from('users')
-      .select('voter_competitions_paid')
+      .select('voter_competitions_paid, email, full_name, phone, country')
       .eq('id', uid)
       .single();
 
@@ -149,32 +213,62 @@ const registerVoter = async (req, res) => {
       return res.status(409).json({ status: 'error', message: 'You have already paid the voter fee for this competition' });
     }
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `Voter Fee: ${competition.title}`,
-              description: 'Competition voter registration fee',
+    const country = profile?.country || 'US';
+
+    if (isCardNetwork(selectedNetwork)) {
+      if (!stripe) {
+        return res.status(500).json({ status: 'error', message: 'Stripe is not configured' });
+      }
+
+      const localAmount = calculateLocalAmount(competition.voter_fee_cents, country);
+      const currency = getCurrency(country);
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: currency.toLowerCase(),
+              product_data: {
+                name: `Voter Fee: ${competition.title}`,
+                description: 'Competition voter registration fee',
+              },
+              unit_amount: localAmount,
             },
-            unit_amount: competition.voter_fee_cents,
+            quantity: 1,
           },
-          quantity: 1,
+        ],
+        success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/success?type=voter&competitionId=${competitionId}&session_id={CHECKOUT_SESSION_ID}&network=stripe`,
+        cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/error?type=voter&competitionId=${competitionId}&reason=cancelled`,
+        metadata: {
+          user_id: uid,
+          competition_id: competitionId,
+          type: 'voter',
         },
-      ],
-      success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/success?type=voter&competitionId=${competitionId}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/payment/error?type=voter&competitionId=${competitionId}&reason=cancelled`,
-      metadata: {
-        user_id: uid,
-        competition_id: competitionId,
-        type: 'voter',
-      },
+      });
+
+      return res.json({ status: 'success', checkoutUrl: session.url, provider: 'stripe' });
+    }
+
+    const localAmount = calculateLocalAmount(competition.voter_fee_cents, country);
+    const result = await dpoService.createPaymentSession({
+      amount: localAmount,
+      countryCode: country,
+      networkId: selectedNetwork,
+      customerEmail: profile?.email,
+      customerName: profile?.full_name,
+      customerPhone: profile?.phone || '',
+      orderId: uuidv4(),
+      paymentType: 'voter',
+      competitionId,
     });
 
-    res.json({ status: 'success', checkoutUrl: session.url });
+    if (!result.success) {
+      return res.status(500).json({ status: 'error', message: result.error || 'Failed to create payment session' });
+    }
+
+    res.json({ status: 'success', checkoutUrl: result.checkoutUrl, transactionRef: result.transactionRef, provider: 'dpo' });
   } catch (error) {
     console.error('Register Voter Error:', error);
     res.status(500).json({ status: 'error', message: 'Failed to create checkout session' });
@@ -224,6 +318,7 @@ const handleStripeWebhook = async (req, res) => {
         amount_cents,
         amount,
         status: 'completed',
+        network_id: 'card',
         ...(type === 'contestant' && idea_id ? { idea_id } : {}),
       });
 
@@ -316,6 +411,118 @@ const handleStripeWebhook = async (req, res) => {
   res.status(200).send('Webhook Received');
 };
 
+const handleDpoWebhook = async (req, res) => {
+  const { TransactionToken, CompanyRef, Result } = req.body;
+
+  if (!TransactionToken) {
+    return res.status(400).send('Missing TransactionToken');
+  }
+
+  if (Result !== '000') {
+    return res.status(200).send('Payment not completed');
+  }
+
+  try {
+    const parts = (CompanyRef || '').split('_');
+    const type = parts[0];
+    const competitionId = parts[1];
+
+    if (!type || !competitionId) {
+      console.error('Invalid CompanyRef format:', CompanyRef);
+      return res.status(200).send('Invalid ref');
+    }
+
+    const { data: existingPayment } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('transaction_ref', TransactionToken)
+      .maybeSingle();
+
+    if (existingPayment) {
+      return res.status(200).send('Payment already processed');
+    }
+
+    const verification = await dpoService.verifyPayment(TransactionToken);
+
+    if (!verification.success || verification.status !== 'Completed') {
+      return res.status(200).send('Payment not confirmed');
+    }
+
+    const { data: payment, error: insertError } = await supabase
+      .from('payments')
+      .insert({
+        user_id: req.body?.user_id || null,
+        competition_id: competitionId,
+        type,
+        transaction_ref: TransactionToken,
+        amount_cents: Math.round(parseFloat(verification.amount || '0') * 100),
+        status: 'completed',
+        network_id: 'dpo',
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('DPO webhook insert error:', insertError);
+      return res.status(200).send('Insert error');
+    }
+
+    if (type === 'contestant') {
+      const { data: ideasArr } = await supabase
+        .from('ideas')
+        .select('id, status')
+        .eq('user_id', payment.user_id)
+        .eq('competition_id', competitionId)
+        .eq('payment_status', 'unpaid')
+        .limit(1);
+      const idea = ideasArr && ideasArr.length > 0 ? ideasArr[0] : null;
+
+      if (idea) {
+        const update = { payment_status: 'paid', updated_at: new Date().toISOString() };
+        if (idea.status === 'approved') {
+          update.is_public = true;
+        }
+        await supabase.from('ideas').update(update).eq('id', idea.id);
+      }
+
+      await supabase.rpc('increment_prize_pool', {
+        comp_id: competitionId,
+        amount: payment.amount_cents,
+      });
+    } else if (type === 'voter') {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('voter_competitions_paid')
+        .eq('id', payment.user_id)
+        .single();
+
+      const currentPaid = userData?.voter_competitions_paid || [];
+      if (!currentPaid.includes(competitionId)) {
+        currentPaid.push(competitionId);
+      }
+
+      await supabase
+        .from('users')
+        .update({
+          voter_payment_status: 'paid',
+          voter_competitions_paid: currentPaid,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', payment.user_id);
+
+      await supabase.rpc('increment_prize_pool', {
+        comp_id: competitionId,
+        amount: payment.amount_cents,
+      });
+    }
+
+    res.status(200).send('OK');
+  } catch (err) {
+    console.error('DPO webhook error:', err);
+    res.status(200).send('Error');
+  }
+};
+
 const getPaymentHistory = async (req, res) => {
   const { uid } = req.user;
 
@@ -379,7 +586,6 @@ const checkPayment = async (req, res) => {
       return res.status(400).json({ error: 'Missing params' });
     }
 
-    // Check payments table first (source of truth for new payments)
     const { data: paymentRecord, error } = await supabase
       .from('payments')
       .select('id')
@@ -397,8 +603,6 @@ const checkPayment = async (req, res) => {
       return res.json({ alreadyPaid: true });
     }
 
-    // Fallback: check users.voter_competitions_paid for voter payments
-    // (legacy — side effects may have updated this even when payments insert failed)
     if (type === 'voter') {
       const { data: userData } = await supabase
         .from('users')
@@ -412,7 +616,6 @@ const checkPayment = async (req, res) => {
       }
     }
 
-    // Fallback: check ideas.payment_status for contestant payments
     if (type === 'contestant') {
       const ideaId = req.query.ideaId;
 
@@ -451,166 +654,199 @@ const checkPayment = async (req, res) => {
 
 const verifyPayment = async (req, res) => {
   try {
-    const { session_id, competition_id, type } = req.query;
+    const { session_id, transaction_ref, competition_id, type } = req.query;
     const { uid } = req.user;
 
-    if (!session_id) {
-      return res.status(400).json({ error: 'Missing session_id' });
+    if (!session_id && !transaction_ref) {
+      return res.status(400).json({ error: 'Missing session_id or transaction_ref' });
     }
 
-    // Step 1: Check local payments table
-    let query = supabase
-      .from('payments')
-      .select('*')
-      .eq('stripe_session_id', session_id)
-      .eq('status', 'completed');
+    if (transaction_ref) {
+      const { data: payment, error } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('transaction_ref', transaction_ref)
+        .eq('status', 'completed')
+        .maybeSingle();
 
-    if (uid) query = query.eq('user_id', uid);
-
-    const { data, error } = await query.maybeSingle();
-
-    if (error) {
-      console.error('Payment verification query error:', error);
-    }
-
-    if (data) {
-      const result = {
-        verified: true,
-        payment: {
-          id: data.id,
-          type: data.type,
-          competition_id: data.competition_id,
-          amount_cents: data.amount_cents,
-          status: data.status,
-          created_at: data.created_at,
-        },
-      };
-
-      if (competition_id && data.competition_id !== competition_id) {
-        result.verified = false;
-      }
-      if (type && data.type !== type) {
-        result.verified = false;
+      if (payment) {
+        return res.json({
+          verified: true,
+          payment: {
+            id: payment.id,
+            type: payment.type,
+            competition_id: payment.competition_id,
+            amount_cents: payment.amount_cents,
+            status: payment.status,
+            created_at: payment.created_at,
+          },
+        });
       }
 
-      return res.json(result);
+      const verification = await dpoService.verifyPayment(transaction_ref);
+      if (verification.success && verification.status === 'Completed') {
+        return res.json({ verified: true, pendingDb: true, provider: 'dpo' });
+      }
+
+      return res.json({ verified: false });
     }
 
-    // Step 2: Not in DB yet — check Stripe directly (webhook may be delayed)
-    if (!stripe) {
-      return res.json({ verified: false, payment: null });
-    }
+    if (session_id) {
+      let query = supabase
+        .from('payments')
+        .select('*')
+        .eq('stripe_session_id', session_id)
+        .eq('status', 'completed');
 
-      try {
-      const session = await stripe.checkout.sessions.retrieve(session_id);
-      if (session.payment_status === 'paid') {
-        const metaCompetitionId = competition_id || session.metadata?.competition_id;
-        const metaType = type || session.metadata?.type || 'contestant';
-        const metaIdeaId = session.metadata?.idea_id;
-        const amount_cents = session.amount_total;
-        const amount = (amount_cents / 100).toFixed(2);
+      if (uid) query = query.eq('user_id', uid);
 
-        const { data: newPayment, error: insertError } = await supabase
-          .from('payments')
-          .upsert({
-            user_id: uid,
-            competition_id: metaCompetitionId,
-            type: metaType,
-            stripe_session_id: session_id,
-            stripe_payment_intent_id: session.payment_intent,
-            amount_cents,
-            amount,
-            status: 'completed',
-            created_at: new Date().toISOString(),
-            ...(metaType === 'contestant' && metaIdeaId ? { idea_id: metaIdeaId } : {}),
-          }, { onConflict: 'stripe_session_id' })
-          .select()
-          .single();
+      const { data, error } = await query.maybeSingle();
 
-        if (insertError && insertError.code !== '23505') {
-          console.error('Error inserting fallback payment (side effects will still run):', insertError);
+      if (error) {
+        console.error('Payment verification query error:', error);
+      }
+
+      if (data) {
+        const result = {
+          verified: true,
+          payment: {
+            id: data.id,
+            type: data.type,
+            competition_id: data.competition_id,
+            amount_cents: data.amount_cents,
+            status: data.status,
+            created_at: data.created_at,
+          },
+        };
+
+        if (competition_id && data.competition_id !== competition_id) {
+          result.verified = false;
+        }
+        if (type && data.type !== type) {
+          result.verified = false;
         }
 
-        try {
-          if (metaType === 'contestant') {
-            const ideaToUpdate = metaIdeaId;
+        return res.json(result);
+      }
 
-            if (ideaToUpdate) {
-              const { data: ideaToCheck } = await supabase
-                .from('ideas')
-                .select('status')
-                .eq('id', ideaToUpdate)
+      if (!stripe) {
+        return res.json({ verified: false, payment: null });
+      }
+
+      try {
+        const session = await stripe.checkout.sessions.retrieve(session_id);
+        if (session.payment_status === 'paid') {
+          const metaCompetitionId = competition_id || session.metadata?.competition_id;
+          const metaType = type || session.metadata?.type || 'contestant';
+          const metaIdeaId = session.metadata?.idea_id;
+          const amount_cents = session.amount_total;
+          const amount = (amount_cents / 100).toFixed(2);
+
+          const { data: newPayment, error: insertError } = await supabase
+            .from('payments')
+            .upsert({
+              user_id: uid,
+              competition_id: metaCompetitionId,
+              type: metaType,
+              stripe_session_id: session_id,
+              stripe_payment_intent_id: session.payment_intent,
+              amount_cents,
+              amount,
+              status: 'completed',
+              network_id: 'card',
+              created_at: new Date().toISOString(),
+              ...(metaType === 'contestant' && metaIdeaId ? { idea_id: metaIdeaId } : {}),
+            }, { onConflict: 'stripe_session_id' })
+            .select()
+            .single();
+
+          if (insertError && insertError.code !== '23505') {
+            console.error('Error inserting fallback payment (side effects will still run):', insertError);
+          }
+
+          try {
+            if (metaType === 'contestant') {
+              const ideaToUpdate = metaIdeaId;
+
+              if (ideaToUpdate) {
+                const { data: ideaToCheck } = await supabase
+                  .from('ideas')
+                  .select('status')
+                  .eq('id', ideaToUpdate)
+                  .single();
+
+                const fallbackUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
+                if (ideaToCheck && ideaToCheck.status === 'approved') {
+                  fallbackUpdate.is_public = true;
+                }
+
+                await supabase
+                  .from('ideas')
+                  .update(fallbackUpdate)
+                  .eq('id', ideaToUpdate);
+              } else {
+                const { data: ideasArr } = await supabase
+                  .from('ideas')
+                  .select('id, status')
+                  .eq('user_id', uid)
+                  .eq('competition_id', metaCompetitionId)
+                  .eq('payment_status', 'unpaid')
+                  .limit(1);
+                const fallbackIdea = ideasArr && ideasArr.length > 0 ? ideasArr[0] : null;
+
+                if (fallbackIdea) {
+                  const fbUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
+                  if (fallbackIdea.status === 'approved') {
+                    fbUpdate.is_public = true;
+                  }
+                  await supabase
+                    .from('ideas')
+                    .update(fbUpdate)
+                    .eq('id', fallbackIdea.id);
+                }
+              }
+
+              await supabase.rpc('increment_prize_pool', {
+                comp_id: metaCompetitionId,
+                amount: amount_cents,
+              });
+            } else if (metaType === 'voter') {
+              const { data: userData } = await supabase
+                .from('users')
+                .select('voter_competitions_paid')
+                .eq('id', uid)
                 .single();
 
-              const fallbackUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
-              if (ideaToCheck && ideaToCheck.status === 'approved') {
-                fallbackUpdate.is_public = true;
+              const currentPaid = userData?.voter_competitions_paid || [];
+              if (!currentPaid.includes(metaCompetitionId)) {
+                currentPaid.push(metaCompetitionId);
               }
 
               await supabase
-                .from('ideas')
-                .update(fallbackUpdate)
-                .eq('id', ideaToUpdate);
-            } else {
-              const { data: ideasArr } = await supabase
-                .from('ideas')
-                .select('id, status')
-                .eq('user_id', uid)
-                .eq('competition_id', metaCompetitionId)
-                .eq('payment_status', 'unpaid')
-                .limit(1);
-              const fallbackIdea = ideasArr && ideasArr.length > 0 ? ideasArr[0] : null;
+                .from('users')
+                .update({
+                  voter_payment_status: 'paid',
+                  voter_competitions_paid: currentPaid,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', uid);
 
-              if (fallbackIdea) {
-                const fbUpdate = { payment_status: 'paid', updated_at: new Date().toISOString() };
-                if (fallbackIdea.status === 'approved') {
-                  fbUpdate.is_public = true;
-                }
-                await supabase
-                  .from('ideas')
-                  .update(fbUpdate)
-                  .eq('id', fallbackIdea.id);
-              }
+              await supabase.rpc('increment_prize_pool', {
+                comp_id: metaCompetitionId,
+                amount: amount_cents,
+              });
             }
-
-            await supabase.rpc('increment_prize_pool', {
-              comp_id: metaCompetitionId,
-              amount: amount_cents,
-            });
-          } else if (metaType === 'voter') {
-            const { data: userData } = await supabase
-              .from('users')
-              .select('voter_competitions_paid')
-              .eq('id', uid)
-              .single();
-
-            const currentPaid = userData?.voter_competitions_paid || [];
-            if (!currentPaid.includes(metaCompetitionId)) {
-              currentPaid.push(metaCompetitionId);
-            }
-
-            await supabase
-              .from('users')
-              .update({
-                voter_payment_status: 'paid',
-                voter_competitions_paid: currentPaid,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', uid);
-
-            await supabase.rpc('increment_prize_pool', {
-              comp_id: metaCompetitionId,
-              amount: amount_cents,
-            });
+          } catch (sideEffectErr) {
+            console.error('Fallback side effects error:', sideEffectErr);
           }
-        } catch (sideEffectErr) {
-          console.error('Fallback side effects error:', sideEffectErr);
-        }
 
-        return res.json({ verified: true, payment: newPayment || { id: session_id, type: metaType, competition_id: metaCompetitionId, amount_cents: session.amount_total } });
+          return res.json({ verified: true, payment: newPayment || { id: session_id, type: metaType, competition_id: metaCompetitionId, amount_cents: session.amount_total } });
+        }
+      } catch (stripeErr) {
+        console.error('Stripe fallback check error:', stripeErr);
       }
-    } catch (stripeErr) {
-      console.error('Stripe fallback check error:', stripeErr);
+
+      return res.json({ verified: false, payment: null });
     }
 
     res.json({ verified: false, payment: null });
@@ -700,4 +936,4 @@ const getMyCompetitions = async (req, res) => {
   }
 };
 
-module.exports = { enterCompetition, registerVoter, handleStripeWebhook, getPaymentHistory, checkEntryPayment, checkPayment, verifyPayment, getMyCompetitions };
+module.exports = { getPaymentMethods, enterCompetition, registerVoter, handleStripeWebhook, handleDpoWebhook, getPaymentHistory, checkEntryPayment, checkPayment, verifyPayment, getMyCompetitions };

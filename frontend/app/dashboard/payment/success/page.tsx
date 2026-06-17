@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { CheckCircle2, Loader2, Trophy, Vote, ArrowRight, XCircle, ShieldCheck, Database, ExternalLink } from 'lucide-react'
+import { CheckCircle2, Loader2, Trophy, Vote, ArrowRight, XCircle, ShieldCheck, Database, ExternalLink, Smartphone } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
@@ -15,15 +15,19 @@ function PaymentSuccessContent() {
   const [status, setStatus] = useState<'verifying' | 'verified' | 'error'>('verifying')
   const [countdown, setCountdown] = useState(5)
   const [payment, setPayment] = useState<any>(null)
-  const [syncStatus, setSyncStatus] = useState({ stripe: false, database: false })
+  const [syncStatus, setSyncStatus] = useState({ gateway: false, database: false })
 
   const sessionId = searchParams.get('session_id')
+  const transactionRef = searchParams.get('transaction_ref')
   const competitionId = searchParams.get('competitionId')
   const ideaId = searchParams.get('ideaId')
   const type = searchParams.get('type')
+  const network = searchParams.get('network') || 'stripe'
+
+  const isDpo = network === 'dpo' || !!transactionRef
 
   useEffect(() => {
-    if (!sessionId) {
+    if (!sessionId && !transactionRef) {
       setStatus('error')
       return
     }
@@ -31,21 +35,23 @@ function PaymentSuccessContent() {
     const verifyWithRetry = async (maxAttempts = 10) => {
       for (let i = 0; i < maxAttempts; i++) {
         try {
-          const params = new URLSearchParams({ session_id: sessionId })
+          const params = new URLSearchParams()
+          if (sessionId) params.append('session_id', sessionId)
+          if (transactionRef) params.append('transaction_ref', transactionRef)
           if (competitionId) params.append('competition_id', competitionId)
           if (type) params.append('type', type)
 
           const res: any = await api.get(`/payments/verify?${params}`)
           if (res.verified) {
             setPayment(res.payment)
-            setSyncStatus({ stripe: true, database: true })
+            setSyncStatus({ gateway: true, database: !!res.payment?.id || !res.pendingDb })
             setStatus('verified')
             await refreshProfile()
             toast.success(type === 'voter' ? 'Voter registration confirmed!' : 'Entry fee payment confirmed!', { duration: 5000 })
             return
           }
-          if (res.stripe_status === 'paid') {
-            setSyncStatus(prev => ({ ...prev, stripe: true }))
+          if (res.gateway_status === 'paid') {
+            setSyncStatus(prev => ({ ...prev, gateway: true }))
           }
         } catch { /* retry */ }
 
@@ -57,7 +63,7 @@ function PaymentSuccessContent() {
       toast.error('Payment verification timed out. Please check your payment history.')
     }
     verifyWithRetry()
-  }, [sessionId, competitionId, type])
+  }, [sessionId, transactionRef, competitionId, type])
 
   useEffect(() => {
     if (status !== 'verified') return
@@ -88,7 +94,9 @@ function PaymentSuccessContent() {
           <div className="flex flex-col gap-3 max-w-xs mx-auto">
             <div className="flex items-center gap-3 text-sm">
               <div className="w-5 h-5 rounded-full border-2 border-zed-primary border-t-transparent animate-spin" />
-              <span className="text-zed-foreground-secondary">Confirming with Stripe...</span>
+              <span className="text-zed-foreground-secondary">
+                Confirming with {isDpo ? 'DPO Pay' : 'Stripe'}...
+              </span>
             </div>
           </div>
         </div>
@@ -104,6 +112,7 @@ function PaymentSuccessContent() {
     return null
   }
 
+  const gatewayLabel = isDpo ? 'DPO Pay' : 'Stripe'
   const targetLabel = type === 'voter' ? 'Voting Arena' : ideaId ? 'Your Idea' : 'Dashboard'
   const targetHref = type === 'voter'
     ? `/vote/${competitionId}`
@@ -135,9 +144,13 @@ function PaymentSuccessContent() {
 
         <div className="flex flex-col gap-3 mb-8 max-w-xs mx-auto">
           <div className="flex items-center gap-3 text-sm bg-white/5 rounded-xl px-4 py-3">
-            <ShieldCheck size={18} className={syncStatus.stripe ? 'text-zed-success' : 'text-zed-foreground-secondary'} />
-            <span className={syncStatus.stripe ? 'text-zed-success font-bold' : 'text-zed-foreground-secondary'}>
-              {syncStatus.stripe ? 'Confirmed by Stripe' : 'Waiting for Stripe...'}
+            {isDpo ? (
+              <Smartphone size={18} className={syncStatus.gateway ? 'text-zed-success' : 'text-zed-foreground-secondary'} />
+            ) : (
+              <ShieldCheck size={18} className={syncStatus.gateway ? 'text-zed-success' : 'text-zed-foreground-secondary'} />
+            )}
+            <span className={syncStatus.gateway ? 'text-zed-success font-bold' : 'text-zed-foreground-secondary'}>
+              {syncStatus.gateway ? `Confirmed by ${gatewayLabel}` : `Waiting for ${gatewayLabel}...`}
             </span>
           </div>
           <div className="flex items-center gap-3 text-sm bg-white/5 rounded-xl px-4 py-3">
