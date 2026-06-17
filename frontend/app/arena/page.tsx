@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Trophy, Users, Clock, ArrowRight, Flame, TrendingUp, Award, Star } from "lucide-react"
 import Layout from "../components/Layout"
+import AppearanceSettings from "../components/AppearanceSettings"
 
 interface Competition {
   id: string; title: string; description: string
@@ -113,19 +114,22 @@ export default function ArenaPage() {
                 </h2>
                 <p style={{ color: "var(--text-secondary)" }}>Join these exciting challenges and win prizes</p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {filters.map(f => (
-                  <button
-                    key={f}
-                    onClick={() => setActiveFilter(f)}
-                    className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
-                    style={{
-                      backgroundColor: activeFilter === f ? "var(--filter-active-bg)" : "var(--filter-inactive-bg)",
-                      color: activeFilter === f ? "var(--filter-active-text)" : "var(--filter-inactive-text)",
-                    }}>
-                    {f.charAt(0).toUpperCase() + f.slice(1)}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2">
+                <div className="flex flex-wrap gap-2">
+                  {filters.map(f => (
+                    <button
+                      key={f}
+                      onClick={() => setActiveFilter(f)}
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
+                      style={{
+                        backgroundColor: activeFilter === f ? "var(--filter-active-bg)" : "var(--filter-inactive-bg)",
+                        color: activeFilter === f ? "var(--filter-active-text)" : "var(--filter-inactive-text)",
+                      }}>
+                      {f.charAt(0).toUpperCase() + f.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <AppearanceSettings />
               </div>
             </div>
 

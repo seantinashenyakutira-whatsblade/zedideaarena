@@ -7,7 +7,11 @@ import { useTheme } from "../context/ThemeProvider"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
-  const { resolved, toggle } = useTheme()
+  const { resolved, setMode } = useTheme()
+
+  const handleToggle = () => {
+    setMode(resolved === "dark" ? "light" : "dark")
+  }
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -72,7 +76,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             {/* Theme Toggle */}
             <button
-              onClick={toggle}
+              onClick={handleToggle}
               className="p-2 rounded-lg transition-all duration-300"
               style={{
                 color: "var(--text-secondary)",
@@ -154,7 +158,7 @@ export default function Navbar() {
 
             {/* Mobile theme toggle */}
             <button
-              onClick={toggle}
+              onClick={handleToggle}
               className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-300"
               style={{ color: "var(--text-secondary)" }}
             >

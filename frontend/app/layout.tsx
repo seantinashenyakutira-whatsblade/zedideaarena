@@ -20,8 +20,9 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                var theme = localStorage.getItem('zedidea-theme');
-                if (!theme) {
+                var stored = localStorage.getItem('zedidea-theme');
+                var theme = stored || 'system';
+                if (theme === 'system') {
                   theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
                 }
                 document.documentElement.setAttribute('data-theme', theme);
