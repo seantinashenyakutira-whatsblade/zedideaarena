@@ -12,41 +12,41 @@ const config: Config = {
         sans: ['Plus Jakarta Sans', 'sans-serif'],
       },
       colors: {
-        // ZedIdeaArena Dark Mode Palette
+        // ZedIdeaArena Light Mode Palette
         zed: {
-          background: '#050505',
-          'background-light': '#0B0B1A',
-          foreground: '#FFFFFF',
-          'foreground-secondary': '#9CA3AF',
+          background: '#F8F8FC',
+          'background-light': '#FFFFFF',
+          foreground: '#0F172A',
+          'foreground-secondary': '#64748B',
           primary: '#4F46E5', // Indigo
           'primary-dark': '#3730A3',
           accent: '#9333EA', // Purple
           'accent-dark': '#6B21A8',
-          success: '#10B981', // Neon Matrix Green
-          surface: 'rgba(255, 255, 255, 0.05)',
-          'surface-hover': 'rgba(255, 255, 255, 0.08)',
-          border: 'rgba(255, 255, 255, 0.1)',
-          'border-hover': 'rgba(255, 255, 255, 0.15)',
+          success: '#10B981', // Green
+          surface: 'rgba(15, 23, 42, 0.05)',
+          'surface-hover': 'rgba(15, 23, 42, 0.08)',
+          border: 'rgba(15, 23, 42, 0.1)',
+          'border-hover': 'rgba(15, 23, 42, 0.15)',
         },
       },
       backgroundColor: {
         zed: {
-          background: '#050505',
-          'background-light': '#0B0B1A',
-          surface: 'rgba(255, 255, 255, 0.05)',
-          'surface-hover': 'rgba(255, 255, 255, 0.08)',
+          background: '#F8F8FC',
+          'background-light': '#FFFFFF',
+          surface: 'rgba(15, 23, 42, 0.05)',
+          'surface-hover': 'rgba(15, 23, 42, 0.08)',
         },
       },
       textColor: {
         zed: {
-          foreground: '#FFFFFF',
-          'foreground-secondary': '#9CA3AF',
+          foreground: '#0F172A',
+          'foreground-secondary': '#64748B',
         },
       },
       borderColor: {
         zed: {
-          border: 'rgba(255, 255, 255, 0.1)',
-          'border-hover': 'rgba(255, 255, 255, 0.15)',
+          border: 'rgba(15, 23, 42, 0.1)',
+          'border-hover': 'rgba(15, 23, 42, 0.15)',
         },
       },
       borderRadius: {
@@ -57,10 +57,10 @@ const config: Config = {
         'zed-pill': '9999px',
       },
       boxShadow: {
-        'zed-glow-primary': '0 10px 25px -5px rgba(79, 70, 229, 0.4)',
-        'zed-glow-accent': '0 10px 25px -5px rgba(147, 51, 234, 0.4)',
-        'zed-glow-success': '0 10px 25px -5px rgba(16, 185, 129, 0.4)',
-        'zed-glow-sm': '0 5px 15px -3px rgba(79, 70, 229, 0.2)',
+        'zed-glow-primary': '0 10px 25px -5px rgba(79, 70, 229, 0.3)',
+        'zed-glow-accent': '0 10px 25px -5px rgba(147, 51, 234, 0.3)',
+        'zed-glow-success': '0 10px 25px -5px rgba(16, 185, 129, 0.3)',
+        'zed-glow-sm': '0 5px 15px -3px rgba(79, 70, 229, 0.15)',
       },
       backdropBlur: {
         'zed-xl': 'blur(40px)',

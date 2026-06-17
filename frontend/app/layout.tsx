@@ -60,20 +60,20 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark bg-zed-background">
+    <html lang="en" className="bg-background">
       <head>
-        <meta name="theme-color" content="#050505" />
+        <meta name="theme-color" content="#F8F8FC" />
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <script dangerouslySetInnerHTML={{
           __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}`
         }} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="ZedIdeaArena" />
         <link rel="apple-touch-icon" href="/apple-icon.png" />
       </head>
-      <body className={`${jakarta.className} font-sans antialiased bg-zed-background text-zed-foreground`}>
+      <body className={`${jakarta.className} font-sans antialiased bg-background text-foreground`}>
         <JsonLd data={organizationSchema()} id="organization-schema" />
         <JsonLd data={websiteSchema()} id="website-schema" />
         <JsonLd data={webApplicationSchema()} id="webapplication-schema" />
@@ -86,7 +86,7 @@ export default function RootLayout({
           <RoutePrefetcher />
         </AuthProvider>
         <AdScript />
-        <Toaster position="bottom-center" toastOptions={{ style: { background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }, className: 'text-xs font-bold' }} />
+        <Toaster position="bottom-center" toastOptions={{ style: { background: '#FFFFFF', border: '1px solid rgba(15,23,42,0.1)', color: '#0F172A' }, className: 'text-xs font-bold' }} />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
