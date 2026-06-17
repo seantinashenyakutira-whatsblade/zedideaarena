@@ -52,8 +52,17 @@ function PaymentContent() {
           return
         }
 
-        if (methodsRes.status === 'fulfilled') {
-          setMethodGroups(methodsRes.value.data || [])
+        if (methodsRes.status === 'fulfilled' && methodsRes.value.data?.length) {
+          setMethodGroups(methodsRes.value.data)
+        } else {
+          setMethodGroups([
+            { id: 'cards', name: 'Credit / Debit Cards', methods: [{ id: 'card', name: 'Visa / Mastercard', icon: 'CreditCard', provider: 'stripe' }] },
+            { id: 'mobile_money', name: 'Mobile Money', methods: [
+              { id: 'airtel', name: 'Airtel Money', icon: 'Smartphone', provider: 'dpo' },
+              { id: 'mtn', name: 'MTN Mobile Money', icon: 'Smartphone', provider: 'dpo' },
+              { id: 'm-pesa', name: 'M-Pesa', icon: 'Smartphone', provider: 'dpo' },
+            ]},
+          ])
         }
       } catch {
         setError('Failed to load payment information.')
