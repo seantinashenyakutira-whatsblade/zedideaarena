@@ -18,11 +18,11 @@ function PaymentSuccessContent() {
   const [syncStatus, setSyncStatus] = useState({ gateway: false, database: false })
 
   const sessionId = searchParams.get('session_id')
-  const transactionRef = searchParams.get('transaction_ref')
+  const transactionRef = searchParams.get('transaction_ref') || searchParams.get('TransactionToken')
   const competitionId = searchParams.get('competitionId')
   const ideaId = searchParams.get('ideaId')
   const type = searchParams.get('type')
-  const network = searchParams.get('network') || 'stripe'
+  const network = searchParams.get('network') || (searchParams.get('TransactionToken') ? 'dpo' : 'stripe')
 
   const isDpo = network === 'dpo' || !!transactionRef
 

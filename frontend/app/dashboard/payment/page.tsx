@@ -39,14 +39,24 @@ function PaymentContent() {
 
     const fetchData = async () => {
       try {
-        const [compRes, methodsRes] = await Promise.all([
+        const [compRes, methodsRes] = await Promise.allSettled([
           api.get(`/competitions/${competitionId}`),
           api.get('/payments/methods'),
         ])
-        setCompetition(compRes.data || compRes)
-        setMethodGroups(methodsRes.data || [])
+
+        if (compRes.status === 'fulfilled') {
+          setCompetition(compRes.value.data || compRes.value)
+        } else {
+          setError('Failed to load competition information.')
+          setLoading(false)
+          return
+        }
+
+        if (methodsRes.status === 'fulfilled') {
+          setMethodGroups(methodsRes.value.data || [])
+        }
       } catch {
-        setError('Failed to load payment information. Please go back and try again.')
+        setError('Failed to load payment information.')
       } finally {
         setLoading(false)
       }
