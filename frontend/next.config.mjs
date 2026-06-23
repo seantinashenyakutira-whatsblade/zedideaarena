@@ -23,7 +23,7 @@ const nextConfig = {
           {
             key: 'Content-Security-Policy',
             value: [
-              "default-src 'self'",
+              "default-src 'self' https://zedideaarena.com",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://onesignal.com https://cdn.onesignal.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google-analytics.com https://va.vercel-scripts.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://images.unsplash.com https://img.youtube.com https://*.googlesyndication.com https://*.googleusercontent.com",

@@ -5,7 +5,7 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000,https://zedideaarena.com,https://hub.zedideaarena.com').split(',').map(s => s.trim());
+const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000,https://zedideaarena.com,https://www.zedideaarena.com,https://hub.zedideaarena.com').split(',').map(s => s.trim());
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
