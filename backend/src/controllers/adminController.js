@@ -142,6 +142,28 @@ const getAdminStats = async (req, res) => {
       .select('*', { count: 'exact', head: true })
       .eq('status', 'open');
 
+    // Payment stats
+    const { count: totalPaymentsCount } = await supabase
+      .from('payments')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: completedPaymentsCount } = await supabase
+      .from('payments')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['completed', 'succeeded']);
+
+    const { count: pendingPaymentsCount } = await supabase
+      .from('payments')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+
+    const { data: revenueData } = await supabase
+      .from('payments')
+      .select('amount_cents')
+      .in('status', ['completed', 'succeeded']);
+
+    const totalRevenueCents = (revenueData || []).reduce((sum, p) => sum + (p.amount_cents || 0), 0);
+
     // Prize distribution breakdown
     const prizeDistribution = [
       { position: 1, label: '1st Place', share: 0.5, icon: 'trophy', amount_cents: Math.round(prizePoolCents * 0.5) },
@@ -158,6 +180,10 @@ const getAdminStats = async (req, res) => {
         competitions: competitionsCount || 0,
         totalPrizePoolCents: prizePoolCents,
         votes: votesCount || 0,
+        totalPayments: totalPaymentsCount || 0,
+        completedPayments: completedPaymentsCount || 0,
+        pendingPayments: pendingPaymentsCount || 0,
+        totalRevenueCents,
         prizeDistribution,
         pending: {
           ideas: pendingIdeasCount || 0,
@@ -719,6 +745,130 @@ function sendCSV(res, filename, headers, rows) {
   res.send(csv);
 }
 
+const getAllPayments = async (req, res) => {
+  try {
+    const { status, type, provider, search, from, to, page = 1, limit = 50 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    let query = supabase
+      .from('payments')
+      .select(`
+        *,
+        users:user_id ( full_name, email, phone, country )
+      `, { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + parseInt(limit) - 1);
+
+    if (status) query = query.eq('status', status);
+    if (type) query = query.eq('type', type);
+    if (provider) query = query.eq('provider', provider);
+    if (search) {
+      query = query.or(`transaction_ref.ilike.%${search}%,users.email.ilike.%${search}%,users.full_name.ilike.%${search}%`);
+    }
+    if (from) query = query.gte('created_at', from);
+    if (to) query = query.lte('created_at', to);
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    res.json({
+      status: 'success',
+      data: data || [],
+      total: count || 0,
+      page: parseInt(page),
+      limit: parseInt(limit),
+    });
+  } catch (error) {
+    console.error('getAllPayments error:', error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+const refundPayment = async (req, res) => {
+  const { id } = req.params;
+  const { amount, reason } = req.body;
+
+  try {
+    const { data: payment, error: fetchError } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !payment) {
+      return res.status(404).json({ status: 'error', message: 'Payment not found' });
+    }
+
+    if (payment.status !== 'completed' && payment.status !== 'succeeded') {
+      return res.status(400).json({ status: 'error', message: 'Payment cannot be refunded' });
+    }
+
+    const service = global.__paymentService;
+    if (!service) {
+      return res.status(503).json({ status: 'error', message: 'Payment service unavailable' });
+    }
+
+    const result = await service.refundPayment({
+      transactionRef: payment.transaction_ref,
+      amount: amount || payment.amount_cents,
+      reason: reason || 'Admin refund',
+      provider: payment.provider,
+    });
+
+    if (!result.success) {
+      return res.status(500).json({ status: 'error', message: result.error });
+    }
+
+    await logAdminAction(req.user.uid, 'payment_refunded', id, 'payment', reason || 'Admin initiated refund');
+
+    res.json({ status: 'success', message: 'Payment refunded successfully' });
+  } catch (error) {
+    console.error('refundPayment error:', error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+const exportPaymentsCSV = async (req, res) => {
+  try {
+    const { status, type, from, to } = req.query;
+
+    let query = supabase
+      .from('payments')
+      .select(`
+        *,
+        users:user_id ( full_name, email, phone, country )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (status) query = query.eq('status', status);
+    if (type) query = query.eq('type', type);
+    if (from) query = query.gte('created_at', from);
+    if (to) query = query.lte('created_at', to);
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    sendCSV(res, 'payments-export.csv',
+      [
+        'ID', 'Transaction Ref', 'User', 'Email', 'Phone', 'Country',
+        'Type', 'Provider', 'Network', 'Amount (cents)', 'Status',
+        'Competition ID', 'Idea ID', 'Created At',
+      ],
+      (data || []).map(p => [
+        p.id, p.transaction_ref, p.users?.full_name || '', p.users?.email || '',
+        p.users?.phone || '', p.users?.country || '',
+        p.type, p.provider, p.network_id, p.amount_cents, p.status,
+        p.competition_id, p.idea_id, p.created_at,
+      ].map(escapeCSV))
+    );
+  } catch (error) {
+    console.error('exportPaymentsCSV error:', error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
 module.exports = {
   createCompetition,
   getCompetitions,
@@ -737,7 +887,10 @@ module.exports = {
   getUserDetail,
   getAllWithdrawals,
   updateWithdrawalStatus,
+  getAllPayments,
+  refundPayment,
   exportIdeasCSV,
   exportUsersCSV,
   exportCompetitionResultsCSV,
+  exportPaymentsCSV,
 };

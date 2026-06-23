@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePageChannel } from '@/hooks/usePageChannel'
-import { Users, FileText, Trophy, Vote, DollarSign, AlertCircle, Loader2, ArrowRight, ShieldCheck, Medal, Crown, Award, Bell, FileWarning, UserX, FileCheck } from 'lucide-react'
+import { Users, FileText, Trophy, Vote, DollarSign, AlertCircle, Loader2, ArrowRight, ShieldCheck, Medal, Crown, Award, Bell, FileWarning, UserX, FileCheck, CreditCard } from 'lucide-react'
 import api from '@/lib/api'
 import { adminService } from '@/services/core'
 import Link from 'next/link'
@@ -69,6 +69,8 @@ export default function AdminOverview() {
     { label: 'Total Votes', value: stats?.votes ?? '—', icon: Vote, color: 'text-green-400', href: '/dashboard/admin/analytics' },
     { label: 'Prize Pool', value: `$${((stats?.totalPrizePoolCents ?? 0) / 100).toLocaleString()}`, icon: DollarSign, color: 'text-purple-400', href: '/dashboard/admin/analytics' },
     { label: 'Paid Ideas', value: stats?.paidIdeas ?? '—', icon: ShieldCheck, color: 'text-zed-success', href: '/dashboard/admin/ideas' },
+    { label: 'Payments', value: stats?.totalPayments ?? '—', icon: CreditCard, color: 'text-zed-accent', href: '/dashboard/admin/payments' },
+    { label: 'Revenue', value: `$${((stats?.totalRevenueCents ?? 0) / 100).toLocaleString()}`, icon: DollarSign, color: 'text-green-400', href: '/dashboard/admin/payments' },
   ]
 
   const actionTypeLabels: Record<string, { label: string; color: string }> = {

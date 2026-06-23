@@ -37,4 +37,15 @@ export const adminService = {
   deleteIdea: (id: string) => api.delete(`/admin/ideas/${id}`),
   getAnalytics: () => api.get('/admin/analytics'),
   getAuditLog: () => api.get('/admin/audit-log'),
+  getPayments: (params?: { status?: string; type?: string; provider?: string; search?: string; page?: number; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.type) qs.set('type', params.type);
+    if (params?.provider) qs.set('provider', params.provider);
+    if (params?.search) qs.set('search', params.search);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return api.get(`/admin/payments${qs.toString() ? `?${qs.toString()}` : ''}`);
+  },
+  refundPayment: (id: string, data?: { amount?: number; reason?: string }) => api.post(`/admin/payments/${id}/refund`, data || {}),
 };

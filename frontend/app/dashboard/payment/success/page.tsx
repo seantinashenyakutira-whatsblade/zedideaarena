@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { CheckCircle2, Loader2, Trophy, Vote, ArrowRight, XCircle, ShieldCheck, Database, ExternalLink, Smartphone } from 'lucide-react'
+import { Loader2, Trophy, Vote, ArrowRight, Smartphone } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
@@ -17,40 +17,38 @@ function PaymentSuccessContent() {
   const [payment, setPayment] = useState<any>(null)
   const [syncStatus, setSyncStatus] = useState({ gateway: false, database: false })
 
-  const sessionId = searchParams.get('session_id')
   const transactionRef = searchParams.get('transaction_ref') || searchParams.get('TransactionToken')
   const competitionId = searchParams.get('competitionId')
   const ideaId = searchParams.get('ideaId')
   const type = searchParams.get('type')
-  const network = searchParams.get('network') || (searchParams.get('TransactionToken') ? 'dpo' : 'stripe')
-
-  const isDpo = network === 'dpo' || !!transactionRef
 
   useEffect(() => {
-    if (!sessionId && !transactionRef) {
+    if (!transactionRef) {
       setStatus('error')
       return
     }
 
-    const verifyWithRetry = async (maxAttempts = 10) => {
+    const verifyWithRetry = async (maxAttempts = 15) => {
       for (let i = 0; i < maxAttempts; i++) {
         try {
           const params = new URLSearchParams()
-          if (sessionId) params.append('session_id', sessionId)
-          if (transactionRef) params.append('transaction_ref', transactionRef)
-          if (competitionId) params.append('competition_id', competitionId)
-          if (type) params.append('type', type)
+          params.append('transaction_ref', transactionRef)
 
-          const res: any = await api.get(`/payments/verify?${params}`)
-          if (res.verified) {
+          const res: any = await api.get(`/payments/status?${params}`)
+          if (res.status === 'completed' && res.payment) {
             setPayment(res.payment)
-            setSyncStatus({ gateway: true, database: !!res.payment?.id || !res.pendingDb })
+            setSyncStatus({ gateway: true, database: true })
             setStatus('verified')
             await refreshProfile()
             toast.success(type === 'voter' ? 'Voter registration confirmed!' : 'Entry fee payment confirmed!', { duration: 5000 })
             return
           }
-          if (res.gateway_status === 'paid') {
+          if (res.status === 'failed' || res.status === 'expired' || res.status === 'cancelled') {
+            setStatus('error')
+            toast.error('Payment failed. Please try again.')
+            return
+          }
+          if (res.status === 'completed') {
             setSyncStatus(prev => ({ ...prev, gateway: true }))
           }
         } catch { /* retry */ }
@@ -63,7 +61,7 @@ function PaymentSuccessContent() {
       toast.error('Payment verification timed out. Please check your payment history.')
     }
     verifyWithRetry()
-  }, [sessionId, transactionRef, competitionId, type])
+  }, [transactionRef, competitionId, type])
 
   useEffect(() => {
     if (status !== 'verified') return
@@ -95,7 +93,7 @@ function PaymentSuccessContent() {
             <div className="flex items-center gap-3 text-sm">
               <div className="w-5 h-5 rounded-full border-2 border-zed-primary border-t-transparent animate-spin" />
               <span className="text-zed-foreground-secondary">
-                Confirming with {isDpo ? 'DPO Pay' : 'Stripe'}...
+                Confirming payment...
               </span>
             </div>
           </div>
@@ -112,7 +110,6 @@ function PaymentSuccessContent() {
     return null
   }
 
-  const gatewayLabel = isDpo ? 'DPO Pay' : 'Stripe'
   const targetLabel = type === 'voter' ? 'Voting Arena' : ideaId ? 'Your Idea' : 'Dashboard'
   const targetHref = type === 'voter'
     ? `/vote/${competitionId}`
@@ -144,17 +141,13 @@ function PaymentSuccessContent() {
 
         <div className="flex flex-col gap-3 mb-8 max-w-xs mx-auto">
           <div className="flex items-center gap-3 text-sm bg-white/5 rounded-xl px-4 py-3">
-            {isDpo ? (
-              <Smartphone size={18} className={syncStatus.gateway ? 'text-zed-success' : 'text-zed-foreground-secondary'} />
-            ) : (
-              <ShieldCheck size={18} className={syncStatus.gateway ? 'text-zed-success' : 'text-zed-foreground-secondary'} />
-            )}
+            <Smartphone size={18} className={syncStatus.gateway ? 'text-zed-success' : 'text-zed-foreground-secondary'} />
             <span className={syncStatus.gateway ? 'text-zed-success font-bold' : 'text-zed-foreground-secondary'}>
-              {syncStatus.gateway ? `Confirmed by ${gatewayLabel}` : `Waiting for ${gatewayLabel}...`}
+              {syncStatus.gateway ? 'Confirmed by PawaPay' : 'Waiting for PawaPay...'}
             </span>
           </div>
           <div className="flex items-center gap-3 text-sm bg-white/5 rounded-xl px-4 py-3">
-            <Database size={18} className={syncStatus.database ? 'text-zed-success' : 'text-zed-foreground-secondary'} />
+            <Smartphone size={18} className={syncStatus.database ? 'text-zed-success' : 'text-zed-foreground-secondary'} />
             <span className={syncStatus.database ? 'text-zed-success font-bold' : 'text-zed-foreground-secondary'}>
               {syncStatus.database ? 'Saved to Database' : 'Saving...'}
             </span>

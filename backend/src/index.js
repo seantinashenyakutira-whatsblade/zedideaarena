@@ -17,7 +17,15 @@ app.use(cors({
 }));
 
 const { supabase } = require('./config/supabase');
-const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+
+const PaymentService = require('./services/payments/PaymentService');
+const PawapayProvider = require('./services/payments/providers/PawapayProvider');
+
+const paymentService = new PaymentService();
+const pawapay = new PawapayProvider();
+paymentService.registerProvider(pawapay);
+
+global.__paymentService = paymentService;
 
 app.get('/health', (req, res) => {
   res.json({
@@ -25,7 +33,7 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     services: {
       supabase: process.env.SUPABASE_URL ? 'configured' : 'missing_credentials',
-      stripe: stripe ? 'initialized' : 'missing_credentials',
+      payments: paymentService.getAvailableProviders().length > 0 ? 'initialized' : 'no_providers',
     },
   });
 });
@@ -36,7 +44,7 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     services: {
       supabase: process.env.SUPABASE_URL ? 'configured' : 'missing_credentials',
-      stripe: stripe ? 'initialized' : 'missing_credentials',
+      payments: paymentService.getAvailableProviders().length > 0 ? 'initialized' : 'no_providers',
     },
   });
 });

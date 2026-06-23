@@ -45,3 +45,7 @@ frontend/tsconfig.tsbuildinfo
 .vercel
 .env*
 test-artifacts/
+
+testsprite_tests/tmp/config.json
+coverage/
+.env.test

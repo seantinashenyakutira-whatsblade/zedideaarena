@@ -3,14 +3,17 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { paymentService } from '@/services/payment'
+import { PaymentMethodIcon } from '@/components/payment/PaymentMethodIcon'
 import { Loader2, ShieldCheck, CreditCard, Smartphone, ArrowLeft, ArrowRight, Trophy, Calendar, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
+import { useAuth } from '@/hooks/useAuth'
 import { toast } from 'sonner'
 
 function PaymentContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { profile } = useAuth()
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
   const [competition, setCompetition] = useState<any | null>(null)
@@ -39,9 +42,10 @@ function PaymentContent() {
 
     const fetchData = async () => {
       try {
+        const country = profile?.country || ''
         const [compRes, methodsRes] = await Promise.allSettled([
           api.get(`/competitions/${competitionId}`),
-          api.get('/payments/methods'),
+          api.get(`/payments/methods${country ? `?country=${country}` : ''}`),
         ])
 
         if (compRes.status === 'fulfilled') {
@@ -54,15 +58,6 @@ function PaymentContent() {
 
         if (methodsRes.status === 'fulfilled' && methodsRes.value.data?.length) {
           setMethodGroups(methodsRes.value.data)
-        } else {
-          setMethodGroups([
-            { id: 'cards', name: 'Credit / Debit Cards', methods: [{ id: 'card', name: 'Visa / Mastercard', icon: 'CreditCard', provider: 'stripe' }] },
-            { id: 'mobile_money', name: 'Mobile Money', methods: [
-              { id: 'airtel', name: 'Airtel Money', icon: 'Smartphone', provider: 'dpo' },
-              { id: 'mtn', name: 'MTN Mobile Money', icon: 'Smartphone', provider: 'dpo' },
-              { id: 'm-pesa', name: 'M-Pesa', icon: 'Smartphone', provider: 'dpo' },
-            ]},
-          ])
         }
       } catch {
         setError('Failed to load payment information.')
@@ -209,17 +204,11 @@ function PaymentContent() {
                           onChange={() => setSelectedNetwork(method.id)}
                           className="accent-[#4F46E5]"
                         />
-                        <div className="w-8 h-8 rounded-lg bg-zed-primary/20 flex items-center justify-center">
-                          {method.icon === 'CreditCard' ? (
-                            <CreditCard size={16} className="text-zed-primary" />
-                          ) : (
-                            <Smartphone size={16} className="text-zed-primary" />
-                          )}
-                        </div>
+                        <PaymentMethodIcon icon={method.icon} name={method.name} size={32} />
                         <div className="flex-1">
                           <span className="text-sm font-bold text-zed-foreground">{method.name}</span>
                           <span className="text-[10px] text-zed-foreground-secondary ml-2 uppercase">
-                            via {method.provider === 'stripe' ? 'Stripe' : 'DPO Pay'}
+                            {method.provider || 'PawaPay'}
                           </span>
                         </div>
                       </label>
@@ -270,11 +259,7 @@ function PaymentContent() {
             </button>
 
             <div className="mt-4 text-[11px] text-zed-foreground-secondary">
-              {selectedNetwork === 'card' ? (
-                <span>Secured by <strong>Stripe</strong></span>
-              ) : (
-                <span>Processed by <strong>DPO Pay</strong></span>
-              )}
+              <span>Powered by <strong>PawaPay</strong></span>
             </div>
           </>
         )}
