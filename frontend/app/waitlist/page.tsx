@@ -441,7 +441,7 @@ export default function WaitlistPage() {
                 items: [
                   'You have an idea that could change something',
                   'You want real feedback from a community',
-                  'You're looking for support and exposure',
+                  'You\u2019re looking for support and exposure',
                   'You believe your idea deserves a chance',
                 ],
               },

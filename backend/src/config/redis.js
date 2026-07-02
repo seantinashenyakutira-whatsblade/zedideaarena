@@ -3,8 +3,9 @@ const Redis = require('ioredis');
 let redisClient = null;
 
 const REDIS_URL = process.env.REDIS_URL;
+const REDIS_PLACEHOLDER = 'redis://default:password@host:port';
 
-if (REDIS_URL) {
+if (REDIS_URL && REDIS_URL !== REDIS_PLACEHOLDER) {
   redisClient = new Redis(REDIS_URL, {
     maxRetriesPerRequest: 3,
     retryStrategy(times) {

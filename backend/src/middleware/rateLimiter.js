@@ -1,20 +1,25 @@
 const rateLimit = require('express-rate-limit');
 const RedisStore = require('rate-limit-redis').default;
-const { getRedis, isRedisAvailable } = require('../config/redis');
+const { getRedis } = require('../config/redis');
 
-function createStore() {
-  if (process.env.REDIS_URL) {
+const REDIS_PLACEHOLDER = 'redis://default:password@host:port';
+
+function isRedisConfigured() {
+  return process.env.REDIS_URL && process.env.REDIS_URL !== REDIS_PLACEHOLDER;
+}
+
+function createStore(prefix) {
+  if (isRedisConfigured()) {
     const client = getRedis();
     if (client) {
       return new RedisStore({
+        prefix,
         sendCommand: (...args) => client.call(...args),
       });
     }
   }
   return undefined;
 }
-
-const store = createStore();
 
 const voteLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -24,7 +29,7 @@ const voteLimiter = rateLimit({
   message: { success: false, error: 'Too many votes. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
-  store,
+  store: createStore('rl:vote:'),
 });
 
 const ideaLimiter = rateLimit({
@@ -35,7 +40,7 @@ const ideaLimiter = rateLimit({
   message: { success: false, error: 'Too many idea submissions. Try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  store,
+  store: createStore('rl:idea:'),
 });
 
 const authLimiter = rateLimit({
@@ -46,7 +51,7 @@ const authLimiter = rateLimit({
   message: { success: false, error: 'Too many auth attempts. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  store,
+  store: createStore('rl:auth:'),
 });
 
 const forgotPasswordLimiter = rateLimit({
@@ -57,7 +62,7 @@ const forgotPasswordLimiter = rateLimit({
   message: { success: false, error: 'Too many password reset requests. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  store,
+  store: createStore('rl:forgotpwd:'),
 });
 
 module.exports = { voteLimiter, ideaLimiter, authLimiter, forgotPasswordLimiter };

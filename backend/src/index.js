@@ -75,6 +75,7 @@ app.use('/api/arena', require('./routes/arenaRoutes'));
 app.use('/api/ads', require('./routes/adsRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/notification-preferences', require('./routes/notificationPreferenceRoutes'));
+app.use('/api/waitlist', require('./routes/waitlistRoutes'));
 
 const { error: sendError } = require('./utils/response');
 
