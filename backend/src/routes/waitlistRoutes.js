@@ -2,12 +2,37 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
 
+const FREE_PASS_LIMIT = 50;
+
+// Get total waitlist count
+router.get('/count', async (req, res) => {
+  try {
+    const { count, error } = await supabase
+      .from('waitlist_signups')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      total: count || 0,
+      freePassLimit: FREE_PASS_LIMIT,
+      spotsRemaining: Math.max(0, FREE_PASS_LIMIT - (count || 0)),
+    });
+  } catch (error) {
+    console.error('Waitlist count error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Something went wrong',
+    });
+  }
+});
+
 // Waitlist signup endpoint
 router.post('/signup', async (req, res) => {
   try {
     const { name, email, interest } = req.body;
 
-    // Validation
     if (!name?.trim() || !email?.trim()) {
       return res.status(400).json({ 
         success: false, 
@@ -17,7 +42,6 @@ router.post('/signup', async (req, res) => {
 
     const normalizedEmail = email.trim().toLowerCase();
     
-    // Check if already on waitlist (duplicate prevention)
     const { data: existing } = await supabase
       .from('waitlist_signups')
       .select('email')
@@ -27,32 +51,44 @@ router.post('/signup', async (req, res) => {
     if (existing) {
       return res.status(200).json({ 
         success: true, 
-        message: 'You are already on the waitlist' 
+        message: 'You are already on the waitlist',
+        freePassEligible: false,
       });
     }
 
-    // Add to waitlist
     const { data, error } = await supabase
       .from('waitlist_signups')
       .insert([{
         name: name.trim(),
         email: normalizedEmail,
-        interest: interest || null
+        interest: interest || null,
       }])
       .select();
 
     if (error) throw error;
 
+    const { count } = await supabase
+      .from('waitlist_signups')
+      .select('*', { count: 'exact', head: true });
+
+    const totalCount = count || 0;
+    const freePassEligible = totalCount <= FREE_PASS_LIMIT;
+
     return res.status(201).json({
       success: true,
       message: 'You have been added to the waitlist',
-      data: data[0]
+      data: {
+        ...data[0],
+        freePassEligible,
+        freePassLimit: FREE_PASS_LIMIT,
+        totalCount,
+      },
     });
   } catch (error) {
     console.error('Waitlist signup error:', error);
     return res.status(500).json({
       success: false,
-      message: error.message || 'Something went wrong'
+      message: error.message || 'Something went wrong',
     });
   }
 });

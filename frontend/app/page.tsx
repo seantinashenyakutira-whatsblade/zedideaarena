@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, CheckCircle2, Mail, Sparkles, Users, Zap, Lightbulb } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Mail, Sparkles, Users, Zap, Lightbulb, Gift, Share2, Copy, Music2, Video, Camera, Facebook } from 'lucide-react'
 import api from '@/lib/api'
 
 const fadeUp = {
@@ -39,6 +39,21 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [countData, setCountData] = useState<{ total: number; freePassLimit: number; spotsRemaining: number } | null>(null)
+  const [loadingCount, setLoadingCount] = useState(true)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const res: any = await api.get('/waitlist/count')
+        if (res?.total !== undefined) setCountData(res)
+      } catch {} finally {
+        setLoadingCount(false)
+      }
+    }
+    fetchCount()
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -134,17 +149,21 @@ export default function HomePage() {
 
         <div className="relative z-10 w-full max-w-4xl mx-auto py-20">
           {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mb-8"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm">
-              <Sparkles size={16} style={{ color: '#6366F1' }} />
-              <span className="text-xs font-semibold text-white/70">The Arena Opens Soon</span>
-            </div>
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="mb-8 flex flex-wrap gap-3"
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm">
+                <Sparkles size={16} style={{ color: '#6366F1' }} />
+                <span className="text-xs font-semibold text-white/70">The Arena Opens Soon</span>
+              </div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-amber-500/20 bg-amber-500/10 backdrop-blur-sm">
+                <Gift size={16} className="text-amber-400" />
+                <span className="text-xs font-semibold text-amber-300">First 50 Contestants get a Free Pass</span>
+              </div>
+            </motion.div>
 
           {/* Headline */}
           <motion.h1
@@ -274,25 +293,106 @@ export default function HomePage() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.4 }}
-                  className="p-8 rounded-2xl border border-green-500/30 bg-green-500/5 text-center"
                 >
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.1, type: 'spring' }}
-                    className="mb-4 flex justify-center"
-                  >
-                    <CheckCircle2 size={48} className="text-green-400" />
-                  </motion.div>
-                  <h3 className="text-xl font-bold mb-2">You&apos;re on the list!</h3>
-                  <p className="text-sm text-white/60">
-                    We&apos;ll keep you updated before the arena opens. Check your email for updates.
-                  </p>
+                  <div className="p-8 rounded-2xl border border-green-500/30 bg-green-500/5 text-center mb-4">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.1, type: 'spring' }}
+                      className="mb-4 flex justify-center"
+                    >
+                      <CheckCircle2 size={48} className="text-green-400" />
+                    </motion.div>
+                    <h3 className="text-xl font-bold mb-2">You&apos;re on the list!</h3>
+                    <p className="text-sm text-white/60 mb-4">
+                      We&apos;ll keep you updated before the arena opens. Check your email for updates.
+                    </p>
+                    {countData && countData.total <= countData.freePassLimit && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20"
+                      >
+                        <Gift size={14} className="text-amber-400" />
+                        <span className="text-xs font-semibold text-amber-300">You&apos;ve earned a Free Pass!</span>
+                      </motion.div>
+                    )}
+                  </div>
+
+                  {/* Share / Referral */}
+                  <div className="text-center">
+                    <p className="text-xs text-white/40 mb-3">Tell a friend about the arena</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <motion.a
+                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent('I just joined the waitlist for ZedIdeaArena — the arena where ideas compete and builders get noticed. First 50 contestants get a free pass!')}&url=${encodeURIComponent('https://zedideaarena.com')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-xs font-medium flex items-center gap-1.5"
+                      >
+                        <Share2 size={14} /> Share on X
+                      </motion.a>
+                      <motion.button
+                        onClick={() => {
+                          navigator.clipboard.writeText('https://zedideaarena.com')
+                          setCopied(true)
+                          setTimeout(() => setCopied(false), 2000)
+                        }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-xs font-medium flex items-center gap-1.5"
+                      >
+                        <Copy size={14} /> {copied ? 'Copied!' : 'Copy Link'}
+                      </motion.button>
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </motion.div>
         </div>
+
+        {/* Live Counter */}
+        {!submitted && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1, duration: 0.6 }}
+            className="mt-10 max-w-lg"
+          >
+            {loadingCount ? (
+              <div className="flex items-center gap-2 text-xs text-white/40">
+                <div className="w-3 h-3 border border-white/20 border-t-white/60 rounded-full animate-spin" />
+                Loading...
+              </div>
+            ) : countData ? (
+              <div>
+                <div className="flex items-center justify-between text-xs text-white/50 mb-2">
+                  <span>Free Passes Claimed</span>
+                  <span className="font-semibold text-white/70">{Math.min(countData.total, countData.freePassLimit)} / {countData.freePassLimit}</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min((countData.total / countData.freePassLimit) * 100, 100)}%` }}
+                    transition={{ duration: 1, delay: 0.5 }}
+                    className="h-full rounded-full"
+                    style={{ background: countData.spotsRemaining > 0 ? 'linear-gradient(90deg,#6366F1,#22D3EE)' : '#ef4444' }}
+                  />
+                </div>
+                <p className="text-xs mt-2">
+                  {countData.spotsRemaining > 0 ? (
+                    <span className="text-amber-400 font-medium">Only {countData.spotsRemaining} spot{countData.spotsRemaining !== 1 ? 's' : ''} left!</span>
+                  ) : (
+                    <span className="text-red-400 font-medium">All 50 free passes have been claimed</span>
+                  )}
+                </p>
+              </div>
+            ) : null}
+          </motion.div>
+        )}
 
         {/* Scroll Indicator */}
         <motion.div className="absolute bottom-8 left-1/2 -translate-x-1/2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5, duration: 1 }}>
@@ -507,6 +607,52 @@ export default function HomePage() {
             >
               Join the Waitlist <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
             </button>
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* SOCIAL FOLLOW */}
+      <section className="py-20 px-6 relative overflow-hidden">
+        <FloatingOrb className="top-0 right-0 w-[400px] h-[400px]" color="rgba(99,102,241,0.05)" />
+        <motion.div {...fadeUp} className="max-w-4xl mx-auto relative z-10 text-center">
+          <motion.h2 {...fadeUp} className="text-3xl sm:text-4xl font-black mb-4">
+            Follow the <span className="gradient-text">Arena</span>
+          </motion.h2>
+          <motion.p {...fadeUp} className="text-sm text-white/50 mb-10 max-w-md mx-auto">
+            Stay updated on launch news, competitions, and community highlights.
+          </motion.p>
+          <motion.div {...fadeUp} className="flex flex-wrap justify-center gap-3">
+            {[
+              { key: 'x', label: 'X (Twitter)', url: 'https://x.com/WhatsbladeLLC', color: '#000' },
+              { key: 'youtube', label: 'YouTube', url: 'https://www.youtube.com/@Zedideaarena?sub_confirmation=1', color: '#FF0000' },
+              { key: 'instagram', label: 'Instagram', url: 'https://instagram.com/zedideaarena', color: '#E4405F' },
+              { key: 'facebook', label: 'Facebook', url: 'https://www.facebook.com/profile.php?id=61573631967617', color: '#1877F2' },
+              { key: 'tiktok', label: 'TikTok', url: 'https://tiktok.com/@zedideaarena', color: '#000' },
+              { key: 'email', label: 'Email', url: 'mailto:support@zedideaarena.com', color: '#6366F1' },
+            ].map((platform, i) => (
+              <motion.a
+                key={platform.key}
+                href={platform.url}
+                target={platform.key === 'email' ? undefined : '_blank'}
+                rel={platform.key === 'email' ? undefined : 'noopener noreferrer'}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 border border-white/10"
+                style={{ background: `${platform.color}15`, borderColor: `${platform.color}30`, color: platform.color }}
+              >
+                {platform.key === 'youtube' && <Video size={16} />}
+                {platform.key === 'instagram' && <Camera size={16} />}
+                {platform.key === 'facebook' && <Facebook size={16} />}
+                {platform.key === 'tiktok' && <Music2 size={16} />}
+                {platform.key === 'email' && <Mail size={16} />}
+                {platform.key === 'x' && <span className="text-xs font-bold">X</span>}
+                {platform.label}
+              </motion.a>
+            ))}
           </motion.div>
         </motion.div>
       </section>
