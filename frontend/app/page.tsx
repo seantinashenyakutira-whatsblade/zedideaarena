@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, CheckCircle2, Mail, Sparkles, Users, Zap, Lightbulb, Gift, Share2, Copy, Music2, Video, Camera, Facebook } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Mail, Sparkles, Users, Zap, Lightbulb, Gift, Share2, Copy, Music2, Video, Camera, Facebook, XIcon, Youtube } from 'lucide-react'
+import VoiceNote from '@/components/VoiceNote'
 import api from '@/lib/api'
 
 const fadeUp = {
@@ -568,7 +569,7 @@ export default function HomePage() {
                 <ul className="space-y-3">
                   {section.items.map((item, j) => (
                     <li key={j} className="flex items-start gap-3 text-white/70">
-                      <span className="text-zed-primary mt-1">\u2713</span>
+                      <CheckCircle2 size={16} className="text-zed-primary mt-0.5 flex-shrink-0" />
                       <span>{item}</span>
                     </li>
                   ))}
@@ -576,6 +577,103 @@ export default function HomePage() {
               </motion.div>
             ))}
           </div>
+        </motion.div>
+      </section>
+
+      <SectionDivider />
+
+      {/* TRUST & SAFETY */}
+      <section className="py-24 px-6 relative overflow-hidden">
+        <FloatingOrb className="top-1/2 right-0 w-[500px] h-[500px]" color="rgba(34,211,238,0.05)" />
+        <motion.div {...fadeUp} className="max-w-4xl mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <motion.h2 {...fadeUp} className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight mb-6">
+              Trust &amp; <span className="gradient-text">Safety</span>
+            </motion.h2>
+            <motion.p {...fadeUp} className="text-lg text-white/60 max-w-2xl mx-auto leading-relaxed">
+              We&apos;re building a fair, transparent arena where every idea gets a real chance.
+            </motion.p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                title: 'Idea Ownership',
+                desc: 'You retain 100% ownership of your idea. We never claim rights to your intellectual property.',
+              },
+              {
+                title: 'Blockchain Timestamps',
+                desc: 'Every submission is cryptographically timestamped, proving when your idea was first entered.',
+              },
+              {
+                title: 'Duplicate Detection',
+                desc: 'Our system checks for duplicate submissions to ensure every idea gets fair consideration.',
+              },
+              {
+                title: 'Plagiarism Checks',
+                desc: 'All entries are screened against public databases to maintain integrity and originality.',
+              },
+              {
+                title: 'Report System',
+                desc: 'Community members can flag inappropriate content. Our team reviews every report within 24 hours.',
+              },
+              {
+                title: 'Clear Attribution',
+                desc: 'Winners are publicly attributed. Every vote is tracked, verified, and publicly auditable.',
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="p-6 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
+                style={{ background: 'rgba(255,255,255,0.03)' }}
+              >
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366F1' }}>
+                  <CheckCircle2 size={18} />
+                </div>
+                <h3 className="text-base font-bold mb-2">{item.title}</h3>
+                <p className="text-sm text-white/60 leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-10 p-6 rounded-2xl border border-white/10 text-center"
+            style={{ background: 'rgba(99,102,241,0.05)' }}
+          >
+            <p className="text-sm text-white/60 max-w-2xl mx-auto">
+              Have a concern? Contact our safety team at{' '}
+              <a href="mailto:safety@zedideaarena.com" className="text-zed-primary hover:underline font-medium">
+                safety@zedideaarena.com
+              </a>
+            </p>
+          </motion.div>
+        </motion.div>
+      </section>
+
+      <SectionDivider />
+
+      {/* VOICE NOTE FROM THE FOUNDER */}
+      <section className="py-24 px-6 relative overflow-hidden">
+        <FloatingOrb className="bottom-0 left-0 w-[500px] h-[500px]" color="rgba(99,102,241,0.05)" />
+        <motion.div {...fadeUp} className="max-w-3xl mx-auto relative z-10 text-center">
+          <motion.h2 {...fadeUp} className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight mb-6">
+            A message from the <span className="gradient-text">founder</span>
+          </motion.h2>
+          <motion.p {...fadeUp} className="text-base sm:text-lg text-white/60 mb-10 max-w-xl mx-auto leading-relaxed">
+            Why I&apos;m building this and what it means for you.
+          </motion.p>
+          <VoiceNote
+            src="/audio/founder-message.mp3"
+            title="Why I built ZedIdeaArena"
+            description="A personal message from our founder about the vision behind the arena."
+          />
         </motion.div>
       </section>
 

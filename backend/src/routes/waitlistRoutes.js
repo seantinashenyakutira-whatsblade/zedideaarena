@@ -31,7 +31,7 @@ router.get('/count', async (req, res) => {
 // Waitlist signup endpoint
 router.post('/signup', async (req, res) => {
   try {
-    const { name, email, interest } = req.body;
+    const { name, email, interest, userType, interests, source, followedChannels } = req.body;
 
     if (!name?.trim() || !email?.trim()) {
       return res.status(400).json({ 
@@ -56,13 +56,26 @@ router.post('/signup', async (req, res) => {
       });
     }
 
+    const metadata = {
+      ...(userType && { user_type: userType }),
+      ...(interests && Array.isArray(interests) && { interests }),
+      ...(source && { source }),
+      ...(followedChannels && Array.isArray(followedChannels) && { followed_channels: followedChannels }),
+    };
+
+    const insertData = {
+      name: name.trim(),
+      email: normalizedEmail,
+      interest: interest || null,
+    };
+
+    if (Object.keys(metadata).length > 0) {
+      insertData.metadata = metadata;
+    }
+
     const { data, error } = await supabase
       .from('waitlist_signups')
-      .insert([{
-        name: name.trim(),
-        email: normalizedEmail,
-        interest: interest || null,
-      }])
+      .insert([insertData])
       .select();
 
     if (error) throw error;
