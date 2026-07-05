@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, CheckCircle2, Mail, Sparkles, Users, Zap, Lightbulb, Gift, Share2, Copy, Music2, Video, Camera, Facebook, XIcon, Youtube } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Mail, Sparkles, Users, Zap, Lightbulb, Gift, Share2, Copy, Facebook } from 'lucide-react'
 import VoiceNote from '@/components/VoiceNote'
 import api from '@/lib/api'
 
@@ -742,12 +742,12 @@ export default function HomePage() {
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 border border-white/10"
                 style={{ background: `${platform.color}15`, borderColor: `${platform.color}30`, color: platform.color }}
               >
-                {platform.key === 'youtube' && <Video size={16} />}
-                {platform.key === 'instagram' && <Camera size={16} />}
+                {platform.key === 'x' && <Image src="/social-x.png" alt="X" width={18} height={18} className="rounded-sm" />}
+                {platform.key === 'youtube' && <Image src="/social-youtube.png" alt="YouTube" width={18} height={18} />}
+                {platform.key === 'instagram' && <Image src="/social-instagram.png" alt="Instagram" width={18} height={18} className="rounded-sm" />}
+                {platform.key === 'tiktok' && <Image src="/social-tiktok.png" alt="TikTok" width={18} height={18} />}
                 {platform.key === 'facebook' && <Facebook size={16} />}
-                {platform.key === 'tiktok' && <Music2 size={16} />}
                 {platform.key === 'email' && <Mail size={16} />}
-                {platform.key === 'x' && <span className="text-xs font-bold">X</span>}
                 {platform.label}
               </motion.a>
             ))}
