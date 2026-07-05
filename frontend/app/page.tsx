@@ -77,13 +77,12 @@ export default function HomePage() {
         interest: formData.interest || null,
       })
 
-      if (response?.data?.success || response?.status === 201) {
+      if (response?.success) {
         setSubmitted(true)
         setFormData({ name: '', email: '', interest: '' })
-        setTimeout(() => setSubmitted(false), 5000)
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Something went wrong. Please try again.')
+      setError(err?.message || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
