@@ -71,7 +71,7 @@ export default function HomePage() {
 
     setLoading(true)
     try {
-      const response = await api.post('/waitlist/signup', {
+      const response: any = await api.post('/waitlist/signup', {
         name: formData.name,
         email: formData.email,
         interest: formData.interest || null,
