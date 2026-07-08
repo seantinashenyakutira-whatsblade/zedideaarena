@@ -65,7 +65,7 @@ export default function AdminPayments() {
         toast.error(res.data.message || 'Refund failed')
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Refund failed')
+      toast.error(err?.message || 'Refund failed')
     } finally {
       setRefunding(null)
     }
@@ -182,7 +182,7 @@ export default function AdminPayments() {
               >
                 <option value="">All providers</option>
                 <option value="pawapay">PawaPay</option>
-                <option value="stripe">Stripe</option>
+
               </select>
             </div>
 

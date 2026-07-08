@@ -1,7 +1,7 @@
 import api from '../lib/api';
 import { supabase } from '../lib/supabase';
 
-const PRODUCTION_DOMAIN = 'zedideaarena.com';
+const PRODUCTION_DOMAIN = process.env.NEXT_PUBLIC_DOMAIN || 'zedideaarena.com';
 const HUB_HOST = `hub.${PRODUCTION_DOMAIN}`;
 const MAIN_HOST = PRODUCTION_DOMAIN;
 const PRODUCTION_ORIGIN = `https://${PRODUCTION_DOMAIN}`;

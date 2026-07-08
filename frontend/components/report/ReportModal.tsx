@@ -60,7 +60,7 @@ export default function ReportModal({ targetType, targetId, open, onClose }: Pro
         setError(data?.message || 'Failed to submit report')
       }
     } catch (e: any) {
-      setError(e?.data?.message || e?.response?.data?.message || e?.message || 'Something went wrong')
+      setError(e?.message || 'Something went wrong')
     } finally {
       setSubmitting(false)
     }

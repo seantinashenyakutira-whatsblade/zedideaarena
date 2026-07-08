@@ -22,12 +22,12 @@ Core backend source code — controllers handle business logic, routes define en
 - `routes/mediaRoutes.js` — /api/media/* (upload, serve)
 - `routes/statsRoutes.js` — /api/stats/* (global stats, leaderboard)
 - `routes/withdrawalRoutes.js` — /api/withdrawals/* (withdrawal requests)
-- `routes/webhookRoutes.js` — /api/webhooks/* (Stripe webhook handler)
+- `routes/webhookRoutes.js` — /api/webhooks/* (payments webhook handler)
 
 ### Controllers
 - `controllers/userController.js` — Login, signup, profile CRUD, mode switching
 - `controllers/ideaController.js` — Idea CRUD, submission, media handling
-- `controllers/paymentController.js` — Stripe checkout sessions, webhook processing, payment verification
+- `controllers/paymentController.js` — PawaPay payment requests, webhook processing, payment verification
 - `controllers/voteController.js` — Vote casting, results, eligibility
 - `controllers/adminController.js` — Admin panel: stats, user mgmt, idea moderation
 - `controllers/mediaController.js` — File uploads to Supabase Storage
@@ -43,13 +43,13 @@ Core backend source code — controllers handle business logic, routes define en
 - Error handling: controllers use try/catch + return res.status(500).json(...); unhandled errors fall to global handler
 - Rate limiters use in-memory store by default; max 10 auth/min, 10 votes/min, 5 ideas/hour
 - Supabase client created once at module load with service_role key for full DB access
-- Stripe webhook handler verifies signature with STRIPE_WEBHOOK_SECRET before processing
+- PawaPay webhook handler verifies signature with PAWAPAY_WEBHOOK_SECRET before processing
 
 ## Payment Flow
-1. **Contestant**: Create idea (POST /api/ideas) → redirect to Stripe checkout → user pays → webhook marks idea as submitted/paid/public → OR fallback: success page retries 10 times then checks Stripe directly
-2. **Voter**: Register voter (POST /api/voter/register) → Stripe checkout → webhook marks voter_competitions_paid → OR fallback in verifyPayment
-3. `GET /api/payment/verify?session_id=...` — First checks payments table, then falls back to Stripe API if webhook delayed. Inline creates payment record + applies side effects on fallback.
-4. Webhook route (`POST /api/webhooks/stripe`) uses `express.raw()` and is mounted before `express.json()` in index.js to preserve raw body for signature verification
+1. **Contestant**: Create idea (POST /api/ideas) → redirect to PawaPay checkout → user pays → webhook marks idea as submitted/paid/public
+2. **Voter**: Register voter (POST /api/voter/register) → PawaPay checkout → webhook marks voter_competitions_paid
+3. `GET /api/payment/verify?reference=...` — First checks payments table, then falls back to PawaPay API if webhook delayed. Inline creates payment record + applies side effects on fallback.
+4. Webhook route (`POST /api/webhooks/pawapay`) uses `express.raw()` and is mounted before `express.json()` in index.js to preserve raw body for signature verification
 
 ## Idea Visibility
 - `status='submitted' AND payment_status='paid' AND is_public=true` for voter panel display

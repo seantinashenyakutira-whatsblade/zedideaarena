@@ -69,7 +69,7 @@ export function VoteModal({ idea, isOpen, onClose, onVoteComplete }: VoteModalPr
       onVoteComplete(idea.id)
       toast.success('Your vote has been cast!')
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || err.message || 'Failed to cast vote')
+      toast.error(err?.message || 'Failed to cast vote')
     } finally {
       setSubmitting(false)
     }

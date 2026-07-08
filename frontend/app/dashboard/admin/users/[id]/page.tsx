@@ -42,7 +42,7 @@ export default function AdminUserDetailPage() {
       }))
       toast.success(`User ${newStatus ? 'verified' : 'unverified'}`)
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to update verification')
+      toast.error(err?.message || 'Failed to update verification')
     }
   }
 

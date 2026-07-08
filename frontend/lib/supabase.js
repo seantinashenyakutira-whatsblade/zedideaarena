@@ -11,7 +11,8 @@ const isProduction = typeof window !== 'undefined' &&
   window.location.hostname !== 'localhost' &&
   !window.location.hostname.includes('127.0.0.1')
 
-const cookieDomain = isProduction ? '.zedideaarena.com' : undefined
+const domain = process.env.NEXT_PUBLIC_DOMAIN || 'zedideaarena.com'
+const cookieDomain = isProduction ? `.${domain}` : undefined
 
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
   cookies: {

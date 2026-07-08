@@ -21,11 +21,12 @@ function isProtectedRoute(pathname: string): 'dashboard' | 'vote' | 'admin' | 'a
   return null
 }
 
-const PRODUCTION_DOMAIN = 'zedideaarena.com'
+const PRODUCTION_DOMAIN = process.env.NEXT_PUBLIC_DOMAIN || 'zedideaarena.com'
 const HUB_SUBDOMAIN = 'hub'
+const isLocalhost = (hostname: string) => hostname === 'localhost' || hostname.includes('127.0.0.1') || hostname.includes('[::1]') || hostname.includes('vercel.app')
 
 function getCookieDomain(hostname: string): string | undefined {
-  if (hostname === 'localhost' || hostname.includes('127.0.0.1') || hostname.includes('vercel.app')) return undefined
+  if (isLocalhost(hostname)) return undefined
   if (hostname.endsWith(PRODUCTION_DOMAIN)) return `.${PRODUCTION_DOMAIN}`
   return undefined
 }
@@ -43,6 +44,7 @@ export async function middleware(request: NextRequest) {
   const pathname = url.pathname
   const hostname = request.headers.get('host')?.split(':')[0] || ''
   const cookieDomain = getCookieDomain(hostname)
+  const isLocal = isLocalhost(hostname)
   const isHub = isHubDomain(hostname)
   const isMain = isMainDomain(hostname) || (!isHub && !hostname.includes(PRODUCTION_DOMAIN))
 
@@ -74,6 +76,16 @@ export async function middleware(request: NextRequest) {
     return res
   }
 
+  // ── LOCAL DEV: skip subdomain routing ────────────
+  if (isLocal) {
+    // On localhost, just enforce auth on protected routes (no subdomain redirects)
+    const protectedArea = isProtectedRoute(pathname)
+    if (!protectedArea && !isPublicRoute(pathname)) {
+      return NextResponse.next()
+    }
+    // fall through to auth check below
+  }
+
   // ── DOMAIN-BASED ROUTING ──────────────────────────
   // hub.zedideaarena.com → app routes only (no landing, no auth pages)
   if (isHub) {
@@ -91,7 +103,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Public routes — no auth needed
-  if (isPublicRoute(pathname)) {
+  if (!isLocal && isPublicRoute(pathname)) {
     return NextResponse.next()
   }
 

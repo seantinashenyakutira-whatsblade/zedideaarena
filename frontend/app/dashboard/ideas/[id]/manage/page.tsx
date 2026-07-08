@@ -64,7 +64,7 @@ export default function ManageIdeaPage() {
       toast.success('Idea deleted successfully')
       router.push('/dashboard/ideas')
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to delete idea')
+      toast.error(err?.message || 'Failed to delete idea')
     }
     setDeleting(false)
   }
