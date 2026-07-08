@@ -8,8 +8,8 @@ router.get('/profile', verifyToken, userController.getUserProfile);
 router.get('/profile/:id', userController.getUserProfileById);
 router.post('/profile', verifyToken, userController.syncUserProfile);
 router.patch('/profile', verifyToken, userController.updateMode);
-router.post('/signup', verifyToken, userController.syncUserProfile);
-router.post('/login', verifyToken, userController.login);
+router.post('/signup', userController.syncUserProfile);
+router.post('/login', userController.login);
 router.post('/forgot-password', forgotPasswordLimiter, userController.forgotPassword);
 router.post('/reset-password', authLimiter, userController.resetPassword);
 

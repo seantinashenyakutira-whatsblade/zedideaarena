@@ -16,6 +16,8 @@ dist/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.test
+.env.keys
 
 # Logs
 *.log
@@ -43,9 +45,7 @@ frontend/tsconfig.tsbuildinfo
 # Cursor
 .cursor/
 .vercel
-.env*
 test-artifacts/
 
 testsprite_tests/tmp/config.json
 coverage/
-.env.test
