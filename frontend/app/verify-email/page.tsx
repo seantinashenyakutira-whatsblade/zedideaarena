@@ -1,27 +1,26 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { CheckCircle2, XCircle, Loader2, Mail, Users, Share2, Copy, ArrowRight } from 'lucide-react'
+import { CheckCircle2, XCircle, Loader2, Mail, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
 import { toast } from 'sonner'
 
 export default function VerifyEmailPage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
   const email = searchParams.get('email')
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
-  const [referralCode, setReferralCode] = useState('')
-  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!token || !email) {
       setStatus('error')
-      setMessage('Missing verification link. Check the link you received via email.')
+      setMessage('Missing verification link.')
       return
     }
 
@@ -30,8 +29,7 @@ export default function VerifyEmailPage() {
         const res: any = await api.get(`/waitlist/verify?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`)
         if (res?.verified) {
           setStatus('success')
-          setMessage(res.message || 'Email verified!')
-          if (res.referralCode) setReferralCode(res.referralCode)
+          setMessage('Email verified!')
         } else {
           setStatus('error')
           setMessage(res.message || 'Verification failed')
@@ -77,37 +75,18 @@ export default function VerifyEmailPage() {
             </motion.div>
 
             <div className="space-y-2">
-              <h1 className="text-2xl font-black text-white">You're on the list!</h1>
-              <p className="text-sm text-white/50">{message}</p>
+              <h1 className="text-2xl font-black text-white">Email verified!</h1>
+              <p className="text-sm text-white/50">Now let's complete your onboarding.</p>
             </div>
 
-            {referralCode && (
-              <div className="card-zed p-6 space-y-3">
-                <div className="flex items-center justify-center gap-2">
-                  <Users size={16} className="text-zed-primary" />
-                  <span className="text-sm font-bold text-white">Your Referral Code</span>
-                </div>
-                <div className="text-3xl font-black tracking-[0.2em] text-zed-primary">{referralCode}</div>
-                <p className="text-xs text-white/50">Share this code with friends to move up the waitlist.</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const url = `https://zedideaarena.com/waitlist?ref=${referralCode}`
-                    navigator.clipboard.writeText(url)
-                    setCopied(true)
-                    setTimeout(() => setCopied(false), 2000)
-                    toast.success('Link copied!')
-                  }}
-                  className="btn-secondary flex items-center gap-2 text-xs font-black uppercase tracking-widest mx-auto"
-                >
-                  <Copy size={14} /> {copied ? 'Copied!' : 'Copy Referral Link'}
-                </button>
-              </div>
-            )}
-
-            <Link href="/" className="btn-primary inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest">
-              Back to Home <ArrowRight size={16} />
-            </Link>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => router.push(`/waitlist?onboard=true&email=${encodeURIComponent(email || '')}`)}
+              className="btn-primary inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest"
+            >
+              Continue Onboarding <ArrowRight size={16} />
+            </motion.button>
           </motion.div>
         )}
 
@@ -118,14 +97,12 @@ export default function VerifyEmailPage() {
                 <XCircle size={40} className="text-red-400" />
               </div>
             </div>
-
             <div className="space-y-2">
               <h1 className="text-2xl font-black text-white">Verification failed</h1>
               <p className="text-sm text-white/50">{message}</p>
             </div>
-
             <div className="card-zed p-6 space-y-3">
-              <p className="text-xs text-white/50">Try requesting a new verification email.</p>
+              <p className="text-xs text-white/50">Request a new verification email.</p>
               {email && (
                 <button
                   type="button"
@@ -143,9 +120,8 @@ export default function VerifyEmailPage() {
                 </button>
               )}
             </div>
-
-            <Link href="/waitlist" className="btn-primary inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest">
-              Join the Waitlist <ArrowRight size={16} />
+            <Link href="/" className="btn-primary inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest">
+              Back to Home <ArrowRight size={16} />
             </Link>
           </motion.div>
         )}

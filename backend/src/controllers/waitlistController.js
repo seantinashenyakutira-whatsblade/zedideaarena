@@ -63,7 +63,34 @@ exports.register = async (req, res) => {
       .maybeSingle();
 
     if (existing?.email_verified) {
-      return res.status(200).json({ success: true, message: 'You are already on the waitlist', verified: true });
+      // Onboarding update — update extra fields if provided
+      const updates = {};
+      if (username !== undefined) updates.username = username.trim() || null;
+      if (country !== undefined) updates.country = country || null;
+      if (profession !== undefined) updates.profession = profession || null;
+      if (role !== undefined) updates.role = role || null;
+      if (interests !== undefined) updates.interests = interests || [];
+      if (goal !== undefined) updates.goal = goal || null;
+      if (challenge !== undefined) updates.challenge = challenge || null;
+      if (marketingConsent !== undefined) updates.marketing_consent = marketingConsent;
+
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('waitlist_signups').update(updates).eq('id', existing.id);
+      }
+
+      // Return existing referral code
+      const { data: fullUser } = await supabase
+        .from('waitlist_signups')
+        .select('referral_code')
+        .eq('id', existing.id)
+        .single();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Profile updated',
+        verified: true,
+        data: { referralCode: fullUser?.referral_code || null },
+      });
     }
 
     if (existing && !existing.email_verified) {

@@ -39,10 +39,10 @@ export default function HomePage() {
   const [formData, setFormData] = useState({ name: '', email: '', interest: '' })
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [subEmail, setSubEmail] = useState('')
   const [error, setError] = useState('')
   const [countData, setCountData] = useState<{ total: number; freePassLimit: number; spotsRemaining: number } | null>(null)
   const [loadingCount, setLoadingCount] = useState(true)
-  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     const fetchCount = async () => {
@@ -78,6 +78,7 @@ export default function HomePage() {
       })
 
       if (response?.success) {
+        setSubEmail(formData.email)
         setSubmitted(true)
         setFormData({ name: '', email: '', interest: '' })
       }
@@ -292,61 +293,53 @@ export default function HomePage() {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.4 }}
+                  className="space-y-5"
                 >
-                  <div className="p-8 rounded-2xl border border-green-500/30 bg-green-500/5 text-center mb-4">
+                  {/* Progress bar */}
+                  <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-zed-primary to-zed-accent rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: '25%' }}
+                      transition={{ duration: 0.8, ease: 'easeOut' }}
+                    />
+                  </div>
+                  <p className="text-xs text-white/40 font-bold tracking-widest uppercase text-center">25% Complete</p>
+
+                  <div className="p-8 rounded-2xl border border-zed-primary/20 bg-zed-primary/5 text-center">
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 0.1, type: 'spring' }}
                       className="mb-4 flex justify-center"
                     >
-                      <CheckCircle2 size={48} className="text-green-400" />
+                      <Mail size={48} className="text-zed-primary" />
                     </motion.div>
-                    <h3 className="text-xl font-bold mb-2">You&apos;re on the list!</h3>
+                    <h3 className="text-xl font-bold mb-2">Verify your email</h3>
                     <p className="text-sm text-white/60 mb-4">
-                      We&apos;ll keep you updated before the arena opens. Check your email for updates.
+                      We sent a verification link to <strong className="text-white">{subEmail}</strong>.<br />
+                      Click it to continue your onboarding.
                     </p>
-                    {countData && countData.total <= countData.freePassLimit && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20"
-                      >
-                        <Gift size={14} className="text-amber-400" />
-                        <span className="text-xs font-semibold text-amber-300">You&apos;ve earned a Free Pass!</span>
-                      </motion.div>
-                    )}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await api.post('/waitlist/resend-verification', { email: subEmail })
+                          toast.success('Verification email resent!')
+                        } catch (err: any) {
+                          toast.error(err?.message || 'Failed to resend')
+                        }
+                      }}
+                      className="btn-secondary text-xs font-black uppercase tracking-widest"
+                    >
+                      Resend Email
+                    </button>
                   </div>
 
-                  {/* Share / Referral */}
-                  <div className="text-center">
-                    <p className="text-xs text-white/40 mb-3">Tell a friend about the arena</p>
-                    <div className="flex items-center justify-center gap-2">
-                      <motion.a
-                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent('I just joined the waitlist for ZedIdeaArena — the arena where ideas compete and builders get noticed. First 50 contestants get a free pass!')}&url=${encodeURIComponent('https://zedideaarena.com')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-xs font-medium flex items-center gap-1.5"
-                      >
-                        <Share2 size={14} /> Share on X
-                      </motion.a>
-                      <motion.button
-                        onClick={() => {
-                          navigator.clipboard.writeText('https://zedideaarena.com')
-                          setCopied(true)
-                          setTimeout(() => setCopied(false), 2000)
-                        }}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-xs font-medium flex items-center gap-1.5"
-                      >
-                        <Copy size={14} /> {copied ? 'Copied!' : 'Copy Link'}
-                      </motion.button>
-                    </div>
+                  <div className="flex items-center justify-center gap-2 text-xs text-white/30">
+                    <div className="w-6 h-px bg-white/10" />
+                    <span>Then complete your profile &rarr;</span>
+                    <div className="w-6 h-px bg-white/10" />
                   </div>
                 </motion.div>
               )}
