@@ -58,7 +58,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── CLEAR STALE SUPABASE COOKIES ON AUTH PAGES ──────
-  if (pathname.startsWith('/auth/')) {
+  // Skip /auth/callback — it needs cookies to complete OAuth exchange
+  if (pathname.startsWith('/auth/') && pathname !== '/auth/callback') {
     const res = isHub
       ? NextResponse.redirect(new URL(pathname, `https://${PRODUCTION_DOMAIN}`))
       : NextResponse.next()
