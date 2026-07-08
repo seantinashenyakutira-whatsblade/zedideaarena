@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const reportController = require('../controllers/reportController');
+const waitlistController = require('../controllers/waitlistController');
 const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 
 router.get('/stats', verifyToken, isAdmin, adminController.getAdminStats);
@@ -28,5 +29,11 @@ router.get('/export/ideas', verifyToken, isAdmin, adminController.exportIdeasCSV
 router.get('/export/users', verifyToken, isAdmin, adminController.exportUsersCSV);
 router.get('/export/competitions/:id', verifyToken, isAdmin, adminController.exportCompetitionResultsCSV);
 router.get('/export/payments', verifyToken, isAdmin, adminController.exportPaymentsCSV);
+
+// Waitlist admin
+router.get('/waitlist', verifyToken, isAdmin, waitlistController.adminGetAll);
+router.get('/waitlist/stats', verifyToken, isAdmin, waitlistController.adminGetStats);
+router.get('/waitlist/export', verifyToken, isAdmin, waitlistController.adminExport);
+router.post('/waitlist/send-email', verifyToken, isAdmin, waitlistController.adminSendEmail);
 
 module.exports = router;

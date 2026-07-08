@@ -49,3 +49,4 @@ test-artifacts/
 
 testsprite_tests/tmp/config.json
 coverage/
+.env*
