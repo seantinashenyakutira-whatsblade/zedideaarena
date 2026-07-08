@@ -20,7 +20,7 @@ export default function AdminWaitlist() {
 
   const fetchStats = async () => {
     try {
-      const res = await api.get('/admin/waitlist/stats')
+      const res: any = await api.get('/admin/waitlist/stats')
       if (res?.success) setStats(res.data)
     } catch { }
   }
@@ -30,7 +30,7 @@ export default function AdminWaitlist() {
       const params = new URLSearchParams({ page: String(page), limit: '50' })
       if (search) params.set('search', search)
       if (statusFilter) params.set('status', statusFilter)
-      const res = await api.get(`/admin/waitlist?${params}`)
+      const res: any = await api.get(`/admin/waitlist?${params}`)
       if (res?.success) {
         setUsers(res.data || [])
         setTotal(res.total || 0)
@@ -65,7 +65,7 @@ export default function AdminWaitlist() {
     if (!confirm(`Send ${type.replace(/_/g, ' ')} email to all verified users?`)) return
     setSendingEmail(true)
     try {
-      const res = await api.post('/admin/waitlist/send-email', { type })
+      const res: any = await api.post('/admin/waitlist/send-email', { type })
       if (res?.success) {
         toast.success(`Email sent to ${res.sent} users`)
         fetchStats()

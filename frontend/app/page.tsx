@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, CheckCircle2, Mail, Sparkles, Users, Zap, Lightbulb, Gift, Share2, Copy, Facebook } from 'lucide-react'
 import VoiceNote from '@/components/VoiceNote'
 import api from '@/lib/api'
+import { toast } from 'sonner'
 
 const fadeUp = {
   initial: { opacity: 0, y: 40 },
