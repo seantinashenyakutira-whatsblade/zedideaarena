@@ -3,5 +3,5 @@
   "rootDirectory": "frontend",
   "buildCommand": "next build",
   "installCommand": "pnpm install",
-  "nodeVersion": "20.x"
+  "nodeVersion": "24.x"
 }
