@@ -73,6 +73,13 @@ exports.register = async (req, res) => {
       if (goal !== undefined) updates.goal = goal || null;
       if (challenge !== undefined) updates.challenge = challenge || null;
       if (marketingConsent !== undefined) updates.marketing_consent = marketingConsent;
+      if (referralSource !== undefined) updates.referral_source = referralSource || null;
+      if (interestedInVoting !== undefined) updates.interested_in_voting = interestedInVoting;
+      if (interestedInEarning !== undefined) updates.interested_in_earning = interestedInEarning;
+      if (interestedInCompetitions !== undefined) updates.interested_in_competitions = interestedInCompetitions;
+      if (motivations !== undefined) updates.motivations = motivations || [];
+      if (hasIdea !== undefined) updates.has_idea = hasIdea || null;
+      if (interestedInCommunity !== undefined) updates.interested_in_community = interestedInCommunity;
 
       if (Object.keys(updates).length > 0) {
         await supabase.from('waitlist_signups').update(updates).eq('id', existing.id);
@@ -121,6 +128,13 @@ exports.register = async (req, res) => {
         goal: goal || null,
         challenge: challenge || null,
         marketing_consent: marketingConsent !== false,
+        referral_source: referralSource || null,
+        interested_in_voting: interestedInVoting ?? false,
+        interested_in_earning: interestedInEarning ?? false,
+        interested_in_competitions: interestedInCompetitions ?? false,
+        motivations: motivations || [],
+        has_idea: hasIdea || null,
+        interested_in_community: interestedInCommunity ?? false,
       }).eq('id', existing.id);
 
       await supabase.from('verification_attempts').insert([{
@@ -182,6 +196,13 @@ exports.register = async (req, res) => {
         verification_token_expiry: expiresAt,
         email_verified: false,
         email_status: 'pending',
+        referral_source: referralSource || null,
+        interested_in_voting: interestedInVoting ?? false,
+        interested_in_earning: interestedInEarning ?? false,
+        interested_in_competitions: interestedInCompetitions ?? false,
+        motivations: motivations || [],
+        has_idea: hasIdea || null,
+        interested_in_community: interestedInCommunity ?? false,
       }])
       .select()
       .single();
