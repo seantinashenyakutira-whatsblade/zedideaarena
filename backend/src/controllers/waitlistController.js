@@ -44,6 +44,8 @@ exports.register = async (req, res) => {
       name, username, email, country, profession,
       role, interests, goal, challenge,
       marketingConsent, referralCode,
+      referralSource, interestedInVoting, interestedInEarning,
+      interestedInCompetitions, motivations, hasIdea, interestedInCommunity,
     } = req.body;
 
     if (!name?.trim() || !email?.trim()) {
